@@ -1,25 +1,10 @@
-## 프로젝트 기본 설정
+package tetris;
 
-### 코딩 컨벤션 및 .gitignore
+import javax.swing.JFrame;
 
-- 클래스:    PascalCase
-- 함수:      camelCase
-- monitoring.json 업로드 x (교수님께 확인 필요)
+import tetris.scene.*;
+import tetris.scene.game.GameScene;
 
-### 프로젝트 구조
-
-> EntryPoint(main 함수) → Tetris → Game → Scene 순차적으로 호출하는 구조.  
->  주요 로직을 Scene 상속 클래스에 작성하면 된다.
-
-```java
-// 프로그램 진입점 클래스
-public class Tetris {
-    public static void main(String[] args) {
-        Game.start();
-    }
-}
-
-// Game 클래스: 게임 실행 메인 클래스
 public class Game {
     private Game() {}
     private static Game instance = new Game();
@@ -44,14 +29,6 @@ public class Game {
         instance.curScene = scene;
         instance.curScene.onEnter();
     }
-}
 
-public abstract class Scene extends JPanel {
-    public Scene(JFrame frame) {
-        super();
-    }
-    public void onEnter() {}
-    public void onExit() {}
+    
 }
-
-```
