@@ -30,6 +30,13 @@ public class MenuScene extends Scene {
 
         box.add(btnStart);
 
+        JButton btnQuit = new JButton("Quit");
+        btnQuit.addActionListener(e -> {
+            Game.quit();
+        });
+
+        box.add(btnQuit);
+
         add(box);
 
         m_frame.setContentPane(this);

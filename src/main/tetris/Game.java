@@ -13,7 +13,7 @@ public class Game {
     Scene curScene;
     JFrame frame;
 
-    public static void start() {
+    public static void run() {
         instance.frame = new JFrame("Tetris");
         instance.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         instance.frame.setSize(480, 720);
@@ -28,6 +28,11 @@ public class Game {
         instance.curScene.onExit();
         instance.curScene = scene;
         instance.curScene.onEnter();
+    }
+
+    public static void quit() {
+        instance.curScene.onExit();
+        instance.frame.dispose();
     }
 
     
