@@ -1,19 +1,19 @@
 package tetris.scene.game;
+import tetris.Game;
+import tetris.scene.Scene;
+import tetris.scene.game.blocks.*;
+import tetris.scene.test.TestScene;
 
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
+
+import java.awt.event.KeyListener;
 import java.awt.*;
 import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 import java.util.Random;
-
-import tetris.Game;
-import tetris.scene.Scene;
-import tetris.scene.game.blocks.*;
-import tetris.scene.menu.MenuScene;
 
 public class GameScene extends Scene {
 
@@ -218,7 +218,7 @@ public class GameScene extends Scene {
                     drawBoard();
                     break;
                 case KeyEvent.VK_ESCAPE:
-                    Game.setScene(new MenuScene(m_frame));
+                    Game.setScene(new TestScene(m_frame));
                     break;
             }
         }

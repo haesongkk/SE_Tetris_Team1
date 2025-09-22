@@ -1,0 +1,12 @@
+# 색맹 모드
+mode: false
+
+# 화면 사이즈
+width: 800
+height: 600
+
+# 조작 (VK_* 의 값을 일단 써놓았음)
+left: 37
+right: 39
+rotate: 38
+fall: 40

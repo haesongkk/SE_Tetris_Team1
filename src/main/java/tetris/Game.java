@@ -1,9 +1,9 @@
 package tetris;
 
-import javax.swing.JFrame;
-
 import tetris.scene.*;
-import tetris.scene.game.GameScene;
+import tetris.scene.test.TestScene;
+
+import javax.swing.JFrame;
 
 public class Game {
     private Game() {}
@@ -16,11 +16,9 @@ public class Game {
     public static void run() {
         instance.frame = new JFrame("Tetris");
         instance.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        instance.frame.setSize(480, 720);
-        instance.frame.setLocationRelativeTo(null);
         instance.frame.setVisible(true);
 
-        instance.curScene = new GameScene(instance.frame);
+        instance.curScene = new TestScene(instance.frame);
         instance.curScene.onEnter();
     }
 
@@ -34,6 +32,4 @@ public class Game {
         instance.curScene.onExit();
         instance.frame.dispose();
     }
-
-    
 }
