@@ -1,7 +1,7 @@
 package tetris;
 
 import tetris.scene.*;
-import tetris.scene.test.TestScene;
+import tetris.scene.menu.MainMenuScene;
 
 import javax.swing.JFrame;
 
@@ -18,7 +18,7 @@ public class Game {
         instance.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         instance.frame.setVisible(true);
 
-        instance.curScene = new TestScene(instance.frame);
+        instance.curScene = new MainMenuScene(instance.frame);
         instance.curScene.onEnter();
     }
 
