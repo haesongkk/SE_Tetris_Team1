@@ -4,6 +4,7 @@ import tetris.Game;
 import tetris.Global;
 import tetris.scene.Scene;
 import tetris.scene.game.GameScene;
+import tetris.scene.scorescene.ScoreScene;
 
 import javax.swing.*;
 import java.awt.*;
@@ -13,9 +14,9 @@ public class TestScene extends Scene {
 
     public TestScene(JFrame frame) {
         super(frame);
-        
+
         this.m_frame = frame;
-        frame.setSize(800,800);
+        frame.setSize(1080,720);
         frame.setLocationRelativeTo(null);
 
 
@@ -33,6 +34,14 @@ public class TestScene extends Scene {
         });
         box.add(btnStart);
 
+
+        JButton btnScore = new JButton("score board");
+        btnScore.addActionListener(e -> {
+            Game.setScene(new ScoreScene(m_frame));
+        });
+        box.add(btnScore);
+
+        
         // 프로그램 종료 테스트
         JButton btnQuit = new JButton("Quit");
         btnQuit.addActionListener(e -> {
