@@ -4,6 +4,7 @@ import tetris.Game;
 import tetris.Global;
 import tetris.scene.Scene;
 import tetris.scene.game.GameScene;
+import tetris.scene.game.overlay.GameOver;
 import tetris.scene.scorescene.ScoreScene;
 
 import javax.swing.*;
@@ -40,6 +41,12 @@ public class TestScene extends Scene {
             Game.setScene(new ScoreScene(m_frame));
         });
         box.add(btnScore);
+
+        JButton btnOverlay = new JButton("overlay");
+        btnOverlay.addActionListener(e -> {
+            GameOver ol = new GameOver(frame, 100);
+        });
+        box.add(btnOverlay);
 
         
         // 프로그램 종료 테스트
