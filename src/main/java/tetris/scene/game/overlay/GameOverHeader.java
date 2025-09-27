@@ -8,9 +8,11 @@ import javax.swing.*;
 
 public class GameOverHeader extends JLabel {
     GameOverHeader() {
-        setText("GAME OVER");
-        setFont(Theme.GIANTS_INLINE.deriveFont(Font.BOLD, 20f));
+        setText("GAME OVER!!");
+        setFont(Theme.GIANTS_INLINE.deriveFont(Font.BOLD, 30f));
+        setForeground(Theme.HEADER_RED);
         setHorizontalAlignment(SwingConstants.CENTER);
+        setVerticalAlignment(SwingConstants.CENTER);
     }
 
     float alpha = 0f;

@@ -32,13 +32,15 @@ public final class Theme {
     public static final Color STAND_BLUE     = new Color(170, 190, 255);
     public static final Color TEXT_WHITE     = new Color(235, 235, 235);
     public static final Color TEXT_GRAY     = new Color(100,100,100);
+    public static final Color TEXT_LIGHTGRAY     = new Color(150,150,150);
     public static final Color SCORE_WHITE    = new Color(245, 245, 245);
 
     public static final Color BADGE_YELLOW   = new Color(255, 223, 128);
     public static final Color DIVIDER        = new Color(36, 36, 36);
 
     public static final Font GIANTS_INLINE = loadFont("./resources/Giants-Inline.ttf");
-    //public static final Font GIANTS_BOLD = loadFont("./resources/Giants-Bold.ttf");
+    public static final Font GIANTS_BOLD = loadFont("./resources/Giants-Bold.ttf");
+    public static final Font GIANTS_REGULAR = loadFont("./resources/Giants-Regular.ttf");
     //public static final Font Dunggeunmo = loadFont("./resources/BoldDunggeunmo.ttf");
     //public static final Font Samlip = loadFont("./resources/SDSamliphopangcheTTFOutline.ttf");
     //public static final Font OKMAN = loadFont("./resources/OKMAN FONT.ttf");

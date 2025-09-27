@@ -3,6 +3,8 @@ package tetris.scene.game.overlay;
 import java.awt.*;
 import javax.swing.*;
 
+import tetris.scene.scorescene.Theme;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,14 +19,14 @@ public class GameOverBody extends JPanel {
         setLayout(new GridLayout(4,2,4,4));
         setOpaque(false);
 
-        EntryComp scoreLabel = new EntryComp("score");
-        EntryComp linesLabel = new EntryComp("lines");
-        EntryComp timeLabel = new EntryComp("time");
-        EntryComp difficultyLabel = new EntryComp("difficulty");
-        EntryComp scoreValue = new EntryComp(Integer.toString(score));
-        EntryComp linesValue = new EntryComp(Integer.toString(lines));
-        EntryComp timeValue = new EntryComp(Integer.toString(time));
-        EntryComp difficultyValue = new EntryComp(difficulty);
+        EntryComp scoreLabel = new EntryComp("score", Theme.I_CYAN);
+        EntryComp linesLabel = new EntryComp("lines", Theme.S_GREEN);
+        EntryComp timeLabel = new EntryComp("time", Theme.T_PURPLE);
+        EntryComp difficultyLabel = new EntryComp("difficulty", Theme.L_ORANGE);
+        EntryComp scoreValue = new EntryComp(Integer.toString(score), Theme.SCORE_WHITE);
+        EntryComp linesValue = new EntryComp(Integer.toString(lines), Theme.SCORE_WHITE);
+        EntryComp timeValue = new EntryComp(Integer.toString(time), Theme.SCORE_WHITE);
+        EntryComp difficultyValue = new EntryComp(difficulty, Theme.SCORE_WHITE);
 
         add(scoreLabel);
         add(scoreValue);
@@ -70,8 +72,10 @@ class EntryComp extends JLabel {
     Timer animTimer;
     int delay = 16;
 
-    EntryComp(String text) {
+    EntryComp(String text, Color color) {
         setText(text);
+        setFont(Theme.GIANTS_BOLD.deriveFont(Font.ITALIC, 20f));
+        setForeground(color);
     }
 
     void startAnimation(float duration, float overshoot) {

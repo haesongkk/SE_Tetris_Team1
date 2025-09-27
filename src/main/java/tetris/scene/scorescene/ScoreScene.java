@@ -1,5 +1,7 @@
 package tetris.scene.scorescene;
+import tetris.Game;
 import tetris.scene.Scene;
+import tetris.scene.test.TestScene;
 
 import javax.swing.*;
 import java.awt.*;
@@ -7,6 +9,10 @@ import java.awt.*;
 public class ScoreScene extends Scene {
     
     public ScoreScene(JFrame frame) {
+        this(frame, -1);
+    }
+    
+    public ScoreScene(JFrame frame, int highlightRank) {
         super(null);
         
         setBackground(Theme.BG);
@@ -23,7 +29,7 @@ public class ScoreScene extends Scene {
 
         add(Box.createRigidArea(new Dimension(0, 12)));
 
-        ScoreBody scoreBody = new ScoreBody();
+        ScoreBody scoreBody = new ScoreBody(highlightRank);
         scoreBody.setAlignmentX(CENTER_ALIGNMENT);
 
         add(scoreBody);
@@ -66,9 +72,9 @@ public class ScoreScene extends Scene {
         t3.start();
 
 
-        // ESC → 종료(원하시면 Scene 전환 로직으로 바꾸세요)
+        // !!!!!! TestScene 말고 시작 메뉴 씬으로 변경 !!!!!!!!
         frame.getRootPane().registerKeyboardAction(
-                e -> System.exit(0),
+                e -> Game.setScene(new TestScene(frame)),
                 KeyStroke.getKeyStroke("ESCAPE"),
                 JComponent.WHEN_IN_FOCUSED_WINDOW
         );

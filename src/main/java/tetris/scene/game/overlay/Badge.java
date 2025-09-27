@@ -3,6 +3,8 @@ package tetris.scene.game.overlay;
 import java.awt.*;
 import javax.swing.*;
 
+import tetris.scene.scorescene.Theme;
+
 // 작은 둥근 "HIGH SCORE!" 배지
 class Badge extends JPanel {
     private float hue = 0f;            // 0~1 HSB hue
@@ -13,12 +15,12 @@ class Badge extends JPanel {
 
     Badge() {
         setOpaque(false);
-        setBackground(new Color(255, 255, 255, 230));
+        setBackground(new Color(30, 30, 30, 240)); // 어두운 배경으로 변경
         setPreferredSize(new Dimension(120, 28));
         setMinimumSize(new Dimension(100, 24));
         setMaximumSize(new Dimension(160, 32));
-        setFont(new Font("Dialog", Font.BOLD, 12));
-        setForeground(new Color(40, 40, 40));
+        setFont(Theme.GIANTS_BOLD.deriveFont(Font.PLAIN, 12f));
+        setForeground(new Color(255, 255, 255)); // 밝은 흰색 글자로 변경
         setToolTipText("HIGH SCORE!");
     }
 

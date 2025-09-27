@@ -17,8 +17,14 @@ public class ScoreBody extends JPanel {
     private List<Row> rowList = new ArrayList<>();
     private Timer animTimer;
     private int animIndex = 0;
+    private int highlightRank = -1;
     
     ScoreBody() {
+        this(-1);
+    }
+    
+    ScoreBody(int highlightRank) {
+        this.highlightRank = highlightRank;
         setOpaque(false);
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         
@@ -47,11 +53,26 @@ public class ScoreBody extends JPanel {
         animTimer = new Timer(110, e -> {
             if(animIndex >= rowList.size()) {
                 ((Timer)e.getSource()).stop();
+                // 모든 행 애니메이션 완료 후 하이스코어 강조 애니메이션 시작
+                if (highlightRank > 0) {
+                    startHighScoreHighlightAnimation();
+                }
                 return;
             }
             rowList.get(animIndex++).startAnimation();
         });
         animTimer.start();
+    }
+    
+    /** 하이스코어 강조 애니메이션 시작 */
+    private void startHighScoreHighlightAnimation() {
+        // 해당 순위에 해당하는 행을 찾아서 강조
+        if (highlightRank > 0 && highlightRank < rowList.size()) {
+            Row targetRow = rowList.get(highlightRank); // highlightRank는 1부터 시작, rowList는 0부터 시작
+            if (targetRow instanceof BodyRow) {
+                ((BodyRow) targetRow).startHighScoreAnimation();
+            }
+        }
     }
 
     
@@ -185,12 +206,29 @@ class HeaderRow extends Row {
 }
 
 class BodyRow extends Row {
+    // 하이스코어 강조 애니메이션 상태
+    private boolean isHighScoreHighlight = false;
+    private Timer highlightTimer;
+    private float pulseScale = 1.0f;
+    private float hue = 0f;
+    private float glowAlpha = 0f;
+    
     @Override Color[] getColors() {
-        return new Color[] {
-            Theme.STAND_BLUE, Theme.LIGHT_GREY, 
-            Theme.LIGHT_GREY, Theme.S_GREEN, 
-            Theme.T_PURPLE, Theme.L_ORANGE
-        };
+        if (isHighScoreHighlight) {
+            // 하이스코어 강조 시 색상순환 색상 사용
+            Color highlightColor = Color.getHSBColor(hue, 0.8f, 1.0f);
+            return new Color[] {
+                highlightColor, highlightColor,
+                highlightColor, highlightColor,
+                highlightColor, highlightColor
+            };
+        } else {
+            return new Color[] {
+                Theme.STAND_BLUE, Theme.LIGHT_GREY, 
+                Theme.LIGHT_GREY, Theme.S_GREEN, 
+                Theme.T_PURPLE, Theme.L_ORANGE
+            };
+        }
     }
     @Override Font[] getFonts() {
         return new Font[] {
@@ -200,7 +238,14 @@ class BodyRow extends Row {
         };
     }
     @Override int[] getSizes() {
-        return new int[] { 14,14,14,14,14,14 };
+        if (isHighScoreHighlight) {
+            // 펄스 효과를 위한 크기 조정
+            int baseSize = 14;
+            int pulseSize = (int)(baseSize * pulseScale);
+            return new int[] { pulseSize, pulseSize, pulseSize, pulseSize, pulseSize, pulseSize };
+        } else {
+            return new int[] { 14,14,14,14,14,14 };
+        }
     }
     @Override int[] getStyle() {
         return new int[] {
@@ -212,5 +257,61 @@ class BodyRow extends Row {
     
     BodyRow(String[] content) {
         super(content);
+    }
+    
+    /** 하이스코어 강조 애니메이션 시작 */
+    public void startHighScoreAnimation() {
+        isHighScoreHighlight = true;
+        
+        // 펄스 + 색상순환 + 글로우 애니메이션
+        highlightTimer = new Timer(50, e -> {
+            // 펄스 효과 (1.0 ~ 1.1 사이에서 부드럽게 변화)
+            pulseScale = 1.0f + (float)(Math.sin(System.currentTimeMillis() * 0.005) * 0.1);
+            
+            // 색상순환 효과
+            hue += 0.02f;
+            if (hue > 1f) hue -= 1f;
+            
+            // 글로우 효과
+            glowAlpha = (float)(Math.sin(System.currentTimeMillis() * 0.003) * 0.3 + 0.3);
+            
+            repaint();
+        });
+        highlightTimer.start();
+    }
+    
+    /** 하이스코어 강조 애니메이션 정지 */
+    private void stopHighScoreAnimation() {
+        isHighScoreHighlight = false;
+        if (highlightTimer != null) {
+            highlightTimer.stop();
+        }
+        pulseScale = 1.0f;
+        hue = 0f;
+        glowAlpha = 0f;
+        repaint();
+    }
+    
+    @Override
+    protected void paintComponent(Graphics g) {
+        if (isHighScoreHighlight) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            
+            // 글로우 효과 (배경 하이라이트)
+            g2.setComposite(AlphaComposite.SrcOver.derive(glowAlpha));
+            g2.setColor(Color.getHSBColor(hue, 0.3f, 1.0f));
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+            
+            // 색상순환 테두리
+            g2.setComposite(AlphaComposite.SrcOver.derive(0.8f));
+            g2.setStroke(new BasicStroke(2f));
+            g2.setColor(Color.getHSBColor(hue, 0.8f, 1.0f));
+            g2.drawRoundRect(1, 1, getWidth()-2, getHeight()-2, 10, 10);
+            
+            g2.dispose();
+        }
+        
+        super.paintComponent(g);
     }
 }
