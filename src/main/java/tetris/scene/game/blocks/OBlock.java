@@ -1,6 +1,5 @@
 package tetris.scene.game.blocks;
 
-
 import java.awt.Color;
 
 public class OBlock extends Block {

@@ -1,6 +1,5 @@
 package tetris.scene.game.blocks;
 
-
 import java.awt.Color;
 
 public class IBlock extends Block {
@@ -11,4 +10,5 @@ public class IBlock extends Block {
 		};
 		color = Color.CYAN;
 	}
+	
 }
