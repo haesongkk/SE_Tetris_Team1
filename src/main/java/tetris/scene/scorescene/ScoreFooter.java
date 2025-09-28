@@ -6,6 +6,7 @@ import javax.swing.Timer;
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.SwingConstants;
+import tetris.util.Theme;
 
 public class ScoreFooter extends JLabel {
     boolean bShow = false;

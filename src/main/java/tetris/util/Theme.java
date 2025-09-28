@@ -1,4 +1,4 @@
-package tetris.scene.scorescene;
+package tetris.util;
 
 import java.awt.*;
 import java.io.File;

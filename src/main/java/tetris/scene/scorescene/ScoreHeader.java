@@ -1,6 +1,7 @@
 package tetris.scene.scorescene;
 import java.awt.*;
 import javax.swing.*;
+import tetris.util.Theme;
 
 public class ScoreHeader extends JLabel{
 

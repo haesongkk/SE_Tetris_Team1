@@ -1,6 +1,11 @@
 package tetris.scene.game.overlay;
  
 import javax.swing.*;
+
+import tetris.util.Theme;
+
+import tetris.util.Animation;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
@@ -28,15 +33,104 @@ public class GameOver extends JPanel {
         boolean isHighScore = isHighScore(score);
         System.out.println("isHighScore: " + isHighScore);
         
-        PopUp popup = new PopUp();
-        popup.setBackground(Color.black); 
-        popup.setLayout(new GridBagLayout());
-        
-        GameOverHeader header = new GameOverHeader();
-        GameOverBody body = new GameOverBody(score, lines, time, difficulty);
-        GameOverFooter footer = new GameOverFooter(isHighScore);
+        GOCanvas popup = new GOCanvas();
 
-        popup.add(header, new GridBagConstraints(
+        Animation gameOver = new Animation(
+            "GAME OVER!!",
+            Theme.GIANTS_INLINE.deriveFont(Font.BOLD, 30f), 
+            Theme.HEADER_RED, Theme.BG, Theme.BG, 
+            0, 0, 
+            SwingConstants.CENTER, SwingConstants.CENTER
+        );
+
+        Animation scoreLabel = new Animation(
+            "SCORE",
+            Theme.GIANTS_INLINE.deriveFont(Font.BOLD, 20f), 
+            Theme.I_CYAN, Theme.BG, Theme.BG, 
+            2, 0, 
+            SwingConstants.LEFT, SwingConstants.CENTER
+        );
+
+        Animation linesLabel = new Animation(
+            "LINES",
+            Theme.GIANTS_INLINE.deriveFont(Font.BOLD, 20f), 
+            Theme.S_GREEN, Theme.BG, Theme.BG, 
+            2, 0, 
+            SwingConstants.LEFT, SwingConstants.CENTER
+        );
+
+        Animation timeLabel = new Animation(
+            "TIME",
+            Theme.GIANTS_INLINE.deriveFont(Font.BOLD, 20f), 
+            Theme.T_PURPLE, Theme.BG, Theme.BG, 
+            2, 0, 
+            SwingConstants.LEFT, SwingConstants.CENTER
+        );
+
+        Animation difficultyLabel = new Animation(
+            "DIFFICULTY",
+            Theme.GIANTS_INLINE.deriveFont(Font.BOLD, 20f), 
+            Theme.L_ORANGE, Theme.BG, Theme.BG, 
+            2, 0, 
+            SwingConstants.LEFT, SwingConstants.CENTER
+        );
+
+        Animation scoreValue = new Animation(
+            Integer.toString(score),
+            Theme.GIANTS_INLINE.deriveFont(Font.BOLD, 20f), 
+            Theme.SCORE_WHITE, Theme.BG, Theme.BG, 
+            2, 0, 
+            SwingConstants.LEFT, SwingConstants.CENTER
+        );
+
+        Animation linesValue = new Animation(
+            Integer.toString(lines),
+            Theme.GIANTS_INLINE.deriveFont(Font.BOLD, 20f), 
+            Theme.SCORE_WHITE, Theme.BG, Theme.BG, 
+            2, 0, 
+            SwingConstants.LEFT, SwingConstants.CENTER
+        );  
+
+        Animation timeValue = new Animation(
+            Integer.toString(time),
+            Theme.GIANTS_INLINE.deriveFont(Font.BOLD, 20f), 
+            Theme.SCORE_WHITE, Theme.BG, Theme.BG, 
+            2, 0, 
+            SwingConstants.LEFT, SwingConstants.CENTER
+        );
+
+        Animation difficultyValue = new Animation(
+            difficulty,
+            Theme.GIANTS_INLINE.deriveFont(Font.BOLD, 20f), 
+            Theme.SCORE_WHITE, Theme.BG, Theme.BG, 
+            2, 0, 
+            SwingConstants.LEFT, SwingConstants.CENTER
+        );
+
+
+     
+
+        popup.setLayout(new GridBagLayout());
+
+        JPanel scoreEntry = new JPanel();
+        scoreEntry.setOpaque(false);
+        scoreEntry.setLayout(new GridLayout(4,2,4,4));
+        scoreEntry.add(scoreLabel);
+        scoreEntry.add(scoreValue);
+        scoreEntry.add(linesLabel);
+        scoreEntry.add(linesValue);
+        scoreEntry.add(timeLabel);
+        scoreEntry.add(timeValue);
+        scoreEntry.add(difficultyLabel);
+        scoreEntry.add(difficultyValue);
+
+
+
+
+
+        GOFooter footer = new GOFooter(isHighScore);
+
+        popup.add(gameOver, new GridBagConstraints(
             0, 0,               // gridx, gridy
             1, 2,               // gridwidth, gridheight
             1.0, 0.1,           // weightx, weighty
@@ -47,9 +141,18 @@ public class GameOver extends JPanel {
         ));
 
         // 배지 영역을 항상 추가 (하이스코어일 때는 배지, 아닐 때는 빈 공간)
-        final Badge badge;
+        final Animation badge;
         if (isHighScore) {
-            badge = new Badge();
+            //badge= new Badge();
+            badge = new Animation(
+                "HIGH SCORE!", Theme.GIANTS_BOLD.deriveFont(Font.PLAIN, 12f), 
+                new Color(255, 255, 255), 
+                new Color(30, 30, 30, 240), 
+                Theme.BADGE_YELLOW,
+                2, 24, 
+                SwingConstants.CENTER, SwingConstants.CENTER
+            );
+            badge.setBorder(BorderFactory.createEmptyBorder(4,8,4,8));
             popup.add(badge, new GridBagConstraints(
                 0, 2,
                 1, 1,
@@ -80,7 +183,7 @@ public class GameOver extends JPanel {
         }
 
         // body와 footer는 항상 동일한 위치에 배치
-        popup.add(body, new GridBagConstraints(
+        popup.add(scoreEntry, new GridBagConstraints(
             0, 3,
             1, 2,
             1.0, 0.8,
@@ -117,16 +220,32 @@ public class GameOver extends JPanel {
         this.setVisible(true);
         this.requestFocusInWindow();
 
-        runLater(0, () -> header.startAnimation(0.5f, 2.5f)); 
-        runLater(500, () -> body.startAnimation(0.3f, 2.5f)); 
+        popup.hueBorder(4.5f, true);
+
+        runLater(0, () -> gameOver.move(50, 0, 0, 0, 1.5f, 0.3f, false)); 
+        //runLater(0, () -> header.startAnimation(0.5f, 2.5f)); 
+        runLater(500, () -> scoreLabel.move(-50, 0, 0, 0, 1.5f, 0.3f, false)); 
+        runLater(800, () -> linesLabel.move(-50, 0, 0, 0, 1.5f, 0.3f, false)); 
+        runLater(1100, () -> timeLabel.move(-50, 0, 0, 0, 1.5f, 0.3f, false)); 
+        runLater(1400, () -> difficultyLabel.move(-50, 0, 0, 0, 1.5f, 0.3f, false)); 
+        runLater(1700, () -> scoreValue.move(-50, 0, 0, 0, 1.5f, 0.3f, false)); 
+        runLater(2000, () -> linesValue.move(-50, 0, 0, 0, 1.5f, 0.3f, false)); 
+        runLater(2300, () -> timeValue.move(-50, 0, 0, 0, 1.5f, 0.3f, false)); 
+        runLater(2600, () -> difficultyValue.move(-50, 0, 0, 0, 1.5f, 0.3f, false)); 
         
         if (isHighScore) {
             // 하이스코어일 때: 배지 애니메이션 + 입력창
             runLater(3500, () -> {
                 if (badge != null) {
-                    badge.startAnimation(0.6f, 1.3f);
+                    badge.pop(0.8f, 0.8f, 0.3f, 1.3f);
+                    //badge.startAnimation(0.5f, 1.3f);
                 }
             }); 
+            runLater(3850, () -> {
+                if (badge != null) {
+                    badge.hueBorder(3.5f, true);
+                }
+            });
             runLater(4200, () -> footer.startAnimation(0.5f, 1.3f));
             
             // 이름 입력 후 엔터키 처리
@@ -135,13 +254,6 @@ public class GameOver extends JPanel {
                 nameField.addActionListener(e -> {
                     String name = nameField.getText().trim();
                     if (!name.isEmpty()) {
-                        System.out.println("=== HIGH SCORE INFO ===");
-                        System.out.println("Name: " + name);
-                        System.out.println("Score: " + score);
-                        System.out.println("Lines: " + lines);
-                        System.out.println("Time: " + time);
-                        System.out.println("Difficulty: " + difficulty);
-                        System.out.println("======================");
                         
                         // 1. 하이스코어 파일 업데이트
                         updateHighScoreFile(name, score, lines, time, difficulty);
@@ -158,6 +270,7 @@ public class GameOver extends JPanel {
         } 
 
     }
+    
 
     void runLater(int delayMs, Runnable r) {
         Timer t = new Timer(delayMs, e -> { ((Timer)e.getSource()).stop(); r.run(); });
@@ -312,12 +425,6 @@ public class GameOver extends JPanel {
         }
         animationTimers.clear();
         
-        // PopUp의 타이머들 정리
-        for (Component comp : getComponents()) {
-            if (comp instanceof PopUp) {
-                ((PopUp) comp).stopTimers();
-            }
-        }
     }
 
     // ==== 반투명 배경 그리기 ====
@@ -332,66 +439,3 @@ public class GameOver extends JPanel {
         g2.dispose();
     }
 }
-
-class PopUp extends JPanel {
-    private float hue = 0f;            // 0~1 HSB hue
-    private Timer colorTimer;
-    
-    PopUp() {
-        startColorAnimation();
-    }
-    
-    private void startColorAnimation() {
-        int delay = 16; // 60fps
-        colorTimer = new Timer(delay, e -> {
-            hue += 0.0035f;
-            if (hue > 1f) hue -= 1f;
-            repaint();
-        });
-        colorTimer.start();
-    }
-    
-    /** 타이머 정지 및 자원 정리 */
-    void stopTimers() {
-        if (colorTimer != null) {
-            colorTimer.stop();
-            colorTimer = null;
-        }
-    }
-    
-    @Override
-    protected void paintComponent(Graphics g) {
-        Graphics2D g2 = (Graphics2D) g.create();
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        
-        int w = getWidth();
-        int h = getHeight();
-        
-        // 배경 그리기 (직사각형)
-        g2.setColor(getBackground());
-        g2.fillRect(0, 0, w, h);
-        
-        // 하이스코어 배지 위치에 가로 점선 그리기
-        // 배지는 GridBagLayout에서 행 2에 위치 (header: 0-1, badge: 2, body: 3-4, footer: 5)
-        // 대략적인 배지 중점 위치 계산 (전체 높이의 약 25% 지점)
-        int badgeCenterY = (int)(h * 0.25);
-        
-        // 점선 스타일 설정
-        float[] dashPattern = {7f, 5f}; // 5px 점선, 5px 간격
-        g2.setStroke(new BasicStroke(2f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 1f, dashPattern, 0f));
-        g2.setColor(new Color(200, 200, 200, 100)); // 반투명 회색 점선
-        
-        // 가로 점선 그리기 (좌우 여백 40px씩)
-        g2.drawLine(20, badgeCenterY, w - 20, badgeCenterY);
-        
-        // 색상순환 테두리 그리기 (직사각형)
-        Color borderColor = Color.getHSBColor(hue, 0.65f, 1.0f);
-        g2.setStroke(new BasicStroke(4f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-        g2.setColor(borderColor);
-        g2.drawRect(2, 2, w - 4, h - 4);
-        
-        g2.dispose();
-    }
-}
-
-

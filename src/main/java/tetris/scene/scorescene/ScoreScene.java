@@ -2,6 +2,7 @@ package tetris.scene.scorescene;
 import tetris.Game;
 import tetris.scene.Scene;
 import tetris.scene.test.TestScene;
+import tetris.util.Theme;
 
 import javax.swing.*;
 import java.awt.*;

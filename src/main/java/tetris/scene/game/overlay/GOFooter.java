@@ -1,10 +1,11 @@
 package tetris.scene.game.overlay;
 
-import tetris.scene.scorescene.Theme;
+import tetris.util.Theme;
+
 import java.awt.*;
 import javax.swing.*;
 
-public class GameOverFooter extends JPanel {
+public class GOFooter extends JPanel {
 
     // ---- 애니 상태 ----
     private float alpha = 0f;       // 0~1
@@ -28,7 +29,7 @@ public class GameOverFooter extends JPanel {
     private Timer countdownTimer;
     private int countdown = 5;
 
-    GameOverFooter(boolean bHigh) {
+    GOFooter(boolean bHigh) {
         setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5)); // 위아래 여백을 5px -> 2px로 줄임
         setOpaque(false);
         setLayout(new GridBagLayout()); // BorderLayout -> GridBagLayout으로 변경
