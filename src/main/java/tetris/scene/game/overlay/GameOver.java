@@ -237,7 +237,7 @@ public class GameOver extends JPanel {
             // 하이스코어일 때: 배지 애니메이션 + 입력창
             runLater(3500, () -> {
                 if (badge != null) {
-                    badge.pop(0.8f, 0.8f, 0.3f, 1.3f);
+                    badge.popOut(0.8f, 0.8f, 0.3f, 1.3f);
                     //badge.startAnimation(0.5f, 1.3f);
                 }
             }); 

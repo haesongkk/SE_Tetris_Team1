@@ -2,6 +2,7 @@ package tetris.scene.scorescene;
 import tetris.Game;
 import tetris.scene.Scene;
 import tetris.scene.test.TestScene;
+import tetris.util.Animation;
 import tetris.util.Theme;
 
 import javax.swing.*;
@@ -24,11 +25,20 @@ public class ScoreScene extends Scene {
         setBorder(BorderFactory.createEmptyBorder(12,24,12,24));
 
         add(Box.createRigidArea(new Dimension(0, 12)));
-        ScoreHeader scoreHeader = new ScoreHeader();
-        scoreHeader.setAlignmentX(CENTER_ALIGNMENT);
-        add(scoreHeader);
+
+        Animation highscore = new Animation(
+            "HIGH SCORE", 
+            Theme.GIANTS_INLINE.deriveFont(Font.ITALIC, 85), 
+            Theme.TITLE_YELLOW, Theme.BG, Theme.BG, 
+            0, 0, 
+            SwingConstants.CENTER, SwingConstants.CENTER
+        );
+        highscore.setAlignmentX(CENTER_ALIGNMENT);
+        highscore.setBorder(BorderFactory.createEmptyBorder(0,100,0,100));
+        add(highscore);
 
         add(Box.createRigidArea(new Dimension(0, 12)));
+
 
         ScoreBody scoreBody = new ScoreBody(highlightRank);
         scoreBody.setAlignmentX(CENTER_ALIGNMENT);
@@ -37,15 +47,26 @@ public class ScoreScene extends Scene {
 
         add(Box.createRigidArea(new Dimension(0, 12)));
 
-        ScoreFooter footer = new ScoreFooter();
-        footer.setAlignmentX(CENTER_ALIGNMENT);
 
-        add(footer);
+        Animation exitLabel = new Animation(
+            "P R E S S    E S C    T O    E X I T", 
+            Theme.GIANTS_INLINE.deriveFont(Font.BOLD, 45), 
+            Theme.TEXT_GRAY, Theme.BG, Theme.BG, 
+            0, 0, 
+            SwingConstants.CENTER, SwingConstants.CENTER
+        );
+        //exitLabel.setBorder(BorderFactory.createEmptyBorder(0,24,0,24));
+        exitLabel.setAlignmentX(CENTER_ALIGNMENT);
+        add(exitLabel);
+
+        // ScoreFooter footer = new ScoreFooter();
+        // footer.setAlignmentX(CENTER_ALIGNMENT);
+        // add(footer);
 
         add(Box.createRigidArea(new Dimension(0, 12)));
 
         Timer t1 = new Timer(0, e -> {
-            scoreHeader.startAnimation();
+            highscore.popIn(0.8f, 0.8f, 0.3f, 2.f);
             add(Box.createRigidArea(new Dimension(0, 12)));
 
             revalidate(); repaint();
@@ -65,7 +86,8 @@ public class ScoreScene extends Scene {
 
 
         Timer t3 = new Timer(0, e -> {
-            footer.startAnimation();
+            //footer.startAnimation();
+            exitLabel.blink(0.8f, 0.4f);
             revalidate(); repaint();
             ((Timer)e.getSource()).stop();
         });

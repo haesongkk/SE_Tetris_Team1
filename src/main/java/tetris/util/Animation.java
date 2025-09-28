@@ -69,7 +69,49 @@ public class Animation extends JLabel {
         animTimer.start();
     }
 
-    public void pop(float startScaleX, float startScaleY, float duration, float overshoot) {
+    public void blink(float vis, float nonVis) {
+        final long visNanos = (long)(vis * 1_000_000_000L);
+        final long nonVisNanos = (long)(nonVis * 1000000000L);
+        final long durationNanos = visNanos + nonVisNanos;
+        alpha = 1f;
+        scaleX = 1f;
+        scaleY = 1f;
+        startTime = System.nanoTime();
+        Timer t = new Timer(delay, e -> {
+            long elapsed = getElapsedNanos();
+            long phase   = elapsed % durationNanos;
+            bVisible = phase < visNanos;
+            repaint();
+        });
+        t.start();
+    }
+
+    public void popIn(float startScaleX, float startScaleY, float duration, float overshoot) {
+        alpha = 0f;
+        bVisible = true;
+        scaleX = startScaleX;
+        scaleY = startScaleY;
+        startTime = System.nanoTime();
+        final long durationNanos = getDurationNanos(duration);
+        Timer animTimer = new Timer(delay, e -> {
+            long now = System.nanoTime();
+            if (startTime < 0) startTime = now;
+            float t = Math.min(1f, (now - startTime) / (float) durationNanos);
+
+            float ease = 1 - (float)Math.pow(1 - t, 5); // 감속 곡선 (easeOutCubic)
+
+            // scale: 시작 1+overshoot → 끝 1.0
+            scaleX = 1.0f + overshoot * (1 - ease);
+            scaleY = 1.0f + overshoot * (1 - ease);
+
+            alpha = (float) Math.pow(t, 0.6);
+            repaint();
+            if (t >= 1f) ((Timer) e.getSource()).stop();
+        });
+        animTimer.start();
+    }
+
+    public void popOut(float startScaleX, float startScaleY, float duration, float overshoot) {
         alpha = 0f;
         bVisible = true;
         scaleX = startScaleX;
