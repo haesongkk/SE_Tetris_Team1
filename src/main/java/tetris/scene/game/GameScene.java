@@ -1,5 +1,7 @@
 package tetris.scene.game;
 import tetris.Game;
+import tetris.GameSettings;
+import tetris.ColorBlindHelper;
 import tetris.scene.Scene;
 import tetris.scene.game.blocks.*;
 import tetris.scene.test.TestScene;
@@ -63,14 +65,20 @@ public class GameScene extends Scene {
     // ─────────────────────────────────────────────────────────────
     private void initUI() {
         setLayout(new BorderLayout());
-        setBackground(Color.BLACK);
+        
+        // 색맹 모드에 따른 배경색 적용
+        int colorBlindMode = GameSettings.getInstance().getColorBlindMode();
+        Color backgroundColor = ColorBlindHelper.getBackgroundColor(colorBlindMode);
+        Color borderColor = ColorBlindHelper.getBorderColor(colorBlindMode);
+        
+        setBackground(backgroundColor);
 
         pane = new JTextPane();
         pane.setEditable(false);
-        pane.setBackground(Color.BLACK);
+        pane.setBackground(backgroundColor);
         CompoundBorder border = BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(Color.GRAY, 10),
-                BorderFactory.createLineBorder(Color.DARK_GRAY, 5)
+                BorderFactory.createLineBorder(borderColor, 10),
+                BorderFactory.createLineBorder(borderColor.darker(), 5)
         );
         pane.setBorder(border);
         add(pane, BorderLayout.CENTER);
