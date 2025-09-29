@@ -1,6 +1,7 @@
 package tetris.scene.menu;
 
 import tetris.Game;
+import tetris.GameSettings;
 import tetris.scene.Scene;
 import tetris.scene.game.GameScene;
 
@@ -13,6 +14,7 @@ import java.awt.event.KeyListener;
 
 public class MainMenuScene extends Scene implements KeyListener {
     private final JFrame frame;
+    private final GameSettings gameSettings;
     private JButton[] menuButtons;
     private int selectedButton = 0;
     
@@ -27,6 +29,7 @@ public class MainMenuScene extends Scene implements KeyListener {
     public MainMenuScene(JFrame frame) {
         super(frame);
         this.frame = frame;
+        this.gameSettings = GameSettings.getInstance();
         
         setupUI();
         setupKeyListener();
@@ -51,8 +54,7 @@ public class MainMenuScene extends Scene implements KeyListener {
         add(infoPanel, BorderLayout.SOUTH);
         
         frame.setContentPane(this);
-        frame.setSize(600, 700);
-        frame.setLocationRelativeTo(null);
+        applyDisplaySettings();
         frame.revalidate();
         frame.repaint();
     }
@@ -178,6 +180,31 @@ public class MainMenuScene extends Scene implements KeyListener {
         repaint();
     }
 
+    // GameSettings에서 화면 크기와 모드를 적용하는 메서드
+    private void applyDisplaySettings() {
+        int[] size = gameSettings.getResolutionSize();
+        int width = size[0];
+        int height = size[1];
+        
+        // 전체화면/창모드 적용
+        if (gameSettings.getDisplayMode() == 1) { // 전체화면
+            frame.dispose();
+            frame.setUndecorated(true);
+            frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+            frame.setVisible(true);
+        } else { // 창모드
+            frame.dispose();
+            frame.setUndecorated(false);
+            frame.setExtendedState(JFrame.NORMAL);
+            frame.setSize(width, height);
+            frame.setLocationRelativeTo(null);
+            frame.setVisible(true);
+        }
+        
+        frame.revalidate();
+        frame.repaint();
+    }
+
     // 메뉴 선택 시 해당하는 동작을 수행하는 메서드
     private void handleMenuSelection(int index) {
         selectedButton = index;
@@ -207,12 +234,9 @@ public class MainMenuScene extends Scene implements KeyListener {
         Game.setScene(new GameScene(frame));
     }
 
-    // 설정 메뉴를 표시하는 메서드 (현재 미구현)
+    // 설정 메뉴를 표시하는 메서드
     private void showSettings() {
-        JOptionPane.showMessageDialog(this, 
-            "설정 메뉴는 아직 구현되지 않았습니다.\n추후 업데이트 예정입니다.", 
-            "설정", 
-            JOptionPane.INFORMATION_MESSAGE);
+        Game.setScene(new SettingsScene(frame));
     }
 
     // 점수 기록을 표시하는 메서드 (현재 미구현)
@@ -271,6 +295,7 @@ public class MainMenuScene extends Scene implements KeyListener {
     // 씬이 활성화될 때 호출되는 메서드
     @Override
     public void onEnter() {
+        applyDisplaySettings();
         requestFocusInWindow();
     }
 }
