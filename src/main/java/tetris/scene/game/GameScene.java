@@ -5,6 +5,7 @@ import tetris.GameSettings;
 import tetris.ColorBlindHelper;
 import tetris.scene.Scene;
 import tetris.scene.game.blocks.*;
+import tetris.scene.menu.MainMenuScene;
 import tetris.scene.test.TestScene;
 
 import javax.swing.*;
@@ -86,26 +87,26 @@ public class GameScene extends Scene {
         
         setBackground(backgroundColor);
 
-        // 성협님 코드 시작
-        pane = new JTextPane();
-        pane.setEditable(false);
-        pane.setBackground(backgroundColor);
-        CompoundBorder border = BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(borderColor, 10),
-                BorderFactory.createLineBorder(borderColor.darker(), 5)
-        );
-        pane.setBorder(border);
-        add(pane, BorderLayout.CENTER);
+        // !!! 충돌났던 코드 !!! 
+        // JTextPane pane = new JTextPane();
+        // pane.setEditable(false);
+        // pane.setBackground(backgroundColor);
+        // CompoundBorder border = BorderFactory.createCompoundBorder(
+        //         BorderFactory.createLineBorder(borderColor, 10),
+        //         BorderFactory.createLineBorder(borderColor.darker(), 5)
+        // );
+        // pane.setBorder(border);
+        // add(pane, BorderLayout.CENTER);
 
-        styleSet = new SimpleAttributeSet();
-        StyleConstants.setFontSize(styleSet, 18);
-        StyleConstants.setFontFamily(styleSet, "Courier");
-        StyleConstants.setBold(styleSet, true);
-        StyleConstants.setForeground(styleSet, Color.WHITE);
-        StyleConstants.setAlignment(styleSet, StyleConstants.ALIGN_CENTER);
+        // styleSet = new SimpleAttributeSet();
+        // StyleConstants.setFontSize(styleSet, 18);
+        // StyleConstants.setFontFamily(styleSet, "Courier");
+        // StyleConstants.setBold(styleSet, true);
+        // StyleConstants.setForeground(styleSet, Color.WHITE);
+        // StyleConstants.setAlignment(styleSet, StyleConstants.ALIGN_CENTER);
 
-        // 키 입력은 Scene(JPanel)에 직접 연결
-        // 성협님 코드 END
+        // // 키 입력은 Scene(JPanel)에 직접 연결
+        // // !!! 충돌났던 코드 !!!
       
         gamePanel = new GamePanel();
         gamePanel.setPreferredSize(new Dimension(
@@ -522,7 +523,7 @@ public class GameScene extends Scene {
                     }
                     break;
                 case KeyEvent.VK_ESCAPE:
-                    Game.setScene(new TestScene(m_frame));
+                    Game.setScene(new MainMenuScene(m_frame));
                     break;
             }
         }

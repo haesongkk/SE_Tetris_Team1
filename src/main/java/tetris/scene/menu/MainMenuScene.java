@@ -4,6 +4,7 @@ import tetris.Game;
 import tetris.GameSettings;
 import tetris.scene.Scene;
 import tetris.scene.game.GameScene;
+import tetris.scene.scorescene.ScoreScene;
 
 import javax.swing.*;
 import java.awt.*;
@@ -241,10 +242,11 @@ public class MainMenuScene extends Scene implements KeyListener {
 
     // 점수 기록을 표시하는 메서드 (현재 미구현)
     private void showScores() {
-        JOptionPane.showMessageDialog(this, 
-            "점수 기록 메뉴는 아직 구현되지 않았습니다.\n추후 업데이트 예정입니다.", 
-            "점수 기록", 
-            JOptionPane.INFORMATION_MESSAGE);
+        Game.setScene(new ScoreScene(frame));
+        // JOptionPane.showMessageDialog(this, 
+        //     "점수 기록 메뉴는 아직 구현되지 않았습니다.\n추후 업데이트 예정입니다.", 
+        //     "점수 기록", 
+        //     JOptionPane.INFORMATION_MESSAGE);
     }
 
     // 게임 종료 확인 다이얼로그를 표시하는 메서드
