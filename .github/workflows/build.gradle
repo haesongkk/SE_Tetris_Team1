@@ -1,0 +1,97 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'tetris'
+version = '1.0'
+
+sourceCompatibility = '17'
+targetCompatibility = '17'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // JUnit 5 for testing
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.10.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-params:5.10.2'
+    
+    // For mocking if needed
+    testImplementation 'org.mockito:mockito-core:5.8.0'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.8.0'
+}
+
+application {
+    mainClass = 'tetris.Tetris'
+}
+
+test {
+    useJUnitPlatform()
+
+    // 시험 결과보기
+    testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+    }
+}
+
+// encoding UTF-8로 설정 (한글 주석을 위해)
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+// JAR manifest 설정
+jar {
+    manifest {
+        attributes(
+            'Main-Class': 'tetris.Tetris'
+        )
+    }
+}
+
+// JaCoCo 설정(Code Coverage 확인을 위해)
+jacoco {
+    toolVersion = "0.8.11"
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        html.required = true
+        csv.required = false
+    }
+
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                'tetris/**', 
+                'test/**'])
+        }))
+    }
+}
+
+jacocoTestCoverageVerification {
+    dependsOn jacocoTestReport
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.70 // 최소 70% 커버리지
+            }
+        }
+    }
+}
+
+// Make test task generate coverage report
+test.finalizedBy jacocoTestReport
+
+// Task to run the application
+task runGame(type: JavaExec) {
+    group = 'application'
+    description = 'Run the Tetris game'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'tetris.Tetris'
+}
