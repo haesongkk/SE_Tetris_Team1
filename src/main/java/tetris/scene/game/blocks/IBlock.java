@@ -21,4 +21,5 @@ public class IBlock extends Block {
 		int colorBlindMode = GameSettings.getInstance().getColorBlindMode();
 		return ColorBlindHelper.getBlockColor(4, colorBlindMode);
 	}
+	
 }

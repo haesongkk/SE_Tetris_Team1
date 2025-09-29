@@ -1,9 +1,8 @@
 package tetris;
 
+import javax.swing.JFrame;
 import tetris.scene.*;
 import tetris.scene.menu.MainMenuScene;
-
-import javax.swing.JFrame;
 
 public class Game {
     private Game() {}
@@ -14,22 +13,22 @@ public class Game {
     JFrame frame;
 
     public static void run() {
-        instance.frame = new JFrame("Tetris");
-        instance.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        instance.frame.setVisible(true);
+        instance.frame = new JFrame("Tetris");                                  // 게임 창 생성
+        instance.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);                // 창 닫기 시 프로그램 종료
+        instance.frame.setVisible(true);                                            // 창 표시
 
         instance.curScene = new MainMenuScene(instance.frame);
         instance.curScene.onEnter();
     }
 
     public static void setScene(Scene scene) {
-        instance.curScene.onExit();
-        instance.curScene = scene;
-        instance.curScene.onEnter();
+        instance.curScene.onExit();                     // 현재 씬 종료 처리    
+        instance.curScene = scene;                      // 씬 교체     
+        instance.curScene.onEnter();                    // 새 씬 진입 처리
     }
 
     public static void quit() {
-        instance.curScene.onExit();
-        instance.frame.dispose();
+        instance.curScene.onExit();               // 현재 씬 종료 처리      
+        instance.frame.dispose();                 // 창 닫기
     }
 }
