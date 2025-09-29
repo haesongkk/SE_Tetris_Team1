@@ -2,7 +2,7 @@ package tetris;
 
 import javax.swing.JFrame;
 import tetris.scene.*;
-import tetris.scene.test.TestScene;
+import tetris.scene.menu.MainMenuScene;
 
 public class Game {
     private Game() {}
@@ -17,8 +17,8 @@ public class Game {
         instance.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);                // 창 닫기 시 프로그램 종료
         instance.frame.setVisible(true);                                            // 창 표시
 
-        instance.curScene = new TestScene(instance.frame);             // 초기 씬 설정                  // TestScene을 초기 씬으로 설정
-        instance.curScene.onEnter();                                   // 씬 진입 처리                 
+        instance.curScene = new MainMenuScene(instance.frame);
+        instance.curScene.onEnter();
     }
 
     public static void setScene(Scene scene) {

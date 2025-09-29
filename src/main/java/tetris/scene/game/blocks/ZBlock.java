@@ -1,5 +1,7 @@
 package tetris.scene.game.blocks;
 
+import tetris.ColorBlindHelper;
+import tetris.GameSettings;
 import java.awt.Color;
 
 public class ZBlock extends Block {
@@ -9,6 +11,15 @@ public class ZBlock extends Block {
 			{1, 1, 0},
 			{0, 1, 1}
 		};
-		color = Color.RED;
+		// ColorBlindHelper를 사용하여 색맹 모드에 따른 색상 설정
+		int colorBlindMode = GameSettings.getInstance().getColorBlindMode();
+		color = ColorBlindHelper.getBlockColor(0, colorBlindMode); // Z블록은 타입 0
+	}
+	
+	// 색상을 동적으로 업데이트하는 메서드
+	@Override
+	public Color getColor() {
+		int colorBlindMode = GameSettings.getInstance().getColorBlindMode();
+		return ColorBlindHelper.getBlockColor(0, colorBlindMode);
 	}
 }
