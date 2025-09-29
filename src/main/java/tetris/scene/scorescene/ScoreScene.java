@@ -40,7 +40,7 @@ public class ScoreScene extends Scene {
         add(Box.createRigidArea(new Dimension(0, 12)));
 
 
-        ScoreBody scoreBody = new ScoreBody(highlightRank);
+        SSBody scoreBody = new SSBody(highlightRank);
         scoreBody.setAlignmentX(CENTER_ALIGNMENT);
 
         add(scoreBody);

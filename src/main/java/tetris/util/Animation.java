@@ -2,33 +2,39 @@ package tetris.util;
 
 import java.awt.*;
 import javax.swing.*;
+
+import java.util.List;
+import java.util.ArrayList;
+
 import javax.swing.border.EmptyBorder;
 
 public class Animation extends JLabel {
     final int delay = 16;
 
     public Animation(String text, Font font, Color foreground, Color background, Color border, int thickness, int radius, int hAlign, int vAlign) {
-        borderRadius = radius;
-        borderThickness = thickness;
-        borderHSB = Color.RGBtoHSB(border.getRed(), border.getGreen(), border.getBlue(), null);
         setOpaque(false);
-
+        
         setText(text);
         setFont(font);
-
+        
         setHorizontalAlignment(hAlign);
         setVerticalAlignment(vAlign);
-
+        
         setForeground(foreground);
         setBackground(background);
         
         setBorder(new EmptyBorder(thickness, thickness, thickness, thickness));
+
+        borderRadius = radius;
+        borderThickness = thickness;
+        borderHSB = Color.RGBtoHSB(border.getRed(), border.getGreen(), border.getBlue(), null);
+        backgroundHSB = Color.RGBtoHSB(background.getRed(), background.getGreen(), background.getBlue(), null);
     }
 
     float alpha = 0.f;
 
-    float scaleX = 0.8f;
-    float scaleY = 0.8f;
+    float scaleX = 1.f;
+    float scaleY = 1.f;
 
     float rotate = 0.f;
 
@@ -43,6 +49,55 @@ public class Animation extends JLabel {
     int borderRadius = 0;
     int borderThickness = 0;
     float[] borderHSB = new float[3];
+    float[] backgroundHSB = new float[3];
+
+    class AnimTimer {
+        Timer timer;
+        long startTime = -1L;
+        long getElapsedNanos() {
+            return System.nanoTime() - startTime;
+        }
+    }
+
+    List<AnimTimer> animTimers = new ArrayList<>();
+    AnimTimer addAnimTimer() {
+        AnimTimer animTimer = new AnimTimer();
+        animTimers.add(animTimer);
+        return animTimer;
+    }
+    void deleteAnimTimer(AnimTimer animTimer) {
+        animTimer.timer.stop();
+        animTimers.remove(animTimer);
+    }
+
+    public void hueBackground(float duration, boolean bLoop) {
+        alpha = 1f;
+        bVisible = true;
+        scaleX = 1f;
+        scaleY = 1f;
+        startTime = System.nanoTime();
+
+        backgroundHSB[1] = .5f;
+        backgroundHSB[2] = .5f;
+
+        final long durationNanos = secToNanos(duration);
+
+        AnimTimer animTimer = addAnimTimer();
+        animTimer.startTime = System.nanoTime();
+        animTimer.timer = new Timer(delay, e -> {
+            long elapsed = animTimer.getElapsedNanos();
+            float tp = getTimeProgress(elapsed, durationNanos);
+
+            backgroundHSB[0] = tp % 1f;
+
+            if(!bLoop && tp >= 1f) {
+                ((Timer)e.getSource()).stop();
+            }
+
+            repaint();
+        });
+        animTimer.timer.start();
+    }
 
 
     public void hueBorder(float duration, boolean bLoop) {
@@ -52,7 +107,10 @@ public class Animation extends JLabel {
         scaleY = 1f;
         startTime = System.nanoTime();
 
-        final long durationNanos = getDurationNanos(duration);
+        borderHSB[1] = .8f;
+        borderHSB[2] = .8f;
+
+        final long durationNanos = secToNanos(duration);
         animTimer = new Timer(delay, e -> {
 
             long elapsed = getElapsedNanos();
@@ -76,14 +134,15 @@ public class Animation extends JLabel {
         alpha = 1f;
         scaleX = 1f;
         scaleY = 1f;
-        startTime = System.nanoTime();
-        Timer t = new Timer(delay, e -> {
-            long elapsed = getElapsedNanos();
+        AnimTimer animTimer = addAnimTimer();
+        animTimer.startTime = System.nanoTime();
+        animTimer.timer = new Timer(delay, e -> {
+            long elapsed = animTimer.getElapsedNanos();
             long phase   = elapsed % durationNanos;
             bVisible = phase < visNanos;
             repaint();
         });
-        t.start();
+        animTimer.timer.start();
     }
 
     public void popIn(float startScaleX, float startScaleY, float duration, float overshoot) {
@@ -92,7 +151,7 @@ public class Animation extends JLabel {
         scaleX = startScaleX;
         scaleY = startScaleY;
         startTime = System.nanoTime();
-        final long durationNanos = getDurationNanos(duration);
+        final long durationNanos = secToNanos(duration);
         Timer animTimer = new Timer(delay, e -> {
             long now = System.nanoTime();
             if (startTime < 0) startTime = now;
@@ -118,7 +177,7 @@ public class Animation extends JLabel {
         scaleY = startScaleY;
         startTime = System.nanoTime();
 
-        final long durationNanos = getDurationNanos(duration);
+        final long durationNanos = secToNanos(duration);
 
         animTimer = new Timer(delay, e -> {
             long now = System.nanoTime();
@@ -142,12 +201,11 @@ public class Animation extends JLabel {
         animTimer.start();
     }
 
-    public void move(int startX, int startY, int endX, int endY,
-    float overshoot, float duration, boolean bLoop) {
+    public void move(int startX, int startY, int endX, int endY, float overshoot, float duration, boolean bLoop) {
         alpha   = 1f;
         scaleX  = 1f;
         scaleY  = 1f;
-        final long  durationNanos = getDurationNanos(duration);
+        final long  durationNanos = secToNanos(duration);
         startTime = System.nanoTime();
 
         animTimer = new Timer(delay, e -> {
@@ -207,12 +265,15 @@ public class Animation extends JLabel {
         return start + (end - start) * eased;
     }
 
-
-
-
-    protected long getDurationNanos(float duration) {
-        return (long)(duration * 1_000_000_000L);
+    protected float nanosToSec(long nanos) {
+        return nanos / 1_000_000_000f;
     }
+
+    protected long secToNanos(float sec) {
+        return (long)(sec * 1_000_000_000L);
+    }
+
+
 
     protected long getElapsedNanos() {
         long now = System.nanoTime();
@@ -241,6 +302,32 @@ public class Animation extends JLabel {
         return super.getPreferredSize();
     }
 
+    
+    @Override
+    public Dimension getMinimumSize() {
+        LayoutManager lm = getLayout();
+        if (lm != null) {
+            Dimension d = lm.minimumLayoutSize(this);
+            Insets in = getInsets();
+            d.width  += in.left + in.right;
+            d.height += in.top  + in.bottom;
+            return d;
+        }
+        return super.getMinimumSize();
+    }
+
+    @Override
+    public Dimension getMaximumSize() {
+        LayoutManager lm = getLayout();
+        if (lm != null) {
+            Dimension d = lm.preferredLayoutSize(this); // 과하게 커지지 않게 preferred로 고정
+            Insets in = getInsets();
+            d.width  += in.left + in.right;
+            d.height += in.top  + in.bottom;
+            return d;
+        }
+        return super.getMaximumSize();
+    }
 
 
     @Override
@@ -269,7 +356,7 @@ public class Animation extends JLabel {
     @Override
     protected void paintComponent(Graphics g) {
         Graphics2D g2 = (Graphics2D) g.create();
-        g2.setColor(getBackground());
+        g2.setColor(HSBtoColor(backgroundHSB));
         float o = borderThickness / 2f;
         int w = getWidth(), h = getHeight();
         g2.fillRoundRect(Math.round(o), Math.round(o),
@@ -297,8 +384,4 @@ public class Animation extends JLabel {
                         borderRadius, borderRadius);
         g2.dispose();
     }
-
-
-
-    
 }
