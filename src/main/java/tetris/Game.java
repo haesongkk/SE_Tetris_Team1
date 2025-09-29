@@ -30,5 +30,7 @@ public class Game {
     public static void quit() {
         instance.curScene.onExit();               // 현재 씬 종료 처리      
         instance.frame.dispose();                 // 창 닫기
+        System.exit(0);
+        
     }
 }
