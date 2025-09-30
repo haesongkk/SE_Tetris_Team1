@@ -290,7 +290,7 @@ public class GameOver extends JPanel {
         return false;
     }
 
-    java.util.List<String> loadFile(String path) {
+    List<String> loadFile(String path) {
         List<String> lines = new ArrayList<>();
         try (BufferedReader br = new BufferedReader(
                 new InputStreamReader(new FileInputStream(path), StandardCharsets.UTF_8))) {
@@ -430,7 +430,6 @@ public class GameOver extends JPanel {
     // ==== 반투명 배경 그리기 ====
     @Override
     protected void paintComponent(Graphics g) {
-
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setComposite(AlphaComposite.SrcOver.derive(0.6f));

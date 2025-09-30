@@ -1,5 +1,19 @@
 package tetris.scene.game;
 
+import tetris.Game;
+import tetris.GameSettings;
+import tetris.ColorBlindHelper;
+import tetris.scene.Scene;
+import tetris.scene.game.blocks.*;
+import tetris.scene.menu.MainMenuScene;
+import tetris.scene.test.TestScene;
+
+import javax.swing.*;
+import javax.swing.border.CompoundBorder;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyledDocument;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -65,8 +79,35 @@ public class GameScene extends Scene {
         removeAll();
         
         setLayout(new BorderLayout());
-        setBackground(Color.BLACK);
+        
+        // 색맹 모드에 따른 배경색 적용
+        int colorBlindMode = GameSettings.getInstance().getColorBlindMode();
+        Color backgroundColor = ColorBlindHelper.getBackgroundColor(colorBlindMode);
+        Color borderColor = ColorBlindHelper.getBorderColor(colorBlindMode);
+        
+        setBackground(backgroundColor);
 
+        // !!! 충돌났던 코드 !!! 
+        // JTextPane pane = new JTextPane();
+        // pane.setEditable(false);
+        // pane.setBackground(backgroundColor);
+        // CompoundBorder border = BorderFactory.createCompoundBorder(
+        //         BorderFactory.createLineBorder(borderColor, 10),
+        //         BorderFactory.createLineBorder(borderColor.darker(), 5)
+        // );
+        // pane.setBorder(border);
+        // add(pane, BorderLayout.CENTER);
+
+        // styleSet = new SimpleAttributeSet();
+        // StyleConstants.setFontSize(styleSet, 18);
+        // StyleConstants.setFontFamily(styleSet, "Courier");
+        // StyleConstants.setBold(styleSet, true);
+        // StyleConstants.setForeground(styleSet, Color.WHITE);
+        // StyleConstants.setAlignment(styleSet, StyleConstants.ALIGN_CENTER);
+
+        // // 키 입력은 Scene(JPanel)에 직접 연결
+        // // !!! 충돌났던 코드 !!!
+      
         gamePanel = new GamePanel();
         gamePanel.setPreferredSize(new Dimension(
             (GAME_WIDTH + 2) * CELL_SIZE,
@@ -76,6 +117,7 @@ public class GameScene extends Scene {
         add(gamePanel, BorderLayout.CENTER);
 
         // 메인 패널(this)에 키 리스너 추가
+
         addKeyListener(new PlayerKeyListener());
         setFocusable(true);
 
@@ -481,7 +523,7 @@ public class GameScene extends Scene {
                     }
                     break;
                 case KeyEvent.VK_ESCAPE:
-                    Game.setScene(new TestScene(m_frame));
+                    Game.setScene(new MainMenuScene(m_frame));
                     break;
             }
         }

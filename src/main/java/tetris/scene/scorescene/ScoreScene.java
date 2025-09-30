@@ -1,6 +1,7 @@
 package tetris.scene.scorescene;
 import tetris.Game;
 import tetris.scene.Scene;
+import tetris.scene.menu.MainMenuScene;
 import tetris.scene.test.TestScene;
 import tetris.util.Animation;
 import tetris.util.Theme;
@@ -40,7 +41,7 @@ public class ScoreScene extends Scene {
         add(Box.createRigidArea(new Dimension(0, 12)));
 
 
-        ScoreBody scoreBody = new ScoreBody(highlightRank);
+        SSBody scoreBody = new SSBody(highlightRank);
         scoreBody.setAlignmentX(CENTER_ALIGNMENT);
 
         add(scoreBody);
@@ -97,7 +98,7 @@ public class ScoreScene extends Scene {
 
         // !!!!!! TestScene 말고 시작 메뉴 씬으로 변경 !!!!!!!!
         frame.getRootPane().registerKeyboardAction(
-                e -> Game.setScene(new TestScene(frame)),
+                e -> Game.setScene(new MainMenuScene(frame)),
                 KeyStroke.getKeyStroke("ESCAPE"),
                 JComponent.WHEN_IN_FOCUSED_WINDOW
         );
