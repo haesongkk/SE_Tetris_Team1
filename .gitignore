@@ -7,3 +7,4 @@ lib/junit-4.13.2.jar
 
 # Ignore Gradle build output directory
 build
+resources/highscore.txt
