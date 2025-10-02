@@ -38,25 +38,9 @@ public final class Theme {
     public static final Color BADGE_YELLOW   = new Color(255, 223, 128);
     public static final Color DIVIDER        = new Color(36, 36, 36);
 
-    public static final Font GIANTS_INLINE = loadFont("./resources/Giants-Inline.ttf");
-    public static final Font GIANTS_BOLD = loadFont("./resources/Giants-Bold.ttf");
-    public static final Font GIANTS_REGULAR = loadFont("./resources/Giants-Regular.ttf");
-    //public static final Font Dunggeunmo = loadFont("./resources/BoldDunggeunmo.ttf");
-    //public static final Font Samlip = loadFont("./resources/SDSamliphopangcheTTFOutline.ttf");
-    //public static final Font OKMAN = loadFont("./resources/OKMAN FONT.ttf");
+    public static final Font GIANTS_INLINE = Loader.loadFont("Giants-Inline.ttf");
+    public static final Font GIANTS_BOLD = Loader.loadFont("Giants-Bold.ttf");
+    public static final Font GIANTS_REGULAR = Loader.loadFont("Giants-Regular.ttf");
     
-    private static Font loadFont(String path){
-        Font f;
-        try {
-            f = Font.createFont(Font.TRUETYPE_FONT,
-                    new File(path))
-                    .deriveFont(Font.BOLD, 16f);
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            f = new Font("Dialog", Font.BOLD, 16);
-            System.out.println("Failed to load custom font.");
-        }
-        return f;
-    }
 
 }

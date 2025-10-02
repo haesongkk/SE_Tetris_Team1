@@ -1,0 +1,73 @@
+plugins {
+    id 'application'
+}
+
+compileJava {
+    options.encoding = 'UTF-8'
+}
+
+compileTestJava {
+    options.encoding = 'UTF-8'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17) // 빌드 JDK 고정
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+application {
+    // 메인 클래스 FQCN
+    mainClass = 'tetris.Tetris'
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+test {
+    useJUnitPlatform()
+    // GUI/Swing/JavaFX 테스트가 헤드리스에서 필요하면:
+    // systemProperty 'java.awt.headless', 'true'
+}
+
+// JAR 파일 생성 설정
+jar {
+    manifest {
+        attributes 'Main-Class': 'tetris.Tetris'
+    }
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+}
+
+
+// ===== exe 빌드 관련 =====
+
+// --- dist 정리: Delete 타입으로 깔끔하게 ---
+tasks.register('cleanDist', Delete) {
+    delete layout.projectDirectory.dir('dist')
+}
+
+// --- jpackage : app-image ---
+tasks.register('jpackageExe', Exec) {
+    dependsOn 'cleanDist', 'jar'
+    group = 'distribution'
+    description = 'Creates a native application image'
+
+    def jp = "${System.getProperty('java.home')}/bin/jpackage.exe"
+    commandLine jp,
+        '--input', 'build/libs',
+        '--main-jar', jar.archiveFileName.get(),
+        '--main-class', 'tetris.Tetris',
+        '--name', 'Tetris Game',
+        '--type', 'app-image',
+        '--dest', 'dist'
+        //'--icon', 'icon.ico'        // ★ Windows는 .ico 사용
+        //,'--win-console'           // 콘솔창 필요하면 주석 해제
+}
