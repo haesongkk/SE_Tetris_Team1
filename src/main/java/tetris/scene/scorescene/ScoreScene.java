@@ -17,7 +17,7 @@ public class ScoreScene extends Scene {
         super(frame);
         setBackground(Theme.BG);
 
-        rankData = Loader.loadFile("highscore.txt");
+        rankData = Loader.loadFile("./data/highscore.txt");
         userRank = highlightRank;
 
         createComponents();

@@ -2,6 +2,17 @@ plugins {
     id 'application'
 }
 
+// Version checking example using Gradle's version comparison
+def minimumGradleVersion = "8.0"
+def currentGradleVersion = gradle.gradleVersion
+
+// Simple version comparison without importing VersionNumber
+if (currentGradleVersion.split('\\.')[0].toInteger() < minimumGradleVersion.split('\\.')[0].toInteger()) {
+    throw new GradleException("This project requires Gradle ${minimumGradleVersion} or higher. Current version: ${currentGradleVersion}")
+}
+
+println "✓ Gradle version check passed: ${currentGradleVersion}"
+
 compileJava {
     options.encoding = 'UTF-8'
 }

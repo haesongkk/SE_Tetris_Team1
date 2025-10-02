@@ -9,8 +9,7 @@ import tetris.util.Loader;
 
 import java.awt.*;
 import java.awt.event.*;
-import java.io.*;
-import java.nio.charset.StandardCharsets;
+
 import java.util.List;
 import java.util.ArrayList;
 
@@ -287,7 +286,7 @@ public class GameOver extends JPanel {
     }
 
     boolean isHighScore(int score) {
-        List<String> lines = Loader.loadFile("highscore.txt");
+        List<String> lines = Loader.loadFile("./data/highscore.txt");
         for (String line : lines) {
             String[] parts = line.split(",", -1);
             if (parts.length < 3) continue;
@@ -302,7 +301,7 @@ public class GameOver extends JPanel {
     
     /** 하이스코어 파일 업데이트 (점수 순으로 정렬, 상위 10명만 유지) */
     void updateHighScoreFile(String name, int score, int lines, int time, String difficulty) {
-        List<String> existingLines = Loader.loadFile("highscore.txt");
+        List<String> existingLines = Loader.loadFile("./data/highscore.txt");
         
         // 시간을 mm:ss 형식으로 변환
         String timeFormatted = String.format("%02d:%02d", time / 60, time % 60);
@@ -342,15 +341,7 @@ public class GameOver extends JPanel {
         }
         
         // 파일에 저장
-        try (BufferedWriter bw = new BufferedWriter(
-                new OutputStreamWriter(new FileOutputStream("./resources/highscore.txt"), StandardCharsets.UTF_8))) {
-            for (String line : existingLines) {
-                bw.write(line);
-                bw.newLine();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        Loader.saveFile("./data/highscore.txt", existingLines);
     }
     
     /** ScoreScene으로 이동 */
@@ -363,6 +354,7 @@ public class GameOver extends JPanel {
         
         // 새로 추가된 하이스코어의 순위 찾기
         int newRank = findNewHighScoreRank(userName, userScore);
+        System.out.println("newRank: " + newRank);
         
         // ScoreScene으로 이동 (순위 정보 전달)
         tetris.Game.setScene(new tetris.scene.scorescene.ScoreScene(frame, newRank));
@@ -393,7 +385,7 @@ public class GameOver extends JPanel {
     
     /** 새로 추가된 하이스코어의 순위 찾기 */
     private int findNewHighScoreRank(String userName, int userScore) {
-        List<String> lines = Loader.loadFile("highscore.txt");
+        List<String> lines = Loader.loadFile("./data/highscore.txt");
         for (int i = 0; i < lines.size(); i++) {
             String line = lines.get(i);
             String[] parts = line.split(",", -1);
