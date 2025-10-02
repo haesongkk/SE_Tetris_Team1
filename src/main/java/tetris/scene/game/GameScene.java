@@ -172,11 +172,14 @@ public class GameScene extends Scene {
         blinkTimer = new Timer(50, new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // 줄 점멸 연출 업데이트
-                if (lineBlinkEffect != null) {
-                    lineBlinkEffect.update();
+                // 게임오버 상태가 아닐 때만 점멸 업데이트 및 화면 갱신
+                if (!isGameOver) {
+                    // 줄 점멸 연출 업데이트
+                    if (lineBlinkEffect != null) {
+                        lineBlinkEffect.update();
+                    }
+                    gamePanel.repaint(); // 화면 갱신
                 }
-                gamePanel.repaint(); // 화면 갱신
             }
         });
         blinkTimer.start(); // 점멸 타이머는 항상 실행
@@ -994,6 +997,11 @@ public class GameScene extends Scene {
         // 타이머 정지 (블록은 그대로 두고 움직임만 중단)
         if (timer != null) {
             timer.stop();
+        }
+        
+        // 점멸 타이머도 정지 (GameOver 창 점멸 방지)
+        if (blinkTimer != null) {
+            blinkTimer.stop();
         }
         
         // 게임 종료 오버레이 표시
