@@ -69,6 +69,18 @@ public class BlockRotation {
             // 블록 타입에 따라 새 인스턴스 생성
             if (curr instanceof IBlock) {
                 tempBlock = new IBlock();
+                // IBlock의 경우 현재 회전 상태를 직접 설정
+                IBlock currentIBlock = (IBlock) curr;
+                IBlock tempIBlock = (IBlock) tempBlock;
+                int currentRotationState = currentIBlock.getRotationState();
+                
+                // 현재 상태로 맞춘 후 한 번 더 회전
+                for (int i = 0; i < currentRotationState; i++) {
+                    tempIBlock.rotate();
+                }
+                tempIBlock.rotate(); // 회전 후 상태 확인용
+                
+                return tempBlock;
             } else if (curr instanceof JBlock) {
                 tempBlock = new JBlock();
             } else if (curr instanceof LBlock) {
@@ -85,7 +97,7 @@ public class BlockRotation {
             
             if (tempBlock == null) return null;
             
-            // 현재 블록과 같은 회전 상태로 맞추기
+            // 현재 블록과 같은 회전 상태로 맞추기 (IBlock이 아닌 경우)
             int currentRotations = getCurrentRotationCount(curr);
             for (int i = 0; i < currentRotations; i++) {
                 tempBlock.rotate();

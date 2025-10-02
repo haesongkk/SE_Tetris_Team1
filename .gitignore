@@ -1,4 +1,27 @@
 .vscode/
 bin/
 build/
+out/
+
+# Java 컴파일 결과물
+*.class
+*.jar
+*.war
+*.ear
+
+# IDE 관련 파일들
+.idea/
+*.iml
+.project
+.classpath
+.settings/
+
+# OS 관련 파일들
+.DS_Store
+Thumbs.db
+
+# 임시 파일들
+*.tmp
+*.temp
+*.log
 
