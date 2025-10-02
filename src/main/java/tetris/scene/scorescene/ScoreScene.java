@@ -4,6 +4,7 @@ import tetris.scene.Scene;
 import tetris.Game;
 import tetris.scene.menu.MainMenuScene;
 import tetris.util.Animation;
+import tetris.util.Loader;
 import tetris.util.Theme;
 
 import javax.swing.*;
@@ -11,18 +12,12 @@ import java.awt.*;
 import java.util.List;
 import java.util.ArrayList;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-
 public class ScoreScene extends Scene {
     public ScoreScene(JFrame frame, int highlightRank) {
         super(frame);
         setBackground(Theme.BG);
 
-        rankData = loadFile("./resources/highscore.txt");
+        rankData = Loader.loadFile("./data/highscore.txt");
         userRank = highlightRank;
 
         createComponents();
@@ -143,17 +138,9 @@ public class ScoreScene extends Scene {
         runLater(3000, () -> exitLabel.blink(0.8f, 0.4f));
     }
 
-    List<String> loadFile(String path) {
-        List<String> lines = new ArrayList<>();
-        try (BufferedReader br = new BufferedReader(
-                new InputStreamReader(new FileInputStream(path), StandardCharsets.UTF_8))) {
-            String line;
-            while ((line = br.readLine()) != null) lines.add(line);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return lines;
-    }
+    
+    
+
 
     JLabel createJLabel(String text, Font font, Color color, int align) {
         JLabel label = new JLabel(text);
