@@ -5,6 +5,7 @@ import tetris.GameSettings;
 import tetris.ColorBlindHelper;
 import tetris.scene.Scene;
 import tetris.scene.game.blocks.*;
+import tetris.scene.game.overlay.ScoreManager;
 import tetris.scene.menu.MainMenuScene;
 import tetris.scene.test.TestScene;
 
@@ -33,14 +34,22 @@ public class GameScene extends Scene {
     private static final int CELL_SIZE = 30; // 각 셀의 픽셀 크기
     private static final int INIT_INTERVAL_MS = 1000; // 블록 드롭 초기 속도 (밀리초)
 
+    // 다음 블록 미리보기 관련 상수
+    private static final int PREVIEW_SIZE = 4; // 미리보기 영역 크기 (4x4)
+    private static final int PREVIEW_CELL_SIZE = 20; // 미리보기 셀 크기
+
     private GamePanel gamePanel; // 커스텀 게임 패널
     private int[][] board; // 게임 보드 상태 (0: 빈칸, 1: 블록 있음)
     private Color[][] boardColors; // 각 셀의 색상 정보 추가
     
     private Timer timer; // 블록 드롭 타이머
     private Block curr; // 현재 떨어지고 있는 블록
+    private Block next; // 다음 블록 추가
     private int x = 3; // 현재 블록의 x 위치
     private int y = 0; // 현재 블록의 y 위치
+
+    // 점수 관리자
+    private ScoreManager scoreManager;
 
     private boolean initialized = false;
 
@@ -51,6 +60,7 @@ public class GameScene extends Scene {
     public GameScene(JFrame frame) {
         super(frame);
         m_frame = frame;
+        scoreManager = new ScoreManager();
         // 여기서 setContentPane 제거 - Scene 전환 시 처리하도록
     }
 
@@ -87,37 +97,17 @@ public class GameScene extends Scene {
         
         setBackground(backgroundColor);
 
-        // !!! 충돌났던 코드 !!! 
-        // JTextPane pane = new JTextPane();
-        // pane.setEditable(false);
-        // pane.setBackground(backgroundColor);
-        // CompoundBorder border = BorderFactory.createCompoundBorder(
-        //         BorderFactory.createLineBorder(borderColor, 10),
-        //         BorderFactory.createLineBorder(borderColor.darker(), 5)
-        // );
-        // pane.setBorder(border);
-        // add(pane, BorderLayout.CENTER);
-
-        // styleSet = new SimpleAttributeSet();
-        // StyleConstants.setFontSize(styleSet, 18);
-        // StyleConstants.setFontFamily(styleSet, "Courier");
-        // StyleConstants.setBold(styleSet, true);
-        // StyleConstants.setForeground(styleSet, Color.WHITE);
-        // StyleConstants.setAlignment(styleSet, StyleConstants.ALIGN_CENTER);
-
-        // // 키 입력은 Scene(JPanel)에 직접 연결
-        // // !!! 충돌났던 코드 !!!
-      
         gamePanel = new GamePanel();
+        // 다음 블록 미리보기 공간을 포함한 크기로 조정
+        int previewWidth = PREVIEW_SIZE * PREVIEW_CELL_SIZE + 40; // 여백 포함
         gamePanel.setPreferredSize(new Dimension(
-            (GAME_WIDTH + 2) * CELL_SIZE,
+            (GAME_WIDTH + 2) * CELL_SIZE + previewWidth,
             (GAME_HEIGHT + 2) * CELL_SIZE
         ));
         gamePanel.setBackground(Color.BLACK);
         add(gamePanel, BorderLayout.CENTER);
 
         // 메인 패널(this)에 키 리스너 추가
-
         addKeyListener(new PlayerKeyListener());
         setFocusable(true);
 
@@ -136,8 +126,11 @@ public class GameScene extends Scene {
         board = new int[GAME_HEIGHT][GAME_WIDTH];
         boardColors = new Color[GAME_HEIGHT][GAME_WIDTH]; // 색상 배열 초기화
         curr = getRandomBlock();
+        next = getRandomBlock(); // 다음 블록 초기화
         x = 3;
         y = 0;
+        // 점수 초기화
+        scoreManager.reset();
         // placeBlock() 호출 제거
         if (gamePanel != null) {
             gamePanel.repaint();
@@ -181,24 +174,13 @@ public class GameScene extends Scene {
         printBoard();
     }
 
-    // 완성된 줄을 찾아서 제거하고 위의 블록들을 내리는 메서드
+    // 완성된 줄을 찾아서 제거하고 위의 블록들을 내리는 메서드 (수정됨)
     private void clearCompletedLines() {
-        int linesCleared = 0;
-
-        // 아래쪽부터 위쪽으로 검사 (GAME_HEIGHT-1부터 0까지)
-        for (int row = GAME_HEIGHT - 1; row >= 0; row--) {
-            if (isLineFull(row)) {
-                // 완성된 줄 제거
-                removeLine(row);
-                linesCleared++;
-                
-                // 제거한 줄 위치에서 다시 검사 (같은 row를 다시 검사)
-                row++; // for문의 row--와 상쇄되어 같은 위치를 다시 검사
-            }
-        }
+        int linesClearedThisTurn = clearAllCompletedLines(); // 개선된 메서드 사용
         
-        if (linesCleared > 0) {
-            System.out.println("Cleared " + linesCleared + " lines!");
+        if (linesClearedThisTurn > 0) {
+            // 점수 업데이트 (ScoreManager 사용)
+            scoreManager.addScore(linesClearedThisTurn);
         }
     }
 
@@ -232,32 +214,38 @@ public class GameScene extends Scene {
         }
     }
 
-    // 여러 줄이 동시에 완성된 경우를 위한 개선된 버전 (선택사항)
+    // 여러 줄이 동시에 완성된 경우를 위한 개선된 버전 (기존 코드에서 변수명 수정)
     private int clearAllCompletedLines() {
-        int linesCleared = 0;
+        int linesClearedCount = 0;
         boolean[] linesToClear = new boolean[GAME_HEIGHT];
         
         // 1단계: 완성된 모든 줄 찾기
         for (int row = 0; row < GAME_HEIGHT; row++) {
             if (isLineFull(row)) {
                 linesToClear[row] = true;
-                linesCleared++;
+                linesClearedCount++;
+                System.out.println("Line " + row + " is complete and will be cleared.");
             }
         }
         
         // 2단계: 완성된 줄들 제거 및 블록들 재배치
-        if (linesCleared > 0) {
+        if (linesClearedCount > 0) {
             int writeRow = GAME_HEIGHT - 1; // 새로 배치할 위치
             
             // 아래에서 위로 올라가면서 완성되지 않은 줄들만 복사
             for (int readRow = GAME_HEIGHT - 1; readRow >= 0; readRow--) {
                 if (!linesToClear[readRow]) {
                     // 완성되지 않은 줄이면 아래쪽으로 이동
+                    if (writeRow != readRow) {
+                        System.out.println("Moving line " + readRow + " to line " + writeRow);
+                    }
                     for (int col = 0; col < GAME_WIDTH; col++) {
                         board[writeRow][col] = board[readRow][col];
                         boardColors[writeRow][col] = boardColors[readRow][col];
                     }
                     writeRow--;
+                } else {
+                    System.out.println("Skipping completed line " + readRow);
                 }
             }
             
@@ -270,10 +258,10 @@ public class GameScene extends Scene {
                 writeRow--;
             }
             
-            System.out.println("Cleared " + linesCleared + " lines simultaneously!");
+            System.out.println("Cleared " + linesClearedCount + " lines simultaneously!");
         }
         
-        return linesCleared;
+        return linesClearedCount;
     }
 
     private void printBoard() {
@@ -334,21 +322,145 @@ public class GameScene extends Scene {
     }
 
     private boolean canRotate() {
-        // Block 클래스에 임시 회전 메서드가 필요하거나, 
-        // 현재는 단순히 경계 체크만 수행
-        int currentWidth = curr.width();
-        int currentHeight = curr.height();
+        if (curr == null) return false;
         
-        // 회전 후 예상 크기 (width와 height가 바뀜)
-        int newWidth = currentHeight;
-        int newHeight = currentWidth;
+        // 임시로 블록을 회전시켜서 충돌 검사
+        Block tempBlock = createTempRotatedBlock();
+        if (tempBlock == null) return false;
         
-        // 회전 후 경계를 벗어나는지 확인
-        if (x + newWidth > GAME_WIDTH || y + newHeight > GAME_HEIGHT) {
+        // 1. 경계 체크
+        if (x + tempBlock.width() > GAME_WIDTH || y + tempBlock.height() > GAME_HEIGHT) {
             return false;
         }
         
+        // 2. 기존 고정된 블록들과의 충돌 체크
+        for (int blockRow = 0; blockRow < tempBlock.height(); blockRow++) {
+            for (int blockCol = 0; blockCol < tempBlock.width(); blockCol++) {
+                if (tempBlock.getShape(blockCol, blockRow) == 1) {
+                    int boardX = x + blockCol;
+                    int boardY = y + blockRow;
+                    
+                    // 보드 범위 체크
+                    if (boardX < 0 || boardX >= GAME_WIDTH || boardY < 0 || boardY >= GAME_HEIGHT) {
+                        return false;
+                    }
+                    
+                    // 기존 블록과의 충돌 체크
+                    if (board[boardY][boardX] == 1) {
+                        System.out.println("Rotation blocked: collision at (" + boardX + ", " + boardY + ")");
+                        return false;
+                    }
+                }
+            }
+        }
+        
         return true;
+    }
+
+    // 현재 블록을 임시로 회전시킨 복사본을 생성하는 메서드
+    private Block createTempRotatedBlock() {
+        if (curr == null) return null;
+        
+        try {
+            // 현재 블록의 복사본 생성
+            Block tempBlock = null;
+            
+            // 블록 타입에 따라 새 인스턴스 생성
+            if (curr instanceof IBlock) {
+                tempBlock = new IBlock();
+            } else if (curr instanceof JBlock) {
+                tempBlock = new JBlock();
+            } else if (curr instanceof LBlock) {
+                tempBlock = new LBlock();
+            } else if (curr instanceof ZBlock) {
+                tempBlock = new ZBlock();
+            } else if (curr instanceof SBlock) {
+                tempBlock = new SBlock();
+            } else if (curr instanceof TBlock) {
+                tempBlock = new TBlock();
+            } else if (curr instanceof OBlock) {
+                tempBlock = new OBlock();
+            }
+            
+            if (tempBlock == null) return null;
+            
+            // 현재 블록과 같은 회전 상태로 맞추기
+            int currentRotations = getCurrentRotationCount();
+            for (int i = 0; i < currentRotations; i++) {
+                tempBlock.rotate();
+            }
+            
+            // 한 번 더 회전 (회전 후 상태 확인용)
+            tempBlock.rotate();
+            
+            return tempBlock;
+            
+        } catch (Exception e) {
+            System.err.println("Error creating temp rotated block: " + e.getMessage());
+            return null;
+        }
+    }
+
+    // 현재 블록의 회전 횟수를 추정하는 메서드 (완벽하지 않을 수 있음)
+    private int getCurrentRotationCount() {
+        // 이 메서드는 Block 클래스에 getRotationState() 메서드가 있다면 더 정확할 것입니다.
+        // 현재는 간단한 추정을 사용합니다.
+        
+        if (curr == null) return 0;
+        
+        // 기본 상태와 비교하여 회전 횟수 추정
+        Block originalBlock = null;
+        
+        if (curr instanceof IBlock) {
+            originalBlock = new IBlock();
+        } else if (curr instanceof JBlock) {
+            originalBlock = new JBlock();
+        } else if (curr instanceof LBlock) {
+            originalBlock = new LBlock();
+        } else if (curr instanceof ZBlock) {
+            originalBlock = new ZBlock();
+        } else if (curr instanceof SBlock) {
+            originalBlock = new SBlock();
+        } else if (curr instanceof TBlock) {
+            originalBlock = new TBlock();
+        } else if (curr instanceof OBlock) {
+            originalBlock = new OBlock();
+        }
+        
+        if (originalBlock == null) return 0;
+        
+        // 현재 블록과 원본 블록의 크기를 비교하여 회전 상태 추정
+        int currentWidth = curr.width();
+        int currentHeight = curr.height();
+        int originalWidth = originalBlock.width();
+        int originalHeight = originalBlock.height();
+        
+        // 크기가 같으면 0도 또는 180도 회전
+        if (currentWidth == originalWidth && currentHeight == originalHeight) {
+            // 더 정확한 비교를 위해 실제 모양을 확인
+            boolean sameShape = true;
+            for (int i = 0; i < Math.min(currentWidth, originalWidth); i++) {
+                for (int j = 0; j < Math.min(currentHeight, originalHeight); j++) {
+                    if (curr.getShape(i, j) != originalBlock.getShape(i, j)) {
+                        sameShape = false;
+                        break;
+                    }
+                }
+                if (!sameShape) break;
+            }
+            
+            if (sameShape) {
+                return 0; // 0도 회전
+            } else {
+                return 2; // 180도 회전
+            }
+        }
+        // 크기가 바뀌었으면 90도 또는 270도 회전
+        else if (currentWidth == originalHeight && currentHeight == originalWidth) {
+            return 1; // 90도 회전 (또는 270도, 하지만 일단 1로 가정)
+        }
+        
+        return 0; // 기본값
     }
 
     private void moveDown() {
@@ -359,7 +471,9 @@ public class GameScene extends Scene {
         } else {
             // 블록이 바닥에 닿았을 때만 보드에 고정
             placeBlockPermanently();
-            curr = getRandomBlock();
+            // 다음 블록을 현재 블록으로, 새로운 다음 블록 생성
+            curr = next;
+            next = getRandomBlock();
             x = 3;
             y = 0;
         }
@@ -402,7 +516,7 @@ public class GameScene extends Scene {
             // 오른쪽 경계
             g2d.fillRect((GAME_WIDTH + 1) * CELL_SIZE, 0, CELL_SIZE, (GAME_HEIGHT + 2) * CELL_SIZE);
             // 위쪽 경계
-            g2d.fillRect(0, 0, (WIDTH + 2) * CELL_SIZE, CELL_SIZE);
+            g2d.fillRect(0, 0, (GAME_WIDTH + 2) * CELL_SIZE, CELL_SIZE);
             // 아래쪽 경계
             g2d.fillRect(0, (GAME_HEIGHT + 1) * CELL_SIZE, (GAME_WIDTH + 2) * CELL_SIZE, CELL_SIZE);
 
@@ -484,12 +598,84 @@ public class GameScene extends Scene {
                 }
             }
 
+            // 다음 블록 미리보기 그리기
+            drawNextBlockPreview(g2d);
+
+            // 점수판 그리기 (ScoreManager 사용)
+            drawScoreBoard(g2d);
+
             // 디버그 정보 표시
             g2d.setColor(Color.YELLOW);
             g2d.setFont(new Font("Arial", Font.BOLD, 12));
             g2d.drawString("Game Area: " + GAME_WIDTH + "x" + GAME_HEIGHT, 5, 15);
             g2d.drawString("Fixed blocks: " + fixedBlockCount, 5, 30);
             g2d.drawString("Current pos: (" + GameScene.this.x + "," + GameScene.this.y + ")", 5, 45);
+        }
+
+        private void drawNextBlockPreview(Graphics2D g2d) {
+            if (next == null) return;
+
+            // 미리보기 영역 위치 계산 (게임 보드 오른쪽)
+            int previewX = (GAME_WIDTH + 2) * CELL_SIZE + 20;
+            int previewY = CELL_SIZE + 20;
+            int previewAreaSize = PREVIEW_SIZE * PREVIEW_CELL_SIZE;
+
+            // 미리보기 영역 배경
+            g2d.setColor(Color.DARK_GRAY);
+            g2d.fillRect(previewX, previewY, previewAreaSize, previewAreaSize);
+
+            // 미리보기 영역 테두리
+            g2d.setColor(Color.WHITE);
+            g2d.setStroke(new BasicStroke(2));
+            g2d.drawRect(previewX, previewY, previewAreaSize, previewAreaSize);
+
+            // "NEXT" 라벨
+            g2d.setColor(Color.WHITE);
+            g2d.setFont(new Font("Arial", Font.BOLD, 14));
+            FontMetrics fm = g2d.getFontMetrics();
+            String nextLabel = "NEXT";
+            int labelWidth = fm.stringWidth(nextLabel);
+            g2d.drawString(nextLabel, previewX + (previewAreaSize - labelWidth) / 2, previewY - 5);
+
+            // 다음 블록을 중앙에 배치하기 위한 오프셋 계산
+            int blockWidth = next.width();
+            int blockHeight = next.height();
+            int offsetX = (PREVIEW_SIZE - blockWidth) / 2;
+            int offsetY = (PREVIEW_SIZE - blockHeight) / 2;
+
+            // 다음 블록 그리기
+            g2d.setColor(next.getColor());
+            for (int blockRow = 0; blockRow < blockHeight; blockRow++) {
+                for (int blockCol = 0; blockCol < blockWidth; blockCol++) {
+                    if (next.getShape(blockCol, blockRow) == 1) {
+                        int drawX = previewX + (offsetX + blockCol) * PREVIEW_CELL_SIZE + 2;
+                        int drawY = previewY + (offsetY + blockRow) * PREVIEW_CELL_SIZE + 2;
+                        
+                        g2d.fillRect(drawX, drawY, PREVIEW_CELL_SIZE - 4, PREVIEW_CELL_SIZE - 4);
+                        
+                        // 블록 테두리
+                        g2d.setColor(Color.BLACK);
+                        g2d.setStroke(new BasicStroke(1));
+                        g2d.drawRect(drawX, drawY, PREVIEW_CELL_SIZE - 4, PREVIEW_CELL_SIZE - 4);
+                        g2d.setColor(next.getColor());
+                    }
+                }
+            }
+        }
+
+        private void drawScoreBoard(Graphics2D g2d) {
+            // 점수판 위치 계산 (다음 블록 미리보기 아래)
+            int previewX = (GAME_WIDTH + 2) * CELL_SIZE + 20;
+            int previewY = CELL_SIZE + 20;
+            int previewAreaSize = PREVIEW_SIZE * PREVIEW_CELL_SIZE;
+            
+            int scoreBoardX = previewX;
+            int scoreBoardY = previewY + previewAreaSize + 30; // 미리보기 아래 30px 간격
+            int scoreBoardWidth = previewAreaSize;
+            int scoreBoardHeight = 120; // 점수판 높이
+
+            // ScoreManager의 drawScoreBoard 메서드 사용
+            scoreManager.drawScoreBoard(g2d, scoreBoardX, scoreBoardY, scoreBoardWidth, scoreBoardHeight);
         }
     }
 
