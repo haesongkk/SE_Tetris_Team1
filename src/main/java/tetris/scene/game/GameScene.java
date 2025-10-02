@@ -5,9 +5,9 @@ import tetris.GameSettings;
 import tetris.ColorBlindHelper;
 import tetris.scene.Scene;
 import tetris.scene.game.blocks.*;
+import tetris.scene.game.overlay.GameOver;
 import tetris.scene.game.overlay.ScoreManager;
 import tetris.scene.menu.MainMenuScene;
-import tetris.scene.test.TestScene;
 
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;
@@ -19,13 +19,13 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import javax.swing.OverlayLayout;
 import java.awt.event.KeyListener;
 import java.util.Random;
 import javax.swing.*;
 import tetris.Game;
 import tetris.scene.Scene;
 import tetris.scene.game.blocks.*;
-import tetris.scene.test.TestScene;
 
 public class GameScene extends Scene {
     private JFrame m_frame;
@@ -52,6 +52,12 @@ public class GameScene extends Scene {
     private ScoreManager scoreManager;
 
     private boolean initialized = false;
+    
+    // 일시정지 상태
+    private boolean isPaused = false;
+    
+    // 게임 종료 상태
+    private boolean isGameOver = false;
 
     // ─────────────────────────────────────────────────────────────
     // Scene lifecycle
@@ -74,6 +80,9 @@ public class GameScene extends Scene {
         m_frame.setContentPane(this);
         m_frame.revalidate();
         m_frame.repaint();
+        
+        // 창을 화면 중앙에 위치시키기
+        m_frame.setLocationRelativeTo(null);
         
         requestFocusInWindow();
         if (timer != null && !timer.isRunning()) timer.start();
@@ -105,7 +114,13 @@ public class GameScene extends Scene {
             (GAME_HEIGHT + 2) * CELL_SIZE
         ));
         gamePanel.setBackground(Color.BLACK);
-        add(gamePanel, BorderLayout.CENTER);
+        
+        // 게임 패널을 중앙에 배치하기 위한 래퍼 패널 생성
+        JPanel wrapperPanel = new JPanel(new GridBagLayout());
+        wrapperPanel.setBackground(backgroundColor);
+        wrapperPanel.add(gamePanel, new GridBagConstraints());
+        
+        add(wrapperPanel, BorderLayout.CENTER);
 
         // 메인 패널(this)에 키 리스너 추가
         addKeyListener(new PlayerKeyListener());
@@ -116,8 +131,10 @@ public class GameScene extends Scene {
         timer = new Timer(INIT_INTERVAL_MS, new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                moveDown();
-                gamePanel.repaint();
+                if (!isPaused && !isGameOver) {  // 일시정지나 게임 종료 상태가 아닐 때만 블록 이동
+                    moveDown();
+                    gamePanel.repaint();
+                }
             }
         });
     }
@@ -154,6 +171,12 @@ public class GameScene extends Scene {
 
     private void placeBlockPermanently() {
         System.out.println("Placing block permanently at x=" + x + ", y=" + y);
+        
+        // 게임 종료 조건 확인: 블록이 천장(y=0 위치)에 고정되면 게임 종료
+        if (y <= 0) {
+            triggerGameOver();
+            return;
+        }
         
         // 블록을 영구적으로 보드에 고정
         for (int j = 0; j < curr.height(); j++) {
@@ -322,160 +345,26 @@ public class GameScene extends Scene {
     }
 
     private boolean canRotate() {
-        if (curr == null) return false;
-        
-        // 임시로 블록을 회전시켜서 충돌 검사
-        Block tempBlock = createTempRotatedBlock();
-        if (tempBlock == null) return false;
-        
-        // 1. 경계 체크
-        if (x + tempBlock.width() > GAME_WIDTH || y + tempBlock.height() > GAME_HEIGHT) {
-            return false;
-        }
-        
-        // 2. 기존 고정된 블록들과의 충돌 체크
-        for (int blockRow = 0; blockRow < tempBlock.height(); blockRow++) {
-            for (int blockCol = 0; blockCol < tempBlock.width(); blockCol++) {
-                if (tempBlock.getShape(blockCol, blockRow) == 1) {
-                    int boardX = x + blockCol;
-                    int boardY = y + blockRow;
-                    
-                    // 보드 범위 체크
-                    if (boardX < 0 || boardX >= GAME_WIDTH || boardY < 0 || boardY >= GAME_HEIGHT) {
-                        return false;
-                    }
-                    
-                    // 기존 블록과의 충돌 체크
-                    if (board[boardY][boardX] == 1) {
-                        System.out.println("Rotation blocked: collision at (" + boardX + ", " + boardY + ")");
-                        return false;
-                    }
-                }
-            }
-        }
-        
-        return true;
-    }
-
-    // 현재 블록을 임시로 회전시킨 복사본을 생성하는 메서드
-    private Block createTempRotatedBlock() {
-        if (curr == null) return null;
-        
-        try {
-            // 현재 블록의 복사본 생성
-            Block tempBlock = null;
-            
-            // 블록 타입에 따라 새 인스턴스 생성
-            if (curr instanceof IBlock) {
-                tempBlock = new IBlock();
-            } else if (curr instanceof JBlock) {
-                tempBlock = new JBlock();
-            } else if (curr instanceof LBlock) {
-                tempBlock = new LBlock();
-            } else if (curr instanceof ZBlock) {
-                tempBlock = new ZBlock();
-            } else if (curr instanceof SBlock) {
-                tempBlock = new SBlock();
-            } else if (curr instanceof TBlock) {
-                tempBlock = new TBlock();
-            } else if (curr instanceof OBlock) {
-                tempBlock = new OBlock();
-            }
-            
-            if (tempBlock == null) return null;
-            
-            // 현재 블록과 같은 회전 상태로 맞추기
-            int currentRotations = getCurrentRotationCount();
-            for (int i = 0; i < currentRotations; i++) {
-                tempBlock.rotate();
-            }
-            
-            // 한 번 더 회전 (회전 후 상태 확인용)
-            tempBlock.rotate();
-            
-            return tempBlock;
-            
-        } catch (Exception e) {
-            System.err.println("Error creating temp rotated block: " + e.getMessage());
-            return null;
-        }
-    }
-
-    // 현재 블록의 회전 횟수를 추정하는 메서드 (완벽하지 않을 수 있음)
-    private int getCurrentRotationCount() {
-        // 이 메서드는 Block 클래스에 getRotationState() 메서드가 있다면 더 정확할 것입니다.
-        // 현재는 간단한 추정을 사용합니다.
-        
-        if (curr == null) return 0;
-        
-        // 기본 상태와 비교하여 회전 횟수 추정
-        Block originalBlock = null;
-        
-        if (curr instanceof IBlock) {
-            originalBlock = new IBlock();
-        } else if (curr instanceof JBlock) {
-            originalBlock = new JBlock();
-        } else if (curr instanceof LBlock) {
-            originalBlock = new LBlock();
-        } else if (curr instanceof ZBlock) {
-            originalBlock = new ZBlock();
-        } else if (curr instanceof SBlock) {
-            originalBlock = new SBlock();
-        } else if (curr instanceof TBlock) {
-            originalBlock = new TBlock();
-        } else if (curr instanceof OBlock) {
-            originalBlock = new OBlock();
-        }
-        
-        if (originalBlock == null) return 0;
-        
-        // 현재 블록과 원본 블록의 크기를 비교하여 회전 상태 추정
-        int currentWidth = curr.width();
-        int currentHeight = curr.height();
-        int originalWidth = originalBlock.width();
-        int originalHeight = originalBlock.height();
-        
-        // 크기가 같으면 0도 또는 180도 회전
-        if (currentWidth == originalWidth && currentHeight == originalHeight) {
-            // 더 정확한 비교를 위해 실제 모양을 확인
-            boolean sameShape = true;
-            for (int i = 0; i < Math.min(currentWidth, originalWidth); i++) {
-                for (int j = 0; j < Math.min(currentHeight, originalHeight); j++) {
-                    if (curr.getShape(i, j) != originalBlock.getShape(i, j)) {
-                        sameShape = false;
-                        break;
-                    }
-                }
-                if (!sameShape) break;
-            }
-            
-            if (sameShape) {
-                return 0; // 0도 회전
-            } else {
-                return 2; // 180도 회전
-            }
-        }
-        // 크기가 바뀌었으면 90도 또는 270도 회전
-        else if (currentWidth == originalHeight && currentHeight == originalWidth) {
-            return 1; // 90도 회전 (또는 270도, 하지만 일단 1로 가정)
-        }
-        
-        return 0; // 기본값
+        return BlockRotation.canRotate(curr, x, y, board, GAME_WIDTH, GAME_HEIGHT);
     }
 
     private void moveDown() {
-        if (curr == null) return;
+        if (curr == null || isGameOver) return;
         
         if (canMoveDown()) {
             y++;
         } else {
             // 블록이 바닥에 닿았을 때만 보드에 고정
             placeBlockPermanently();
-            // 다음 블록을 현재 블록으로, 새로운 다음 블록 생성
-            curr = next;
-            next = getRandomBlock();
-            x = 3;
-            y = 0;
+            
+            // 게임이 종료되지 않은 경우에만 다음 블록 생성
+            if (!isGameOver) {
+                // 다음 블록을 현재 블록으로, 새로운 다음 블록 생성
+                curr = next;
+                next = getRandomBlock();
+                x = 3;
+                y = 0;
+            }
         }
     }
 
@@ -492,6 +381,43 @@ public class GameScene extends Scene {
         
         if (canMoveLeft()) {
             x--;
+        }
+    }
+
+    /**
+     * 하드 드롭: 현재 블록을 가능한 한 아래까지 즉시 떨어뜨립니다.
+     */
+    private void hardDrop() {
+        if (curr == null) return;
+        
+        // BlockHardDrop 클래스를 사용하여 하드 드롭 실행
+        int newY = BlockHardDrop.executeHardDrop(curr, x, y, board, GAME_WIDTH, GAME_HEIGHT);
+        y = newY;
+        
+        // 블록이 바닥에 닿았으므로 즉시 고정
+        placeBlockPermanently();
+        
+        // 다음 블록을 현재 블록으로, 새로운 다음 블록 생성
+        curr = next;
+        next = getRandomBlock();
+        x = 3;
+        y = 0;
+        
+        // 화면 업데이트
+        if (gamePanel != null) {
+            gamePanel.repaint();
+        }
+    }
+
+    /**
+     * 게임 일시정지 상태를 토글합니다.
+     */
+    private void togglePause() {
+        isPaused = !isPaused;
+        System.out.println("Game " + (isPaused ? "PAUSED" : "RESUMED"));
+        
+        if (gamePanel != null) {
+            gamePanel.repaint();
         }
     }
 
@@ -545,9 +471,9 @@ public class GameScene extends Scene {
                 g2d.drawLine(CELL_SIZE, gridY, (GAME_WIDTH + 1) * CELL_SIZE, gridY);
             }
 
-            // 게임 보드 그리기 (고정된 블록들) - 디버그 추가
+            // 게임 보드 그리기 (고정된 블록들)
             int fixedBlockCount = 0;
-            System.out.println("Rendering fixed blocks..."); // 디버그
+            // System.out.println("Rendering fixed blocks..."); // 디버그 (주석 처리)
             
             for (int row = 0; row < GAME_HEIGHT; row++) {
                 for (int col = 0; col < GAME_WIDTH; col++) {
@@ -555,7 +481,7 @@ public class GameScene extends Scene {
                         fixedBlockCount++;
                         Color blockColor = boardColors[row][col];
                         
-                        System.out.println("Found fixed block at [" + row + "][" + col + "] color=" + blockColor); // 디버그
+                        // System.out.println("Found fixed block at [" + row + "][" + col + "] color=" + blockColor); // 디버그 (주석 처리)
                         
                         if (blockColor != null) {
                             g2d.setColor(blockColor);
@@ -568,10 +494,10 @@ public class GameScene extends Scene {
                             g2d.drawRect((col + 1) * CELL_SIZE + 1, (row + 1) * CELL_SIZE + 1, 
                                         CELL_SIZE - 2, CELL_SIZE - 2);
                             
-                            System.out.println("Drew fixed block at screen pos: " + 
-                                             ((col + 1) * CELL_SIZE + 1) + "," + ((row + 1) * CELL_SIZE + 1)); // 디버그
+                            // System.out.println("Drew fixed block at screen pos: " + 
+                            //                  ((col + 1) * CELL_SIZE + 1) + "," + ((row + 1) * CELL_SIZE + 1)); // 디버그 (주석 처리)
                         } else {
-                            System.out.println("Block color is null!"); // 디버그
+                            // System.out.println("Block color is null!"); // 디버그 (주석 처리)
                         }
                     }
                 }
@@ -603,6 +529,11 @@ public class GameScene extends Scene {
 
             // 점수판 그리기 (ScoreManager 사용)
             drawScoreBoard(g2d);
+
+            // 일시정지 오버레이 그리기
+            if (isPaused) {
+                drawPauseOverlay(g2d);
+            }
 
             // 디버그 정보 표시
             g2d.setColor(Color.YELLOW);
@@ -677,6 +608,42 @@ public class GameScene extends Scene {
             // ScoreManager의 drawScoreBoard 메서드 사용
             scoreManager.drawScoreBoard(g2d, scoreBoardX, scoreBoardY, scoreBoardWidth, scoreBoardHeight);
         }
+
+        /**
+         * 일시정지 오버레이를 그립니다.
+         */
+        private void drawPauseOverlay(Graphics2D g2d) {
+            // 게임 영역에 반투명 오버레이
+            g2d.setColor(new Color(0, 0, 0, 150)); // 반투명 검은색
+            g2d.fillRect(CELL_SIZE, CELL_SIZE, GAME_WIDTH * CELL_SIZE, GAME_HEIGHT * CELL_SIZE);
+            
+            // PAUSED 텍스트
+            g2d.setColor(Color.WHITE);
+            g2d.setFont(new Font("Arial", Font.BOLD, 48));
+            FontMetrics fm = g2d.getFontMetrics();
+            String pausedText = "PAUSED";
+            int textWidth = fm.stringWidth(pausedText);
+            int textHeight = fm.getHeight();
+            
+            // 게임 영역 중앙에 텍스트 배치
+            int gameAreaCenterX = CELL_SIZE + (GAME_WIDTH * CELL_SIZE) / 2;
+            int gameAreaCenterY = CELL_SIZE + (GAME_HEIGHT * CELL_SIZE) / 2;
+            
+            int textX = gameAreaCenterX - textWidth / 2;
+            int textY = gameAreaCenterY + textHeight / 4; // 텍스트 베이스라인 조정
+            
+            g2d.drawString(pausedText, textX, textY);
+            
+            // 부가 안내 텍스트
+            g2d.setFont(new Font("Arial", Font.PLAIN, 16));
+            FontMetrics smallFm = g2d.getFontMetrics();
+            String instructionText = "Press P to resume";
+            int instructionWidth = smallFm.stringWidth(instructionText);
+            int instructionX = gameAreaCenterX - instructionWidth / 2;
+            int instructionY = textY + 60; // PAUSED 텍스트 아래 60px
+            
+            g2d.drawString(instructionText, instructionX, instructionY);
+        }
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -688,6 +655,28 @@ public class GameScene extends Scene {
         @Override
         public void keyPressed(KeyEvent e) {
             System.out.println("Key pressed: " + e.getKeyCode());
+            
+            // ESC 키는 항상 처리 (메인 메뉴로 이동)
+            if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                Game.setScene(new MainMenuScene(m_frame));
+                return;
+            }
+            
+            // 게임이 종료된 상태일 때는 ESC를 제외한 모든 키 입력 무시
+            if (isGameOver) {
+                return;
+            }
+            
+            // P 키는 일시정지 상태와 관계없이 처리 (게임이 진행 중일 때만)
+            if (e.getKeyCode() == KeyEvent.VK_P) {
+                togglePause();
+                return;
+            }
+            
+            // 일시정지 상태일 때는 다른 키 입력 무시
+            if (isPaused) {
+                return;
+            }
             
             switch (e.getKeyCode()) {
                 case KeyEvent.VK_DOWN:
@@ -708,11 +697,45 @@ public class GameScene extends Scene {
                         gamePanel.repaint();
                     }
                     break;
-                case KeyEvent.VK_ESCAPE:
-                    Game.setScene(new MainMenuScene(m_frame));
+                case KeyEvent.VK_SPACE:
+                    hardDrop();
                     break;
             }
         }
         @Override public void keyReleased(KeyEvent e) {}
+    }
+    
+    /**
+     * 게임 종료를 처리하는 메서드
+     */
+    private void triggerGameOver() {
+        // 게임 종료 상태 설정
+        isGameOver = true;
+        
+        // 현재 블록과 다음 블록을 null로 설정하여 더 이상 그려지지 않도록 함
+        curr = null;
+        next = null;
+        
+        // 타이머 정지
+        if (timer != null) {
+            timer.stop();
+        }
+        
+        // 게임 종료 오버레이 표시
+        int currentScore = scoreManager.getScore();
+        int currentLines = scoreManager.getLinesCleared();
+        int currentTime = 0; // 시간 기능이 구현되지 않았으므로 0으로 설정
+        String difficulty = "Normal"; // 현재 난이도 설정
+        
+        GameOver gameOverOverlay = new GameOver(m_frame, currentScore, currentLines, currentTime, difficulty);
+        
+        // 게임 종료 화면을 현재 패널에 추가
+        setLayout(new OverlayLayout(this));
+        add(gameOverOverlay, 0); // 맨 앞에 추가
+        
+        revalidate();
+        repaint();
+        
+        System.out.println("Game Over! Score: " + currentScore + ", Lines: " + currentLines);
     }
 }
