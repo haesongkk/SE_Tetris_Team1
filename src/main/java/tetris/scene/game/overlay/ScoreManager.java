@@ -6,10 +6,13 @@ import java.awt.*;
  * 테트리스 게임의 점수 계산 및 표시를 담당하는 클래스
  */
 public class ScoreManager {
-    private static final int POINTS_PER_LINE = 1000; // 줄 삭제당 점수
+    private static final int POINTS_PER_LINE = 1000; // 기본 줄 삭제당 점수
+    private static final double SPEED_MULTIPLIER_INCREASE = 0.2; // 속도 증가 시 점수 배율 증가 (20%)
+    private static final double MAX_SPEED_MULTIPLIER = 1.6; // 최대 점수 배율 (160%)
     
     private int score; // 현재 점수
     private int linesCleared; // 삭제된 줄 수
+    private double speedMultiplier; // 속도에 따른 점수 배율 (1.0 = 100%, 1.2 = 120%)
     
     public ScoreManager() {
         reset();
@@ -21,6 +24,7 @@ public class ScoreManager {
     public void reset() {
         score = 0;
         linesCleared = 0;
+        speedMultiplier = 1.0; // 기본 배율 100%
     }
     
     /**
@@ -30,9 +34,15 @@ public class ScoreManager {
     public void addScore(int linesClearedCount) {
         if (linesClearedCount > 0) {
             linesCleared += linesClearedCount;
-            score += linesClearedCount * POINTS_PER_LINE;
             
-            System.out.println("Cleared " + linesClearedCount + " lines! Total score: " + score);
+            // 속도 배율을 적용한 점수 계산
+            int baseScore = linesClearedCount * POINTS_PER_LINE;
+            int bonusScore = (int) (baseScore * speedMultiplier);
+            score += bonusScore;
+            
+            System.out.println("Cleared " + linesClearedCount + " lines! Base: " + baseScore + 
+                             ", Multiplier: " + String.format("%.1f", speedMultiplier) + 
+                             "x, Final: " + bonusScore + ", Total score: " + score);
         }
     }
     
@@ -50,6 +60,30 @@ public class ScoreManager {
      */
     public int getLinesCleared() {
         return linesCleared;
+    }
+    
+    /**
+     * 게임 속도가 증가했을 때 점수 배율을 증가시킵니다.
+     */
+    public void onSpeedIncrease() {
+        if (speedMultiplier < MAX_SPEED_MULTIPLIER) {
+            speedMultiplier += SPEED_MULTIPLIER_INCREASE;
+            // 부동소수점 연산 오차를 방지하기 위해 최댓값 강제 제한
+            if (speedMultiplier > MAX_SPEED_MULTIPLIER) {
+                speedMultiplier = MAX_SPEED_MULTIPLIER;
+            }
+            System.out.println("Speed increased! Score multiplier is now: " + String.format("%.1f", speedMultiplier) + "x");
+        } else {
+            System.out.println("Speed increased! Score multiplier is already at maximum: " + String.format("%.1f", speedMultiplier) + "x");
+        }
+    }
+    
+    /**
+     * 현재 점수 배율을 반환합니다.
+     * @return 현재 점수 배율
+     */
+    public double getSpeedMultiplier() {
+        return speedMultiplier;
     }
     
     /**
@@ -108,13 +142,5 @@ public class ScoreManager {
         String linesText = String.valueOf(linesCleared);
         int linesWidth = fm.stringWidth(linesText);
         g2d.drawString(linesText, scoreBoardX + (scoreBoardWidth - linesWidth) / 2, scoreBoardY + 90);
-
-        // 줄당 점수 정보
-        g2d.setFont(new Font("Arial", Font.PLAIN, 8));
-        fm = g2d.getFontMetrics();
-        String pointsInfo = POINTS_PER_LINE + " pts/line";
-        int pointsWidth = fm.stringWidth(pointsInfo);
-        g2d.setColor(Color.LIGHT_GRAY);
-        g2d.drawString(pointsInfo, scoreBoardX + (scoreBoardWidth - pointsWidth) / 2, scoreBoardY + 110);
     }
 }

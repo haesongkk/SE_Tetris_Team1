@@ -91,4 +91,29 @@ public class BlockHardDrop {
         
         return new HardDropResult(finalY, blockPlaced);
     }
+    
+    /**
+     * 하드 드롭 시 블록이 떨어질 위치를 계산합니다 (고스트 블록용).
+     * 실제로 블록을 이동시키지는 않고, 위치만 계산합니다.
+     * 
+     * @param curr 현재 블록
+     * @param x 현재 블록의 x 위치
+     * @param y 현재 블록의 y 위치
+     * @param board 게임 보드 상태 배열
+     * @param gameWidth 게임 보드 너비
+     * @param gameHeight 게임 보드 높이
+     * @return 하드 드롭 시 떨어질 y 위치
+     */
+    public static int calculateGhostPosition(Block curr, int x, int y, int[][] board, int gameWidth, int gameHeight) {
+        if (curr == null) return y;
+        
+        int ghostY = y;
+        
+        // 블록이 더 이상 아래로 갈 수 없을 때까지 y 좌표를 증가
+        while (canMoveDown(curr, x, ghostY, board, gameWidth, gameHeight)) {
+            ghostY++;
+        }
+        
+        return ghostY;
+    }
 }
