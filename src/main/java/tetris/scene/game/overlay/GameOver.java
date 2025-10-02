@@ -15,15 +15,21 @@ import java.util.ArrayList;
 
 public class GameOver extends JPanel {
     
-    // 애니메이션 타이머들 저장
-    private java.util.List<Timer> animationTimers = new ArrayList<>();
-    
-    // JFrame 참조 저장
+    private List<Timer> animationTimers = new ArrayList<>();
     private JFrame frame;
 
-    // ==== 생성자 ====
+    List<Animation> scoreEntryList = new ArrayList<>();
+    String[] scoreEntryContent = {
+        "SCORE", "LINES", "TIME", "DIFFICULTY"
+    };
+    Color[] scoreEntryColor = {
+        Theme.I_CYAN, Theme.S_GREEN, Theme.T_PURPLE, Theme.L_ORANGE
+    };
+    Color scoreValueColor = Theme.SCORE_WHITE;
+    Font scoreEntryFont = Theme.GIANTS_INLINE.deriveFont(Font.BOLD, 20f);
+
     public GameOver(JFrame frame, int score, int lines, int time, String difficulty) {
-        this.frame = frame; // frame 저장
+        this.frame = frame;
         setOpaque(false);
         setLayout(new GridBagLayout());
         
