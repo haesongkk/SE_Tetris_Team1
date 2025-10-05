@@ -924,8 +924,11 @@ public class GameScene extends Scene {
         public void keyPressed(KeyEvent e) {
             System.out.println("Key pressed: " + e.getKeyCode());
             
+            GameSettings settings = GameSettings.getInstance();
+            int keyCode = e.getKeyCode();
+            
             // ESC 키는 항상 처리 (메인 메뉴로 이동)
-            if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+            if (keyCode == KeyEvent.VK_ESCAPE) {
                 Game.setScene(new MainMenuScene(m_frame));
                 return;
             }
@@ -935,8 +938,8 @@ public class GameScene extends Scene {
                 return;
             }
             
-            // P 키는 일시정지 상태와 관계없이 처리 (게임이 진행 중일 때만)
-            if (e.getKeyCode() == KeyEvent.VK_P) {
+            // 일시정지 키 처리 (게임이 진행 중일 때만)
+            if (keyCode == settings.getPauseKey()) {
                 togglePause();
                 return;
             }
@@ -946,35 +949,33 @@ public class GameScene extends Scene {
                 return;
             }
             
-            switch (e.getKeyCode()) {
-                case KeyEvent.VK_DOWN:
-                    moveDown();
-                    gamePanel.repaint();
-                    break;
-                case KeyEvent.VK_RIGHT:
-                    moveRight();
-                    gamePanel.repaint();
-                    break;
-                case KeyEvent.VK_LEFT:
-                    moveLeft();
-                    gamePanel.repaint();
-                    break;
-                case KeyEvent.VK_UP:
-                    if (curr != null) {
-                        if (canRotate()) {
-                            curr.rotate();
-                            gamePanel.repaint();
-                        } else {
-                            // 회전할 수 없을 때 흔들림 효과 시작
-                            if (blockShake != null) {
-                                blockShake.startShake();
-                            }
+            // 사용자 설정 키에 따른 동작 처리
+            if (keyCode == settings.getFallKey()) {
+                moveDown();
+                gamePanel.repaint();
+            } else if (keyCode == settings.getRightKey()) {
+                moveRight();
+                gamePanel.repaint();
+            } else if (keyCode == settings.getLeftKey()) {
+                moveLeft();
+                gamePanel.repaint();
+            } else if (keyCode == settings.getRotateKey()) {
+                if (curr != null) {
+                    if (canRotate()) {
+                        curr.rotate();
+                        gamePanel.repaint();
+                    } else {
+                        // 회전할 수 없을 때 흔들림 효과 시작
+                        if (blockShake != null) {
+                            blockShake.startShake();
                         }
                     }
-                    break;
-                case KeyEvent.VK_SPACE:
-                    hardDrop();
-                    break;
+                }
+            } else if (keyCode == settings.getDropKey()) {
+                hardDrop();
+            } else if (keyCode == settings.getHoldKey()) {
+                // Hold 기능이 구현되어 있다면 여기에 연결
+                // holdBlock(); // 예시 - 실제 구현에 따라 달라질 수 있음
             }
         }
         @Override public void keyReleased(KeyEvent e) {}
