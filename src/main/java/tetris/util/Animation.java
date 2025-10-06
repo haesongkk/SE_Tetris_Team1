@@ -43,9 +43,6 @@ public class Animation extends JLabel {
 
     boolean bVisible = false;
     
-    long startTime = -1L;
-    Timer animTimer;
-
     int borderRadius = 0;
     int borderThickness = 0;
     float[] borderHSB = new float[3];
@@ -75,7 +72,6 @@ public class Animation extends JLabel {
         bVisible = true;
         scaleX = 1f;
         scaleY = 1f;
-        startTime = System.nanoTime();
 
         backgroundHSB[1] = .5f;
         backgroundHSB[2] = .5f;
@@ -105,15 +101,16 @@ public class Animation extends JLabel {
         bVisible = true;
         scaleX = 1f;
         scaleY = 1f;
-        startTime = System.nanoTime();
 
         borderHSB[1] = .8f;
         borderHSB[2] = .8f;
 
         final long durationNanos = secToNanos(duration);
-        animTimer = new Timer(delay, e -> {
+        AnimTimer animTimer = addAnimTimer();
+        animTimer.startTime = System.nanoTime();
+        animTimer.timer = new Timer(delay, e -> {
 
-            long elapsed = getElapsedNanos();
+            long elapsed = animTimer.getElapsedNanos();
             float tp = getTimeProgress(elapsed, durationNanos);
 
             borderHSB[0] = tp % 1f;
@@ -124,7 +121,7 @@ public class Animation extends JLabel {
 
             repaint();
         });
-        animTimer.start();
+        animTimer.timer.start();
     }
 
     public void blink(float vis, float nonVis) {
@@ -150,12 +147,14 @@ public class Animation extends JLabel {
         bVisible = true;
         scaleX = startScaleX;
         scaleY = startScaleY;
-        startTime = System.nanoTime();
         final long durationNanos = secToNanos(duration);
-        Timer animTimer = new Timer(delay, e -> {
+
+        AnimTimer animTimer = addAnimTimer();
+        animTimer.startTime = System.nanoTime();
+        animTimer.timer = new Timer(delay, e -> {
             long now = System.nanoTime();
-            if (startTime < 0) startTime = now;
-            float t = Math.min(1f, (now - startTime) / (float) durationNanos);
+            if (animTimer.startTime < 0) animTimer.startTime = now;
+            float t = Math.min(1f, (now - animTimer.startTime) / (float) durationNanos);
 
             float ease = 1 - (float)Math.pow(1 - t, 5); // 감속 곡선 (easeOutCubic)
 
@@ -167,7 +166,7 @@ public class Animation extends JLabel {
             repaint();
             if (t >= 1f) ((Timer) e.getSource()).stop();
         });
-        animTimer.start();
+        animTimer.timer.start();
     }
 
     public void popOut(float startScaleX, float startScaleY, float duration, float overshoot) {
@@ -175,13 +174,15 @@ public class Animation extends JLabel {
         bVisible = true;
         scaleX = startScaleX;
         scaleY = startScaleY;
-        startTime = System.nanoTime();
-
         final long durationNanos = secToNanos(duration);
 
-        animTimer = new Timer(delay, e -> {
+        AnimTimer animTimer = addAnimTimer();
+        animTimer.startTime = System.nanoTime();
+
+
+        animTimer.timer = new Timer(delay, e -> {
             long now = System.nanoTime();
-            float t = Math.min(1f, (now - startTime) / (float) durationNanos);
+            float t = Math.min(1f, (now - animTimer.startTime) / (float) durationNanos);
 
             float s = overshoot; // overshoot 강도
             float tp = t - 1f;
@@ -198,7 +199,7 @@ public class Animation extends JLabel {
                 ((Timer) e.getSource()).stop();
             }
         });
-        animTimer.start();
+        animTimer.timer.start();
     }
 
     public void move(int startX, int startY, int endX, int endY, float overshoot, float duration, boolean bLoop) {
@@ -206,12 +207,13 @@ public class Animation extends JLabel {
         scaleX  = 1f;
         scaleY  = 1f;
         final long  durationNanos = secToNanos(duration);
-        startTime = System.nanoTime();
+        AnimTimer animTimer = addAnimTimer();
+        animTimer.startTime = System.nanoTime();
 
-        animTimer = new Timer(delay, e -> {
+        animTimer.timer = new Timer(delay, e -> {
             bVisible = true;
 
-            long elapsed = getElapsedNanos();
+            long elapsed = animTimer.getElapsedNanos();
             float t = getTimeProgress(elapsed, durationNanos);
 
             // 위치 보간
@@ -226,7 +228,7 @@ public class Animation extends JLabel {
                 offsetY = endY;
             }
         });
-        animTimer.start();
+        animTimer.timer.start();
     }
 
     /** 0..1로 클램프 */
@@ -274,11 +276,6 @@ public class Animation extends JLabel {
     }
 
 
-
-    protected long getElapsedNanos() {
-        long now = System.nanoTime();
-        return now - startTime;
-    }
 
     protected float getTimeProgress(long cur, long total) {
         return (float)cur / (float)total;

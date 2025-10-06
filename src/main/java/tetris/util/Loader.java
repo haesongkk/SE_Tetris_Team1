@@ -1,14 +1,22 @@
 package tetris.util;
 
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Objects;
 import java.awt.Font;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+
 import java.io.BufferedReader;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
+
+import java.io.BufferedWriter;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+
 
 public class Loader {
     public static List<String> loadFile(String path) {
@@ -28,16 +36,16 @@ public class Loader {
         Objects.requireNonNull(lines, "lines");
     
         try {
-            java.io.File target = new java.io.File(path);
-            java.io.File parent = target.getParentFile();
+            File target = new File(path);
+            File parent = target.getParentFile();
             if (parent != null && !parent.exists()) {
                 parent.mkdirs(); // 부모 디렉터리 없으면 생성
             }
     
-            try (java.io.BufferedWriter bw = new java.io.BufferedWriter(
-                    new java.io.OutputStreamWriter(
-                            new java.io.FileOutputStream(target),
-                            java.nio.charset.StandardCharsets.UTF_8))) {
+            try (BufferedWriter bw = new BufferedWriter(
+                    new OutputStreamWriter(
+                            new FileOutputStream(target),
+                            StandardCharsets.UTF_8))) {
     
                 for (String line : lines) {
                     bw.write(line);
