@@ -1,7 +1,6 @@
 package tetris.util;
 
 import java.awt.*;
-import java.io.File;
 
 public final class Theme {
     private Theme(){}

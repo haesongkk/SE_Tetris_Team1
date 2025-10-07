@@ -31,22 +31,38 @@ public class Animation extends JLabel {
         backgroundHSB = Color.RGBtoHSB(background.getRed(), background.getGreen(), background.getBlue(), null);
     }
 
-    float alpha = 0.f;
+    public float alpha = 0.f;
 
-    float scaleX = 1.f;
-    float scaleY = 1.f;
+    public float scaleX = 1.f;
+    public float scaleY = 1.f;
 
-    float rotate = 0.f;
+    public float rotate = 0.f;
 
-    float offsetX = 0.f;
-    float offsetY = 0.f;
+    public float offsetX = 0.f;
+    public float offsetY = 0.f;
 
-    boolean bVisible = false;
+    public boolean bVisible = false;
     
-    int borderRadius = 0;
-    int borderThickness = 0;
-    float[] borderHSB = new float[3];
-    float[] backgroundHSB = new float[3];
+    public int borderRadius = 0;
+    public int borderThickness = 0;
+    public float[] borderHSB = new float[3];
+    public float[] backgroundHSB = new float[3];
+
+    static List<Timer> runningTimers = new ArrayList<>();
+    static public void runLater(float delay, Runnable r) {
+        final int delayMs = (int)(delay * 1000);
+        Timer t = new Timer(delayMs, e -> { ((Timer)e.getSource()).stop(); r.run(); });
+        t.setRepeats(false);
+        runningTimers.add(t); 
+        t.start();
+    }
+    static public void reset() {
+        for(Timer t: runningTimers) {
+            t.stop();
+        }
+        runningTimers.clear();
+    }
+
 
     class AnimTimer {
         Timer timer;
@@ -123,6 +139,36 @@ public class Animation extends JLabel {
         });
         animTimer.timer.start();
     }
+
+    public void saturateBorder(float duration, boolean bLoop) {
+        alpha = 1f;
+        bVisible = true;
+        scaleX = 1f;
+        scaleY = 1f;
+    
+        final long durationNanos = secToNanos(duration);
+        AnimTimer animTimer = addAnimTimer();
+        animTimer.startTime = System.nanoTime();
+        animTimer.timer = new Timer(delay, e -> {
+    
+            long elapsed = animTimer.getElapsedNanos();
+            float tp = getTimeProgress(elapsed, durationNanos);
+    
+            if (bLoop) {
+                // 순환: 0 -> 1 -> 0 -> 1 반복
+                borderHSB[1] = 0.5f + 0.5f * (float)Math.sin(tp * Math.PI * 2);
+            } else {
+                borderHSB[1] = tp;
+                if (tp >= 1f) {
+                    ((Timer)e.getSource()).stop();
+                }
+            }
+    
+            repaint();
+        });
+        animTimer.timer.start();
+    }
+    
 
     public void blink(float vis, float nonVis) {
         final long visNanos = (long)(vis * 1_000_000_000L);

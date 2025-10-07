@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.ArrayList;
 
 public class ScoreScene extends Scene {
-    public ScoreScene(JFrame frame, int highlightRank) {
+    public ScoreScene(JFrame frame, int highlightRank, String mode) {
         super(frame);
         setBackground(Theme.BG);
         setLayout(new BorderLayout());
@@ -29,7 +29,7 @@ public class ScoreScene extends Scene {
         add(titleLabel, BorderLayout.NORTH);
         
         // 랭크 패널
-        rankPanel = new RankPanel(highlightRank);
+        rankPanel = new RankPanel(highlightRank, mode);
         add(rankPanel, BorderLayout.CENTER);
 
         // 종료 라벨
@@ -57,7 +57,7 @@ public class ScoreScene extends Scene {
     }
 
     public ScoreScene(JFrame frame) {
-        this(frame, -1);
+        this(frame, -1, "Normal");
     }
 
 

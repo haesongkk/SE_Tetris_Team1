@@ -4,6 +4,7 @@ import tetris.util.Loader;
 import tetris.GameSettings;
 import tetris.util.Animation;
 import tetris.util.Theme;
+import tetris.util.VerifyData;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,21 +12,37 @@ import java.awt.*;
 import javax.swing.*;
 
 public class RankPanel extends JPanel {
-    RankPanel(int highlightRank) {
+    RankPanel(int highlightRank, String mode) {
 
-        List<String> rankData = Loader.loadFile("./data/highscore.txt");
+        List<String> rankData = Loader.loadFile("./data/highscore_v2.txt");
 
-        if(!verifyRankData(rankData)){
+        if(!VerifyData.verifyHighScore(rankData)){
             System.out.println("rank data is invalid, so it is saved as 0");
-            List<String> initialRankData = new ArrayList<String>();
-            Loader.saveFile("./data/highscore.txt", initialRankData);
-            rankData = initialRankData;
+            rankData = new ArrayList<String>();
+            Loader.saveFile("./data/highscore_v2.txt", rankData);
         }  
 
-        this.highlightRank = rankData.size() > highlightRank ? highlightRank : -1;
+        List<String> filtered = new ArrayList<String>();
+        boolean tagFound = false;
+        for(String line: rankData) {
+            String trimmed = line.trim();
+            if(trimmed.isEmpty()) continue;
+            
+            if(!tagFound) {
+                if(trimmed.equals("#" + mode)) tagFound = true;
+                continue;
+            }
+            if(trimmed.startsWith("#")) break;
+
+            if(!trimmed.isEmpty()) filtered.add(line);
+
+        }
+
+
+        this.highlightRank = filtered.size() > highlightRank ? highlightRank : -1;
 
         setOpaque(false);
-        if(rankData.size() == 0) {
+        if(filtered.size() == 0) {
             noDataLabel = new Animation(
                 "NO DATA",
                 Theme.GIANTS_INLINE.deriveFont(Font.BOLD, 30f),
@@ -44,8 +61,8 @@ public class RankPanel extends JPanel {
                     rankRowList[i].add(rankItemList[i][j]);
                 }
             }
-            for(int i = 0; i < rankData.size(); i++) {
-                String[] parts = rankData.get(i).split(",", -1);
+            for(int i = 0; i < filtered.size(); i++) {
+                String[] parts = filtered.get(i).split(",", -1);
                 if(parts.length > 6) {
                     System.out.println("Rank data is invalid, so it is skipped");
                     continue;
