@@ -1,7 +1,7 @@
 package tetris;
 
 import tetris.scene.game.GameScene;
-import tetris.scene.game.overlay.ScoreManager;
+import tetris.scene.game.core.ScoreManager;
 import javax.swing.*;
 import java.awt.*;
 import java.lang.reflect.Field;
@@ -361,7 +361,7 @@ public class GameScreenTest {
             }
 
             // ScoreManager 클래스가 존재하는지 확인
-            Class<?> scoreManagerClass = Class.forName("tetris.scene.game.overlay.ScoreManager");
+            Class<?> scoreManagerClass = Class.forName("tetris.scene.game.core.ScoreManager");
             assertTest(scoreManagerClass != null, "ScoreManager 클래스가 존재합니다.");
 
             System.out.println("모든 게임 화면 요소가 통합적으로 작동합니다.");
