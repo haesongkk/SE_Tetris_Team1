@@ -4,6 +4,7 @@ import tetris.Game;
 import tetris.GameSettings;
 import tetris.scene.Scene;
 import tetris.scene.game.GameScene;
+import tetris.scene.game.ItemGameScene;
 import tetris.scene.scorescene.ScoreScene;
 
 import javax.swing.*;
@@ -230,9 +231,130 @@ public class MainMenuScene extends Scene implements KeyListener {
         }
     }
 
-    // 게임을 시작하는 메서드
+    // 게임을 시작하는 메서드 - 게임모드 선택 다이얼로그 표시
     private void startGame() {
-        Game.setScene(new GameScene(frame));
+        showGameModeDialog();
+    }
+    
+    /**
+     * 게임 모드 선택 다이얼로그를 표시합니다.
+     */
+    private void showGameModeDialog() {
+        // 커스텀 다이얼로그 생성 (제목표시줄 없음)
+        JDialog modeDialog = new JDialog(frame, true);
+        modeDialog.setUndecorated(true); // 제목표시줄 제거
+        modeDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        modeDialog.setResizable(false);
+        
+        // 다이얼로그 크기 설정 (작은 크기)
+        modeDialog.setSize(350, 250);
+        modeDialog.setLocationRelativeTo(frame);
+        
+        // 다이얼로그 내용 패널 설정
+        JPanel dialogPanel = new JPanel();
+        dialogPanel.setBackground(new Color(30, 30, 50));
+        dialogPanel.setLayout(new BorderLayout());
+        dialogPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(255, 255, 100), 2), // 테두리 추가
+            BorderFactory.createEmptyBorder(15, 15, 15, 15)
+        ));
+        
+        // 제목 라벨
+        JLabel titleLabel = new JLabel("게임 모드 선택", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Malgun Gothic", Font.BOLD, 20));
+        titleLabel.setForeground(new Color(255, 255, 100));
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0));
+        
+        // 버튼 패널
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setOpaque(false);
+        buttonPanel.setLayout(new GridLayout(3, 1, 0, 10));
+        
+        // Regular Mode 버튼
+        JButton regularButton = createDialogButton("🎮 Regular Mode");
+        regularButton.addActionListener(e -> {
+            modeDialog.dispose();
+            Game.setScene(new GameScene(frame));
+        });
+        
+        // Item Mode 버튼 (활성화)
+        JButton itemButton = createDialogButton("🎁 Item Mode");
+        itemButton.addActionListener(e -> {
+            modeDialog.dispose();
+            Game.setScene(new ItemGameScene(frame));
+        });
+        itemButton.setToolTipText("폭탄 아이템과 함께하는 테트리스!");
+        
+        // 취소 버튼
+        JButton cancelButton = createDialogButton("❌ 취소");
+        cancelButton.setBackground(new Color(100, 50, 50));
+        cancelButton.addActionListener(e -> modeDialog.dispose());
+        
+        buttonPanel.add(regularButton);
+        buttonPanel.add(itemButton);
+        buttonPanel.add(cancelButton);
+        
+        // 설명 라벨
+        JLabel descLabel = new JLabel("<html><center>Regular Mode: 클래식 테트리스<br>Item Mode: 준비중</center></html>", SwingConstants.CENTER);
+        descLabel.setFont(new Font("Malgun Gothic", Font.PLAIN, 11));
+        descLabel.setForeground(Color.LIGHT_GRAY);
+        
+        // 컴포넌트 배치
+        dialogPanel.add(titleLabel, BorderLayout.NORTH);
+        dialogPanel.add(buttonPanel, BorderLayout.CENTER);
+        dialogPanel.add(descLabel, BorderLayout.SOUTH);
+        
+        modeDialog.add(dialogPanel);
+        
+        // ESC 키로 다이얼로그 닫기 기능 추가
+        modeDialog.addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override
+            public void keyPressed(java.awt.event.KeyEvent e) {
+                if (e.getKeyCode() == java.awt.event.KeyEvent.VK_ESCAPE) {
+                    modeDialog.dispose();
+                }
+            }
+        });
+        
+        // 다이얼로그가 포커스를 받을 수 있도록 설정
+        modeDialog.setFocusable(true);
+        
+        // 다이얼로그 표시
+        modeDialog.setVisible(true);
+        modeDialog.requestFocus(); // 포커스 요청
+    }
+    
+    /**
+     * 다이얼로그용 버튼을 생성합니다.
+     */
+    private JButton createDialogButton(String text) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("Malgun Gothic", Font.BOLD, 14));
+        button.setPreferredSize(new Dimension(250, 35));
+        button.setBackground(new Color(70, 70, 120));
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.setBorderPainted(true);
+        button.setBorder(BorderFactory.createRaisedBevelBorder());
+        
+        // 호버 효과 (활성화된 버튼만)
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                if (button.isEnabled()) {
+                    button.setBackground(new Color(120, 120, 200));
+                }
+            }
+            
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                if (button.isEnabled()) {
+                    button.setBackground(new Color(70, 70, 120));
+                }
+            }
+        });
+        
+        return button;
     }
 
     // 설정 메뉴를 표시하는 메서드

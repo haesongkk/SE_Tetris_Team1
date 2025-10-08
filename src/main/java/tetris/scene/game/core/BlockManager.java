@@ -24,6 +24,7 @@ public class BlockManager {
     // 의존성
     private final BoardManager boardManager;
     private final BlockShake blockShake;
+    private ItemManager itemManager; // 아이템 모드용 (옵션)
     
     // 속도 증가 관리자
     private SpeedUp speedUp;
@@ -74,23 +75,32 @@ public class BlockManager {
      */
     private Block getRandomBlock() {
         Random rnd = new Random(System.currentTimeMillis());
-        int block = rnd.nextInt(7); // 0~6
+        int block = rnd.nextInt(7); // 0~6 랜덤 블록
         
         // 블록 생성 수 증가 (SpeedUp 관리자 사용)
         if (speedUp != null) {
             speedUp.onBlockGenerated(isGameOver);
         }
         
+        Block newBlock;
         switch (block) {
-            case 0: return new IBlock();
-            case 1: return new JBlock();
-            case 2: return new LBlock();
-            case 3: return new ZBlock();
-            case 4: return new SBlock();
-            case 5: return new TBlock();
-            case 6: return new OBlock();
+            case 0: newBlock = new IBlock(); break;
+            case 1: newBlock = new JBlock(); break;
+            case 2: newBlock = new LBlock(); break;
+            case 3: newBlock = new ZBlock(); break;
+            case 4: newBlock = new SBlock(); break;
+            case 5: newBlock = new TBlock(); break;
+            case 6: newBlock = new OBlock(); break;
+            default: newBlock = new LBlock(); break;
         }
-        return new LBlock();
+        
+        // 디버그 모드일 때는 무조건 폭탄 블록으로 변환
+        if (itemManager != null && itemManager.shouldCreateItemBlock()) {
+            System.out.println("Debug mode: Converting block to bomb block!");
+            return itemManager.createItemBlock(newBlock);
+        }
+        
+        return newBlock;
     }
     
     /**
@@ -108,10 +118,7 @@ public class BlockManager {
             // 블록이 바닥에 닿았을 때 보드에 고정
             placeBlockPermanently();
             
-            // 게임이 종료되지 않은 경우에만 다음 블록 생성
-            if (!isGameOver) {
-                generateNextBlock();
-            }
+            // 다음 블록 생성은 줄 삭제 검사 이후에 GameScene에서 호출
             return true; // 블록 고정됨
         }
     }
@@ -146,6 +153,10 @@ public class BlockManager {
         
         if (canRotate()) {
             currentBlock.rotate();
+        } else {
+            // 회전할 수 없을 때 blockshake 시작
+            blockShake.startShake();
+            System.out.println("Cannot rotate block! Starting shake effect");
         }
     }
     
@@ -165,10 +176,7 @@ public class BlockManager {
         // 블록이 바닥에 닿았으므로 즉시 고정
         placeBlockPermanently();
         
-        // 게임이 종료되지 않은 경우에만 다음 블록 생성
-        if (!isGameOver) {
-            generateNextBlock();
-        }
+        // 다음 블록 생성은 줄 삭제 검사 이후에 GameScene에서 호출
         
         return true;
     }
@@ -195,11 +203,45 @@ public class BlockManager {
     /**
      * 다음 블록을 현재 블록으로 만들고 새로운 다음 블록을 생성합니다.
      */
-    private void generateNextBlock() {
+    public void generateNextBlock() {
         currentBlock = nextBlock;
-        nextBlock = getRandomBlock();
+        nextBlock = createNextBlock();
         x = 3;
         y = 0;
+    }
+    
+    /**
+     * 새로운 블록을 생성합니다. 아이템 모드에서는 아이템 블록을 생성할 수 있습니다.
+     */
+    private Block createNextBlock() {
+        Block normalBlock = getRandomBlock();
+        
+        // 아이템 매니저가 있고 폭탄 블록을 생성해야 하는 경우
+        if (itemManager != null && itemManager.shouldCreateItemBlock()) {
+            System.out.println("Creating item block as next block! (Total lines: " + itemManager.getTotalLinesCleared() + ")");
+            return itemManager.createItemBlock(normalBlock);
+        }
+        
+        return normalBlock;
+    }
+    
+    /**
+     * 아이템 매니저를 설정합니다 (아이템 모드용).
+     */
+    public void setItemManager(ItemManager itemManager) {
+        this.itemManager = itemManager;
+    }
+    
+    /**
+     * 다음 블록을 즉시 아이템 블록으로 교체합니다.
+     * 누적 2줄 이상 완성 시 즉시 폭탄 블록이 나와야 하는 경우에 사용합니다.
+     */
+    public void forceCreateItemBlock() {
+        if (itemManager != null && itemManager.shouldCreateItemBlock()) {
+            System.out.println("Force creating item block as next block! (Total lines: " + itemManager.getTotalLinesCleared() + ")");
+            // 현재 미리보기에 표시된 nextBlock을 폭탄 블록으로 변환
+            nextBlock = itemManager.createItemBlock(nextBlock);
+        }
     }
     
     // 이동 가능성 체크 메서드들
@@ -229,7 +271,15 @@ public class BlockManager {
      * 회전 가능한지 확인합니다.
      */
     public boolean canRotate() {
-        return BlockRotation.canRotate(currentBlock, x, y, boardManager.getBoard(), gameWidth, gameHeight);
+        if (currentBlock == null) return false;
+        
+        // BombItemBlock의 경우 특별 처리
+        if (currentBlock instanceof BombItemBlock) {
+            return ((BombItemBlock) currentBlock).canRotate(boardManager.getBoard(), x, y);
+        }
+        
+        // 일반 블록의 경우 Block.canRotate() 사용
+        return currentBlock.canRotate(x, y, boardManager.getBoard(), gameWidth, gameHeight);
     }
     
     // Getter 메서드들
