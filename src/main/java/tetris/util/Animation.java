@@ -29,16 +29,23 @@ public class Animation extends JLabel {
         borderThickness = thickness;
         borderHSB = Color.RGBtoHSB(border.getRed(), border.getGreen(), border.getBlue(), null);
         backgroundHSB = Color.RGBtoHSB(background.getRed(), background.getGreen(), background.getBlue(), null);
+        counter.add(this);
     }
 
     public void release() {
-        for(AnimTimer animTimer: animTimers) {
-            animTimer.timer.stop();
-            animTimer.timer = null;
+        if(animTimers != null) {
+            for(AnimTimer animTimer: animTimers) {
+                animTimer.timer.stop();
+                animTimer.timer = null;
+            }
+            animTimers.clear();
+            animTimers = null;
         }
-        animTimers.clear();
-        animTimers = null;
+        counter.remove(this);
     }
+
+    static List<Animation> counter = new ArrayList<>();
+
 
     public float alpha = 0.f;
 
@@ -58,19 +65,27 @@ public class Animation extends JLabel {
     public float[] backgroundHSB = new float[3];
 
     static List<Timer> runningTimers = new ArrayList<>();
+
     static public void runLater(float delay, Runnable r) {
         final int delayMs = (int)(delay * 1000);
-        Timer t = new Timer(delayMs, e -> { ((Timer)e.getSource()).stop(); r.run(); });
+        Timer t = new Timer(delayMs, e -> { 
+            ((Timer)e.getSource()).stop(); 
+            runningTimers.remove(e.getSource());
+            r.run(); 
+        });
         t.setRepeats(false);
         runningTimers.add(t); 
         t.start();
+
     }
+
     static public void reset() {
         for(Timer t: runningTimers) {
             t.stop();
         }
         runningTimers.clear();
     }
+
 
 
     class AnimTimer {

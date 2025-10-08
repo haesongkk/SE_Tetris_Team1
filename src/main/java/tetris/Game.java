@@ -24,9 +24,9 @@ public class Game {
 
     public static void setScene(Scene scene) {
         instance.curScene.onExit();                     // 현재 씬 종료 처리    
+        Animation.reset();
         instance.curScene = scene;                      // 씬 교체     
         instance.curScene.onEnter();                    // 새 씬 진입 처리
-        Animation.reset();
     }
 
     public static void quit() {

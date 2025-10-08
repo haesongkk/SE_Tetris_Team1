@@ -8,8 +8,6 @@ import tetris.util.Theme;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.List;
-import java.util.ArrayList;
 
 public class ScoreScene extends Scene {
     public ScoreScene(JFrame frame, int highlightRank, String mode) {
@@ -43,7 +41,6 @@ public class ScoreScene extends Scene {
         add(exitLabel, BorderLayout.SOUTH);
 
 
-        startAnimations();
 
         frame.getRootPane().registerKeyboardAction(
                 e -> Game.setScene(new MainMenuScene(frame)),
@@ -62,34 +59,26 @@ public class ScoreScene extends Scene {
 
 
     void startAnimations() {
-        runLater(0, () -> titleLabel.popIn(0.8f, 0.8f, 0.3f, 2.f));
-        runLater(0.3f, () -> rankPanel.startAnimations(2.5f));
-        rankPanel.setNextAnimation(() -> runLater(0.5f, () -> exitLabel.blink(0.8f, 0.4f)));
+        Animation.runLater(0, () -> titleLabel.popIn(0.8f, 0.8f, 0.3f, 2.f));
+        Animation.runLater(0.3f, () -> rankPanel.startAnimations(2.5f));
+        rankPanel.setNextAnimation(() -> Animation.runLater(0.5f, () -> exitLabel.blink(0.8f, 0.4f)));
     }
 
 
-    void runLater(float delay, Runnable r) {
-        final int delayMs = (int)(delay * 1000);
-        Timer t = new Timer(delayMs, e -> { ((Timer)e.getSource()).stop(); r.run(); });
-        t.setRepeats(false);
-        animationTimers.add(t); 
-        t.start();
-    }
 
     Animation titleLabel;
     Animation exitLabel;
     RankPanel rankPanel;
 
 
-    List<Timer> animationTimers = new ArrayList<>();
 
-    @Override public void onEnter() {}
+    @Override public void onEnter() {
+        startAnimations();
+    }
     @Override public void onExit() {
-        for(Timer t: animationTimers) {
-            t.stop();
-        }
-        animationTimers.clear();
-        animationTimers = null;
+        titleLabel.release();
+        exitLabel.release();
+        rankPanel.release();
         titleLabel = null;
         exitLabel = null;
         rankPanel = null;

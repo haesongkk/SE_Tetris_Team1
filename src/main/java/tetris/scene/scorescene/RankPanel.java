@@ -91,6 +91,14 @@ public class RankPanel extends JPanel {
     RankItem[][] rankItemList = new RankItem[RANK_ROW_COUNT][COL_COUNT];
     Timer animTimer;
     int animIndex = 0;
+
+    void release() {
+        animTimer.stop();
+        animTimer = null;
+        for(RankRow rankRow: rankRowList) {
+            rankRow.release();
+        }
+    }
 }
 
 class RankRow extends Animation {
