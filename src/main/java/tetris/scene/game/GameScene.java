@@ -267,15 +267,10 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
         if (gameStateManager.isGameOver()) return;
         
         if (blockManager.getCurrentBlock() != null) {
-            if (blockManager.canRotate()) {
-                blockManager.rotateBlock();
-                repaintGamePanel();
-            } else {
-                // 회전할 수 없을 때 흔들림 효과 시작
-                if (blockShake != null) {
-                    blockShake.startShake();
-                }
-            }
+            // BlockManager의 rotateBlock()를 호출하여 회전 시도
+            // BlockManager에서 회전 가능 여부를 판단하고 blockshake 처리
+            blockManager.rotateBlock();
+            repaintGamePanel();
         }
     }
     
@@ -317,10 +312,11 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
     }
     
     /**
-     * 완성된 줄을 찾아서 제거 연출을 시작합니다.
+     * 완성된 줄과 폭탄이 있는 줄을 찾아서 제거 연출을 시작합니다.
      */
     private void checkAndClearLines() {
         java.util.List<Integer> completedLines = new java.util.ArrayList<>();
+        java.util.List<Integer> bombLines = new java.util.ArrayList<>();
         
         // BoardManager를 사용하여 완성된 줄들을 찾습니다
         for (int row = 0; row < boardManager.getHeight(); row++) {
@@ -329,9 +325,33 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
             }
         }
         
-        if (!completedLines.isEmpty()) {
+        // 폭탄이 있는 줄들을 찾습니다
+        bombLines = boardManager.getBombLines();
+        
+        // 완성된 줄과 폭탄이 있는 줄을 합칩니다 (중복 제거)
+        java.util.Set<Integer> allLinesToDelete = new java.util.HashSet<>();
+        allLinesToDelete.addAll(completedLines);
+        allLinesToDelete.addAll(bombLines);
+        
+        if (!allLinesToDelete.isEmpty()) {
+            java.util.List<Integer> linesToBlink = new java.util.ArrayList<>(allLinesToDelete);
+            linesToBlink.sort(Integer::compareTo); // 정렬
+            
+            System.out.println("Found completed lines: " + completedLines);
+            if (!bombLines.isEmpty()) {
+                System.out.println("Found bomb lines: " + bombLines);
+            }
+            System.out.println("All lines to delete: " + linesToBlink);
+            
             // 줄 점멸 연출 시작 (타이머는 계속 실행하되 블록 이동만 일시정지)
-            timerManager.getLineBlinkEffect().startBlinkEffect(completedLines);
+            System.out.println("Starting blink effect for lines: " + linesToBlink);
+            timerManager.getLineBlinkEffect().startBlinkEffect(linesToBlink);
+            System.out.println("Blink effect started");
+        } else {
+            // 완성된 줄이나 폭탄이 있는 줄이 없으면 즉시 다음 블록 생성
+            if (!blockManager.isGameOver()) {
+                blockManager.generateNextBlock();
+            }
         }
     }
     
@@ -340,19 +360,63 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
      */
     private void executeLineDeletion() {
         System.out.println("=== EXECUTING LINE DELETION ===");
-        int linesClearedThisTurn = boardManager.clearCompletedLines(); // BoardManager 사용
-        System.out.println("Lines cleared this turn: " + linesClearedThisTurn);
+        int[] lineResults = boardManager.clearCompletedAndBombLinesSeparately(); // [완성된 줄 수, 폭탄 줄 수]
+        int completedLines = lineResults[0];
+        int bombLines = lineResults[1];
         
-        if (linesClearedThisTurn > 0) {
+        System.out.println("Completed lines cleared: " + completedLines);
+        System.out.println("Bomb lines cleared: " + bombLines);
+        
+        // 완성된 줄에 대한 처리
+        if (completedLines > 0) {
             // 점수 업데이트 (ScoreManager 사용)
-            scoreManager.addScore(linesClearedThisTurn);
+            scoreManager.addScore(completedLines);
             
-            // 줄 삭제 수 증가 (SpeedUp 관리자 사용)
+            // 줄 삭제 수 증가 (SpeedUp 관리자 사용) - 완성된 줄만 카운트
             if (timerManager.getSpeedUp() != null) {
-                timerManager.getSpeedUp().onLinesCleared(linesClearedThisTurn);
+                timerManager.getSpeedUp().onLinesCleared(completedLines);
             }
+            
+            // 아이템 모드에서 ItemManager에 줄 삭제 알림 - 완성된 줄만 카운트
+            notifyLinesCleared(completedLines);
         }
+        
+        // 폭탄 줄에 대한 처리 (점수만 주고 줄 카운트는 증가시키지 않음)
+        if (bombLines > 0) {
+            // 폭탄으로 삭제된 각 줄마다 1줄 완성 점수 지급 (게임 속도 배율 적용)
+            for (int i = 0; i < bombLines; i++) {
+                scoreManager.addScore(1); // 1줄씩 점수 추가 (배율 적용됨)
+            }
+            System.out.println("Bomb bonus: " + bombLines + " lines worth of points added (with speed multiplier)");
+        }
+        
+        // 아이템 모드에서 다음 블록을 즉시 폭탄 블록으로 교체 (완성된 줄만 기준)
+        forceCreateItemBlockIfNeeded(completedLines);
+        
+        // 줄 삭제 검사 완료 후 다음 블록 생성 (게임이 종료되지 않은 경우에만)
+        if (!blockManager.isGameOver()) {
+            blockManager.generateNextBlock();
+        }
+        
         System.out.println("=== LINE DELETION COMPLETED ===");
+    }
+    
+    /**
+     * 줄 삭제 알림 메서드 (서브클래스에서 오버라이드 가능)
+     * @param linesCleared 삭제된 줄 수
+     */
+    protected void notifyLinesCleared(int linesCleared) {
+        // 기본 GameScene에서는 아무것도 하지 않음
+        // ItemGameScene에서 오버라이드하여 ItemManager에 알림
+    }
+    
+    /**
+     * 필요시 다음 블록을 아이템 블록으로 강제 생성 (서브클래스에서 오버라이드 가능)
+     * @param linesCleared 이번에 삭제된 줄 수
+     */
+    protected void forceCreateItemBlockIfNeeded(int linesCleared) {
+        // 기본 GameScene에서는 아무것도 하지 않음
+        // ItemGameScene에서 오버라이드하여 2줄 이상 시 즉시 폭탄 블록 생성
     }
     
     /**

@@ -132,18 +132,5 @@ public class ScoreManager {
         String scoreText = String.format("%,d", score);
         int scoreWidth = fm.stringWidth(scoreText);
         g2d.drawString(scoreText, scoreBoardX + (scoreBoardWidth - scoreWidth) / 2, scoreBoardY + 45);
-
-        // 삭제된 줄 수
-        g2d.setFont(new Font("Arial", Font.BOLD, 10));
-        fm = g2d.getFontMetrics();
-        String linesLabel = "LINES";
-        int linesLabelWidth = fm.stringWidth(linesLabel);
-        g2d.drawString(linesLabel, scoreBoardX + (scoreBoardWidth - linesLabelWidth) / 2, scoreBoardY + 70);
-
-        g2d.setFont(new Font("Arial", Font.BOLD, 14));
-        fm = g2d.getFontMetrics();
-        String linesText = String.valueOf(linesCleared);
-        int linesWidth = fm.stringWidth(linesText);
-        g2d.drawString(linesText, scoreBoardX + (scoreBoardWidth - linesWidth) / 2, scoreBoardY + 90);
     }
 }

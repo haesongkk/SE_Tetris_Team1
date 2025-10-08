@@ -3,6 +3,7 @@ package tetris.scene.game.core;
 import tetris.scene.game.blocks.Block;
 import tetris.scene.game.blocks.BlockHardDrop;
 import tetris.scene.game.blocks.BlockShake;
+import tetris.scene.game.blocks.BombItemBlock;
 import tetris.util.LineBlinkEffect;
 
 import java.awt.*;
@@ -63,11 +64,14 @@ public class RenderManager {
         // 줄 점멸 효과 렌더링
         renderLineBlinkEffect(g2d, lineBlinkEffect);
         
-        // 고스트 블록 렌더링 (하드드롭 미리보기)
-        renderGhostBlock(g2d);
-        
-        // 현재 블록 렌더링
-        renderCurrentBlock(g2d, lastBlock, lastBlockX, lastBlockY);
+        // 점멸 효과가 진행 중이 아닐 때만 현재 블록과 고스트 블록 렌더링
+        if (lineBlinkEffect == null || !lineBlinkEffect.isActive()) {
+            // 고스트 블록 렌더링 (하드드롭 미리보기)
+            renderGhostBlock(g2d);
+            
+            // 현재 블록 렌더링
+            renderCurrentBlock(g2d, lastBlock, lastBlockX, lastBlockY);
+        }
         
         // 다음 블록 미리보기 렌더링
         renderNextBlockPreview(g2d);
@@ -231,7 +235,6 @@ public class RenderManager {
         }
         
         if (blockToDraw != null) {
-            g2d.setColor(blockToDraw.getColor());
             for (int blockRow = 0; blockRow < blockToDraw.height(); blockRow++) {
                 for (int blockCol = 0; blockCol < blockToDraw.width(); blockCol++) {
                     if (blockToDraw.getShape(blockCol, blockRow) == 1) {
@@ -245,13 +248,27 @@ public class RenderManager {
                             drawY += blockShake.getShakeOffsetY();
                         }
                         
-                        g2d.fillRect(drawX, drawY, CELL_SIZE - 2, CELL_SIZE - 2);
+                        // BombItemBlock인 경우 폭탄 셀 처리
+                        if (blockToDraw instanceof BombItemBlock) {
+                            BombItemBlock bombBlock = (BombItemBlock) blockToDraw;
+                            if (bombBlock.isBombCell(blockCol, blockRow)) {
+                                // 폭탄 셀 그리기
+                                bombBlock.drawBombCell((Graphics2D) g2d.create(), drawX, drawY, CELL_SIZE - 2);
+                            } else {
+                                // 일반 셀 그리기
+                                g2d.setColor(bombBlock.getCellColor(blockCol, blockRow));
+                                g2d.fillRect(drawX, drawY, CELL_SIZE - 2, CELL_SIZE - 2);
+                            }
+                        } else {
+                            // 일반 블록 그리기
+                            g2d.setColor(blockToDraw.getColor());
+                            g2d.fillRect(drawX, drawY, CELL_SIZE - 2, CELL_SIZE - 2);
+                        }
                         
                         // 현재 블록 테두리
                         g2d.setColor(Color.WHITE);
                         g2d.setStroke(new BasicStroke(2));
                         g2d.drawRect(drawX, drawY, CELL_SIZE - 2, CELL_SIZE - 2);
-                        g2d.setColor(blockToDraw.getColor());
                     }
                 }
             }

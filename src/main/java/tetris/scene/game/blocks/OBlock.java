@@ -22,4 +22,11 @@ public class OBlock extends Block {
 		int colorBlindMode = GameSettings.getInstance().getColorBlindMode();
 		return ColorBlindHelper.getBlockColor(2, colorBlindMode);
 	}
+	
+	@Override
+	public void rotate() {
+		// O-블록도 실제로 회전시킴 (폭탄 위치가 달라져야 하므로)
+		super.rotate();
+		System.out.println("O-Block rotated!");
+	}
 }
