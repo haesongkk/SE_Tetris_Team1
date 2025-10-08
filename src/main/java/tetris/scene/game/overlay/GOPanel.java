@@ -7,11 +7,7 @@ import java.awt.*;
 import javax.swing.*;
 
 public class GOPanel extends Animation {
-    Animation gameOver;
-    ScorePanel scorePanel;
-    GOFooter goFooter;
 
-    Animation badge;
 
     GOPanel(String score, String lines, String time, String difficulty, boolean isHighScore) {
         super(
@@ -65,13 +61,26 @@ public class GOPanel extends Animation {
 
     }
 
+    Animation gameOver;
+    ScorePanel scorePanel;
+    GOFooter goFooter;
 
+    Animation badge;
     
+    @Override
+    public void release() {
+        super.release();
 
-    void free() {
+        gameOver.release();
         gameOver = null;
+
+        scorePanel.release();
         scorePanel = null;
+
+        goFooter.release();
         goFooter = null;
+
+        badge.release();
         badge = null;
     }
 

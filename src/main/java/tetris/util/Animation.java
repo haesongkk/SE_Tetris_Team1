@@ -31,6 +31,15 @@ public class Animation extends JLabel {
         backgroundHSB = Color.RGBtoHSB(background.getRed(), background.getGreen(), background.getBlue(), null);
     }
 
+    public void release() {
+        for(AnimTimer animTimer: animTimers) {
+            animTimer.timer.stop();
+            animTimer.timer = null;
+        }
+        animTimers.clear();
+        animTimers = null;
+    }
+
     public float alpha = 0.f;
 
     public float scaleX = 1.f;
@@ -82,6 +91,7 @@ public class Animation extends JLabel {
         animTimer.timer.stop();
         animTimers.remove(animTimer);
     }
+
 
     public void hueBackground(float duration, boolean bLoop) {
         alpha = 1f;

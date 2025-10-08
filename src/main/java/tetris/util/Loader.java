@@ -1,62 +1,8 @@
 package tetris.util;
 
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Objects;
 import java.awt.Font;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
-
-import java.io.BufferedWriter;
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
-
-
 public class Loader {
-    public static List<String> loadFile(String path) {
-        List<String> lines = new ArrayList<>();
-        try (BufferedReader br = new BufferedReader(
-                new InputStreamReader(new FileInputStream(path), StandardCharsets.UTF_8))) {
-            String line;
-            while ((line = br.readLine()) != null) lines.add(line);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return lines;
-    }
-
-    public static void saveFile(String path, List<String> lines) {
-        Objects.requireNonNull(path, "path");
-        Objects.requireNonNull(lines, "lines");
-    
-        try {
-            File target = new File(path);
-            File parent = target.getParentFile();
-            if (parent != null && !parent.exists()) {
-                parent.mkdirs(); // 부모 디렉터리 없으면 생성
-            }
-    
-            try (BufferedWriter bw = new BufferedWriter(
-                    new OutputStreamWriter(
-                            new FileOutputStream(target),
-                            StandardCharsets.UTF_8))) {
-    
-                for (String line : lines) {
-                    bw.write(line);
-                    bw.newLine();
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-        
 
         public static Font loadFont(String path) {
             return loadFont(path, 16f, Font.BOLD);

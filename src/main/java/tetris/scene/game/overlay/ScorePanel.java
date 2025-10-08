@@ -73,18 +73,19 @@ public class ScorePanel extends JPanel {
     }
 
 
-    void free() {
+    void release() {
+
         animTimer.stop();
         animTimer = null;
         for(Animation anim: scoreItemList) {
-            //anim.deleteAnimTimer(anim.addAnimTimer());
+            anim.release();
         }
         scoreItemList = null;
     }
 
     int animIndex = 0;
-    Timer animTimer;
 
+    Timer animTimer;
     Animation[] scoreItemList = new Animation[8];
 
 }
