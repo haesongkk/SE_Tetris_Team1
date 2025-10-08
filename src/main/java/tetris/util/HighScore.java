@@ -115,7 +115,7 @@ public class HighScore extends HashMap<String, ArrayList<ScoreEntry>> {
     }
 
     public List<List<String>> get(String mode){
-        ArrayList<ScoreEntry> list = super.get(mode.toLowerCase());
+        ArrayList<ScoreEntry> list = super.computeIfAbsent(mode.toLowerCase(), k -> new ArrayList<ScoreEntry>());
         List<List<String>> output = new ArrayList<>();
         for(int i = 0; i < list.size(); i++){
             ScoreEntry scoreEntry = list.get(i);

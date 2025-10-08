@@ -8,12 +8,16 @@ import java.util.ArrayList;
 
 import javax.swing.border.EmptyBorder;
 
-public class Animation extends JLabel {
+public class Animation extends JButton {
     final int delay = 16;
 
     public Animation(String text, Font font, Color foreground, Color background, Color border, int thickness, int radius, int hAlign, int vAlign) {
-        setOpaque(false);
-        
+        setOpaque(false);  
+        setContentAreaFilled(false);
+        setFocusPainted(false);
+        //setRolloverEnabled(false);
+        //setBorderPainted(false);
+
         setText(text);
         setFont(font);
         
@@ -31,6 +35,7 @@ public class Animation extends JLabel {
         backgroundHSB = Color.RGBtoHSB(background.getRed(), background.getGreen(), background.getBlue(), null);
         counter.add(this);
     }
+
 
     public void release() {
         if(animTimers != null) {

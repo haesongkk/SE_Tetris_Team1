@@ -6,99 +6,169 @@ import tetris.util.Theme;
 import tetris.util.HighScore;
 
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.awt.*;
+import java.awt.event.ActionListener;
+
 import javax.swing.*;
+
 
 public class RankPanel extends JPanel {
     RankPanel(int highlightRank, String mode) {
-        HighScore highScore = new HighScore("./data/highscore_v2.txt");
-
-        List<List<String>> rankData = highScore.get(mode);
-
-        this.highlightRank = rankData.size() >= highlightRank ? highlightRank : -1;
-
         setOpaque(false);
-        if(rankData.size() == 0) {
-            noDataLabel = new Animation(
-                "NO DATA",
-                Theme.GIANTS_INLINE.deriveFont(Font.BOLD, 30f),
-                Theme.I_CYAN, Theme.BG, Theme.BG,
-                1, 15,
-                SwingConstants.CENTER, SwingConstants.CENTER
-            );
-            setLayout(new GridLayout(1,1));
-            add(noDataLabel);
-        } else {
-            // 데이터 수와 무관하게 일정한 갯수의 행을 추가한다
-            for(int i = 0; i < RANK_ROW_COUNT; i++) {
-                rankRowList[i] = new RankRow();
-                add(rankRowList[i]);
-                for(int j = 0; j < COL_COUNT; j++) {
-                    rankItemList[i][j] = new RankItem(i, j);
-                    rankRowList[i].add(rankItemList[i][j]);
-                }
-            }
-            for(int i = 0; i < rankData.size(); i++) {
-                List<String> items = rankData.get(i);
-                for(int j = 0; j < items.size(); j++) {
-                    rankItemList[i+1][j].setText(items.get(j));
-                }
-            }
-            setLayout(new GridLayout(11,1,0,12));
-            setBorder(BorderFactory.createEmptyBorder(24,48,24,48));
+        setLayout(new BorderLayout());
+        
+        this.highScore = new HighScore("./data/highscore_v2.txt");
+
+        this.highlightRank = highlightRank;
+        int[] screenSize = GameSettings.getInstance().getResolutionSize();
+        int gap = (int)(screenSize[0] * 0.05f);
+
+        JPanel panel = new JPanel();
+        panel.setOpaque(false);
+        panel.setLayout(new GridLayout(1,4,gap,0));
+        panel.setBorder(BorderFactory.createEmptyBorder(0, gap, 0, gap));
+        add(panel, BorderLayout.NORTH);
+
+
+        final String[] modeList = {"normal", "hard", "easy", "item"};
+        for(int i = 0; i < modeList.length; i++) {
+            buttonList[i] = new ModeBtn(modeList[i], this::reload);
+            panel.add(buttonList[i]);
         }
+
+        rankTable = new RankTable();
+        add(rankTable, BorderLayout.CENTER);
+        reload(modeList[0]);
+
     }
 
-
-    void setNextAnimation(Runnable nextAnimation) {
-        this.nextAnimation = nextAnimation;
+    void release() {
+        if(rankTable != null) {
+            rankTable.release();
+            rankTable = null;
+        }
+        if(highScore != null) {
+            highScore.release();
+            highScore = null;
+        }
+        for(ModeBtn button: buttonList) {
+            button.release();
+            button = null;
+        }
+        buttonList = null;
     }
 
-    void startAnimations(float duration) {
-        final float delay = duration / rankRowList.length;
+    
+    int highlightRank = -1;
+    float popOutDuration = 0.3f;
 
-        if(noDataLabel != null) {
-            noDataLabel.popOut(0.6f, 0.6f, 0.3f, 1.4f);
+    HighScore highScore = null;
+    RankTable rankTable = null;
+    ModeBtn[] buttonList = new ModeBtn[4];
+
+
+
+    void startAnimations(float duration, Runnable nextAnimation) {
+
+        for(ModeBtn button: buttonList) {
+            button.popOut(0.6f, 0.6f, 0.3f, 1.4f);
+        }
+        rankTable.startAnimations(duration, highlightRank);
+        Animation.runLater(duration, () -> {
             if(nextAnimation != null) {
                 nextAnimation.run();
             }
-            return;
-        }
-
-        animTimer = new Timer((int)(delay * 1000), e -> {
-            rankRowList[animIndex++].popOut(0.6f, 0.6f, delay, 1.4f);
-            if(animIndex == rankRowList.length) {
-                animTimer.stop();
-                if(nextAnimation != null) {
-                    nextAnimation.run();
-                }
-                if(highlightRank > 0) {
-                    rankRowList[highlightRank].hueBackground(3.5f, true);
-                    rankRowList[highlightRank].hueBorder(3.5f, true);
-                }
-            }
         });
-        animTimer.start();
+    }
+
+    void reload(String mode) {
+        List<List<String>> rankData = highScore.get(mode);
+        rankTable.reload(rankData);
+        rankTable.startAnimations(0f, -1);
+    }
+}
+
+class ModeBtn extends Animation {
+    ActionListener eventListener = null;
+    ModeBtn(String mode, Consumer<String> clickCallback) {
+        super(mode, Theme.GIANTS_INLINE.deriveFont(Font.BOLD, 20), 
+            Theme.TEXT_WHITE, Theme.TEXT_GRAY, Color.BLACK, 1, 15, 
+            SwingConstants.CENTER, SwingConstants.CENTER
+        );
+
+        setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+
+        eventListener = e -> clickCallback.accept(mode);
+        addActionListener(eventListener);
     }
 
 
+    @Override
+    public void release() {
+        super.release();
+        removeActionListener(eventListener);
+        eventListener = null;
+    }
+}
+
+class RankTable extends JPanel {
     final int RANK_ROW_COUNT = 11;
     final int COL_COUNT = 5;
-    Runnable nextAnimation;
-    int highlightRank = -1;
-    Animation noDataLabel = null;
     RankRow[] rankRowList = new RankRow[RANK_ROW_COUNT];
     RankItem[][] rankItemList = new RankItem[RANK_ROW_COUNT][COL_COUNT];
-    Timer animTimer;
-    int animIndex = 0;
+
+    RankTable() {
+        setOpaque(false);
+        setLayout(new GridLayout(11,1,0,12));
+        setBorder(BorderFactory.createEmptyBorder(24,48,24,48));
+
+    }
 
     void release() {
-        animTimer.stop();
-        animTimer = null;
-        for(RankRow rankRow: rankRowList) {
-            rankRow.release();
+        rankRowList = null;
+        rankItemList = null;
+    }
+
+    void startAnimations(float duration, int highlightRank) {
+        final float delay = duration / rankRowList.length;
+        for(int i = 0; i < rankRowList.length; i++) {
+            final float startTime = delay * i;
+            final RankRow row = rankRowList[i];
+            Animation.runLater(startTime, () -> row.popOut(0.6f, 0.6f, delay, 1.4f));
+        }
+        if(highlightRank > 0) {
+            Animation.runLater(duration, () -> rankRowList[highlightRank].hueBackground(3.5f, true));
+            Animation.runLater(duration, () -> rankRowList[highlightRank].hueBorder(3.5f, true));
         }
     }
+
+
+    void reload(List<List<String>> rankTableData) {
+        removeAll();
+        for(int i = 0; i < RANK_ROW_COUNT; i++) {
+            rankRowList[i] = new RankRow();
+            add(rankRowList[i]);
+            for(int j = 0; j < COL_COUNT; j++) {
+                rankItemList[i][j] = new RankItem(i, j);
+                rankRowList[i].add(rankItemList[i][j]);
+            }
+        }
+        for(int i = 0; i < rankTableData.size(); i++) {
+            List<String> items = rankTableData.get(i);
+            for(int j = 0; j < items.size(); j++) {
+                rankItemList[i+1][j].setText(items.get(j));
+            }
+        }
+        if(rankTableData.size() == 0) {
+            rankItemList[5][2].setNoData();
+        }
+        revalidate();
+        repaint();
+    }
+
 }
 
 class RankRow extends Animation {
@@ -108,7 +178,7 @@ class RankRow extends Animation {
             1, 15, 
             SwingConstants.CENTER, SwingConstants.CENTER
         );
-        setLayout(new GridLayout(1,6,0,12));
+        setLayout(new GridLayout(1,5,0,12));
     }
 }
 
@@ -156,6 +226,13 @@ class RankItem extends JLabel {
         setForeground(color);
         setHorizontalAlignment(align);
         setText(text);
+    }
+
+    void setNoData() {
+        setText("NO DATA");
+        setHorizontalAlignment(SwingConstants.CENTER);
+        setFont(getFont().deriveFont(Font.BOLD, getFont().getSize() * 1.5f));
+        setForeground(Theme.TEXT_GRAY);
     }
 
 }

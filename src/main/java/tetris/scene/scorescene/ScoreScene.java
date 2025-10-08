@@ -60,8 +60,13 @@ public class ScoreScene extends Scene {
 
     void startAnimations() {
         Animation.runLater(0, () -> titleLabel.popIn(0.8f, 0.8f, 0.3f, 2.f));
-        Animation.runLater(0.3f, () -> rankPanel.startAnimations(2.5f));
-        rankPanel.setNextAnimation(() -> Animation.runLater(0.5f, () -> exitLabel.blink(0.8f, 0.4f)));
+        Animation.runLater(
+            0.3f, 
+            () -> rankPanel.startAnimations(
+                2.5f, 
+                () -> Animation.runLater(0.5f, () -> exitLabel.blink(0.8f, 0.4f))
+            )
+        );
     }
 
 
