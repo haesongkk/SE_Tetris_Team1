@@ -1,4 +1,4 @@
-package tetris.scene.game.overlay;
+package tetris.scene.game.core;
 
 import java.awt.*;
 
@@ -35,9 +35,9 @@ public class ScoreManager {
         if (linesClearedCount > 0) {
             linesCleared += linesClearedCount;
             
-            // 속도 배율을 적용한 점수 계산
+            // 속도 배율을 적용한 점수 계산 (반올림 처리로 정확한 점수 계산)
             int baseScore = linesClearedCount * POINTS_PER_LINE;
-            int bonusScore = (int) (baseScore * speedMultiplier);
+            int bonusScore = (int) Math.round(baseScore * speedMultiplier);
             score += bonusScore;
             
             System.out.println("Cleared " + linesClearedCount + " lines! Base: " + baseScore + 
@@ -68,7 +68,10 @@ public class ScoreManager {
     public void onSpeedIncrease() {
         if (speedMultiplier < MAX_SPEED_MULTIPLIER) {
             speedMultiplier += SPEED_MULTIPLIER_INCREASE;
-            // 부동소수점 연산 오차를 방지하기 위해 최댓값 강제 제한
+            // 부동소수점 연산 오차를 방지하기 위해 반올림 처리
+            speedMultiplier = Math.round(speedMultiplier * 10.0) / 10.0;
+            
+            // 최댓값 강제 제한
             if (speedMultiplier > MAX_SPEED_MULTIPLIER) {
                 speedMultiplier = MAX_SPEED_MULTIPLIER;
             }

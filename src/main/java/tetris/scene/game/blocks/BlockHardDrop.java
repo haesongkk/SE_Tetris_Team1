@@ -3,6 +3,7 @@ package tetris.scene.game.blocks;
 /**
  * 블록 하드 드롭 기능을 담당하는 유틸리티 클래스
  * 블록을 즉시 바닥까지 떨어뜨리는 기능을 제공합니다.
+ * 고스트 블록은 해당 클래스에서 위치 계산만 수행되며 실제 시각적 표현은 RenderManager에서 처리합니다.
  */
 public class BlockHardDrop {
     
