@@ -1,6 +1,8 @@
 package tetris.util;
 
 import java.awt.*;
+import java.io.IOException;
+import java.io.InputStream;
 
 public final class Theme {
     private Theme(){}
@@ -21,13 +23,6 @@ public final class Theme {
     public static final Color L_ORANGE       = new Color(0xFF,0xA5,0x57);
 
 
-    
-
-
-    public static final Color ROW_BG         = new Color(24, 24, 24);
-    public static final Color ROW_HILIGHT    = new Color(58, 58, 58, 120);
-    public static final Color ROW_SHADOW     = new Color(8, 8, 8, 160);
-
     public static final Color STAND_BLUE     = new Color(170, 190, 255);
     public static final Color TEXT_WHITE     = new Color(235, 235, 235);
     public static final Color TEXT_GRAY     = new Color(100,100,100);
@@ -35,11 +30,21 @@ public final class Theme {
     public static final Color SCORE_WHITE    = new Color(245, 245, 245);
 
     public static final Color BADGE_YELLOW   = new Color(255, 223, 128);
-    public static final Color DIVIDER        = new Color(36, 36, 36);
 
-    public static final Font GIANTS_INLINE = Loader.loadFont("Giants-Inline.ttf");
-    public static final Font GIANTS_BOLD = Loader.loadFont("Giants-Bold.ttf");
-    public static final Font GIANTS_REGULAR = Loader.loadFont("Giants-Regular.ttf");
-    
+    public static final Font GIANTS_INLINE = loadFont("Giants-Inline.ttf");
+    public static final Font GIANTS_BOLD = loadFont("Giants-Bold.ttf");
+    public static final Font GIANTS_REGULAR = loadFont("Giants-Regular.ttf");
+
+    static Font loadFont(String path) {
+        try (InputStream in = Thread.currentThread()
+                    .getContextClassLoader()
+                    .getResourceAsStream(path)) {
+            return Font.createFont(Font.TRUETYPE_FONT, in);
+        } catch (FontFormatException | IOException ex) {
+            ex.printStackTrace();
+            System.out.println("Failed to load custom font.");
+            return new Font("Dialog", Font.BOLD, 16);
+        }
+    }
 
 }
