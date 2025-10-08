@@ -26,14 +26,24 @@ public class Animation extends JButton {
         
         setForeground(foreground);
         setBackground(background);
+        setBorderColor(border);
         
         setBorder(new EmptyBorder(thickness, thickness, thickness, thickness));
 
+
         borderRadius = radius;
         borderThickness = thickness;
-        borderHSB = Color.RGBtoHSB(border.getRed(), border.getGreen(), border.getBlue(), null);
-        backgroundHSB = Color.RGBtoHSB(background.getRed(), background.getGreen(), background.getBlue(), null);
         counter.add(this);
+    }
+
+    @Override
+    public void setBackground(Color background) {
+        super.setBackground(background);
+        backgroundHSB = Color.RGBtoHSB(background.getRed(), background.getGreen(), background.getBlue(), null);
+    }
+
+    public void setBorderColor(Color border) {
+        borderHSB = Color.RGBtoHSB(border.getRed(), border.getGreen(), border.getBlue(), null);
     }
 
 

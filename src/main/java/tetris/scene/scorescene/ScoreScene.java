@@ -19,7 +19,7 @@ public class ScoreScene extends Scene {
         // 제목 라벨
         titleLabel = new Animation(
             "HIGH SCORE", 
-            Theme.GIANTS_INLINE.deriveFont(Font.BOLD, 85), 
+            Theme.getFont(Theme.GIANTS_INLINE, 0.08f), 
             Theme.Block('O'), Theme.BG(), Theme.BG(), 
             0, 0, 
             SwingConstants.CENTER, SwingConstants.CENTER
@@ -33,7 +33,7 @@ public class ScoreScene extends Scene {
         // 종료 라벨
         exitLabel = new Animation(
             "P R E S S    E S C    T O    E X I T", 
-            Theme.GIANTS_INLINE.deriveFont(Font.BOLD, 45), 
+            Theme.getFont(Theme.GIANTS_INLINE, 0.04f), 
             Theme.GRAY, Theme.BG(), Theme.BG(), 
             0, 0, 
             SwingConstants.CENTER, SwingConstants.CENTER

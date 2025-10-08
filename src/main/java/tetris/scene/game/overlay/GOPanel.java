@@ -22,7 +22,7 @@ public class GOPanel extends Animation {
 
         gameOver = new Animation(
             "GAME OVER!!",
-            Theme.GIANTS_INLINE.deriveFont(Font.BOLD, 30f), 
+            Theme.getFont(Theme.GIANTS_INLINE, 0.024f), 
             Theme.Block('Z'), Theme.BG(), Theme.BG(), 
             0, 0, 
             SwingConstants.CENTER, SwingConstants.CENTER
@@ -41,7 +41,7 @@ public class GOPanel extends Animation {
 
         badge = new Animation(
             "HIGH SCORE!",
-            Theme.GIANTS_INLINE.deriveFont(Font.BOLD, 45f),
+            Theme.getFont(Theme.GIANTS_INLINE, 0.045f),
             Theme.LIGHT_GRAY, Theme.BG(), Theme.Block('O'),
             1, 0,
             SwingConstants.CENTER, SwingConstants.CENTER
@@ -132,7 +132,6 @@ public class GOPanel extends Animation {
 
         final int badgeRadius = (int)(badgeHeight * 0.5f);
 
-        final float fontSize = width * 0.03f;
 
 
         // 배지 배경
@@ -141,7 +140,7 @@ public class GOPanel extends Animation {
 
         // 배지 텍스트
         g2.setColor(badge.getForeground());
-        g2.setFont(Theme.GIANTS_REGULAR.deriveFont(Font.BOLD, fontSize));
+        g2.setFont(Theme.getFont(Theme.GIANTS_BOLD, 0.009f));
         
         // 텍스트 중앙 정렬
         FontMetrics fm = g2.getFontMetrics();

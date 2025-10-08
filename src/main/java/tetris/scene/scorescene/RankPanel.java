@@ -88,6 +88,15 @@ public class RankPanel extends JPanel {
 
     void reload(String mode) {
         List<List<String>> rankData = highScore.get(mode);
+        for(ModeBtn button: buttonList) {
+            if(button.getText().equals(mode)) {
+                button.setForeground(Theme.WHITE);
+                button.setBackground(Theme.LIGHT_GRAY);
+            } else {
+                button.setForeground(Theme.GRAY);
+                button.setBackground(Theme.DARK_GRAY);
+            }
+        }
         rankTable.reload(rankData);
         rankTable.startAnimations(0f, -1);
     }
@@ -96,7 +105,7 @@ public class RankPanel extends JPanel {
 class ModeBtn extends Animation {
     ActionListener eventListener = null;
     ModeBtn(String mode, Consumer<String> clickCallback) {
-        super(mode, Theme.GIANTS_INLINE.deriveFont(Font.BOLD, 20), 
+        super(mode, Theme.getFont(Theme.GIANTS_INLINE, 0.015f), 
             Theme.WHITE, Theme.GRAY, Theme.DARK_GRAY, 1, 15, 
             SwingConstants.CENTER, SwingConstants.CENTER
         );
@@ -202,14 +211,10 @@ class RankRow extends Animation {
 class RankItem extends JLabel {
     RankItem(int row, int col) {
 
-        int[] screenSize = GameSettings.getInstance().getResolutionSize();
-
-        float bigFontSize = screenSize[0] * 0.015f;
-        float smallFontSize = screenSize[0] * 0.012f;
 
         Font font = row == 0 ? 
-            Theme.GIANTS_INLINE.deriveFont(Font.BOLD, bigFontSize) : 
-            Theme.GIANTS_INLINE.deriveFont(Font.BOLD, smallFontSize);
+            Theme.getFont(Theme.GIANTS_INLINE, 0.015f) : 
+            Theme.getFont(Theme.GIANTS_INLINE, 0.012f);
 
         Color color = row == 0 ? Theme.Block(ColorType.RED) : 
             col == 0 ? Theme.Block(ColorType.CYAN) : 
@@ -236,7 +241,7 @@ class RankItem extends JLabel {
             null ) : null;
 
         if(col == 2 ) {
-            setBorder(BorderFactory.createEmptyBorder(0, 0, 0, (int)smallFontSize * 4));
+            setBorder(BorderFactory.createEmptyBorder(0, 0, 0, Theme.getPixelWidth(0.08f)));
         }
 
         setFont(font);

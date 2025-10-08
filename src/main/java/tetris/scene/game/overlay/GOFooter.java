@@ -16,10 +16,9 @@ import javax.swing.text.BadLocationException;
 
 public class GOFooter extends Animation {
 
-
     GOFooter(boolean isHighScore) {
         super(
-            null, Theme.GIANTS_INLINE, 
+            null, null, 
             Theme.BG(), Theme.BG(), Theme.BG(), 
             0, 0, 
             SwingConstants.CENTER, SwingConstants.CENTER
@@ -35,13 +34,13 @@ public class GOFooter extends Animation {
 
         if (isHighScore) {
             label = new JLabel("ENTER YOUR NAME:", SwingConstants.LEFT);
-            label.setFont(Theme.GIANTS_REGULAR.deriveFont(Font.BOLD, 14f));
+            label.setFont(Theme.getFont(Theme.GIANTS_REGULAR, 0.012f));
             label.setForeground(Theme.GRAY);
             label.setAlignmentX(Component.LEFT_ALIGNMENT);
             label.setHorizontalAlignment(JLabel.LEFT);
 
             nameField = new JTextField();
-            nameField.setFont(Theme.GIANTS_REGULAR.deriveFont(Font.PLAIN, 18f)); 
+            nameField.setFont(Theme.getFont(Theme.GIANTS_REGULAR, 0.016f)); 
             nameField.setHorizontalAlignment(JTextField.CENTER);
 
             nameFieldAl = e -> {
@@ -61,12 +60,12 @@ public class GOFooter extends Animation {
 
         } else {
             label = new JLabel("", SwingConstants.CENTER);
-            label.setFont(Theme.GIANTS_REGULAR.deriveFont(Font.BOLD, 18.f));
+            label.setFont(Theme.getFont(Theme.GIANTS_REGULAR, 0.016f));
             label.setForeground(Theme.Block('O'));
             
             retryButton = new JButton("RETRY?");
             
-            retryButton.setFont(Theme.GIANTS_BOLD.deriveFont(Font.ITALIC, 14.f));
+            retryButton.setFont(Theme.getFont(Theme.GIANTS_BOLD, 0.014f));
             retryButton.setForeground(new Color(60, 60, 60));
 
             retryButton.setFocusPainted(false);

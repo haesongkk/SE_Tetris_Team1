@@ -5,31 +5,28 @@ import javax.swing.*;
 
 import tetris.util.Animation;
 import tetris.util.Theme;
-import tetris.GameSettings;
 
 public class ScorePanel extends JPanel {
     ScorePanel(String score, String lines, String time, String difficulty) {
         setOpaque(false);
 
         
-        final int[] screenSize = GameSettings.getInstance().getResolutionSize();
-        int width = (int)(screenSize[0] * 0.05f);
-        int height = (int)(screenSize[1] * 0.03f);
+        int width = Theme.getPixelWidth(0.05f);
+        int height = Theme.getPixelHeight(0.03f);
 
         setLayout(new GridLayout(4,2,width/2,0));
         setBorder(BorderFactory.createEmptyBorder(height, width, height, width));
 
         
-        final float labelSize = screenSize[0] * 0.015f;
-        final float valueSize = screenSize[0] * 0.012f;
-        final Font f = Theme.GIANTS_INLINE.deriveFont(Font.BOLD);
+        final Font labelFont = Theme.getFont(Theme.GIANTS_INLINE, 0.015f);
+        final Font valueFont = Theme.getFont(Theme.GIANTS_INLINE, 0.012f);
 
 
         final Font[] scoreItemFont = {
-            f.deriveFont(labelSize), f.deriveFont(valueSize),
-            f.deriveFont(labelSize), f.deriveFont(valueSize),
-            f.deriveFont(labelSize), f.deriveFont(valueSize),
-            f.deriveFont(labelSize), f.deriveFont(valueSize)
+            labelFont, valueFont,
+            labelFont, valueFont,
+            labelFont, valueFont,
+            labelFont, valueFont
         };
         
         final Color[] scoreItemColor = {
