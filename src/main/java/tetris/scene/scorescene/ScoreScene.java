@@ -12,7 +12,7 @@ import java.awt.*;
 public class ScoreScene extends Scene {
     public ScoreScene(JFrame frame, int highlightRank, String mode) {
         super(frame);
-        setBackground(Theme.BG);
+        setBackground(Theme.BG());
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createEmptyBorder(24, 0, 24, 0));
 
@@ -20,7 +20,7 @@ public class ScoreScene extends Scene {
         titleLabel = new Animation(
             "HIGH SCORE", 
             Theme.GIANTS_INLINE.deriveFont(Font.BOLD, 85), 
-            Theme.TITLE_YELLOW, Theme.BG, Theme.BG, 
+            Theme.Block('O'), Theme.BG(), Theme.BG(), 
             0, 0, 
             SwingConstants.CENTER, SwingConstants.CENTER
         );
@@ -34,7 +34,7 @@ public class ScoreScene extends Scene {
         exitLabel = new Animation(
             "P R E S S    E S C    T O    E X I T", 
             Theme.GIANTS_INLINE.deriveFont(Font.BOLD, 45), 
-            Theme.TEXT_GRAY, Theme.BG, Theme.BG, 
+            Theme.GRAY, Theme.BG(), Theme.BG(), 
             0, 0, 
             SwingConstants.CENTER, SwingConstants.CENTER
         );

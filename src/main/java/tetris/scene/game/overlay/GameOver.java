@@ -7,6 +7,7 @@ import tetris.GameSettings;
 import tetris.scene.game.GameScene;
 import tetris.scene.scorescene.ScoreScene;
 import tetris.util.HighScore;
+import tetris.util.Theme;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -83,7 +84,7 @@ public class GameOver extends JPanel {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setComposite(AlphaComposite.SrcOver.derive(0.6f));
-        g2.setColor(Color.BLACK);
+        g2.setColor(Theme.BLACK);
         g2.fillRect(0, 0, getWidth(), getHeight());
         g2.dispose();
     }

@@ -33,10 +33,10 @@ public class ScorePanel extends JPanel {
         };
         
         final Color[] scoreItemColor = {
-            Theme.I_CYAN,   Theme.SCORE_WHITE,
-            Theme.S_GREEN,  Theme.SCORE_WHITE,
-            Theme.T_PURPLE, Theme.SCORE_WHITE,
-            Theme.L_ORANGE, Theme.SCORE_WHITE
+            Theme.Block('I'),   Theme.LIGHT_GRAY,
+            Theme.Block('S'),   Theme.LIGHT_GRAY,
+            Theme.Block('T'),   Theme.LIGHT_GRAY,
+            Theme.Block('L'),   Theme.LIGHT_GRAY
         };
 
         final String[] scoreItemText = {
@@ -49,7 +49,7 @@ public class ScorePanel extends JPanel {
         for (int i = 0; i < 8; i++) {
             Animation anim = new Animation(
                 scoreItemText[i], scoreItemFont[i],
-                scoreItemColor[i], Theme.BG, Theme.BG,
+                scoreItemColor[i], Theme.BG(), Theme.BG(),
                 0, 0,
                 SwingConstants.LEFT, SwingConstants.CENTER
             );

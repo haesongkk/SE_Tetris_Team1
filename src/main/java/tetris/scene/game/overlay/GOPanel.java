@@ -12,7 +12,7 @@ public class GOPanel extends Animation {
     GOPanel(String score, String lines, String time, String difficulty, boolean isHighScore) {
         super(
             null, Theme.GIANTS_INLINE, 
-            Theme.HEADER_RED, Theme.BG, Theme.BADGE_YELLOW,
+            Theme.Block('Z'), Theme.BG(), Theme.Block('O'),
             2, 0, 
             SwingConstants.CENTER, SwingConstants.CENTER
         );
@@ -23,7 +23,7 @@ public class GOPanel extends Animation {
         gameOver = new Animation(
             "GAME OVER!!",
             Theme.GIANTS_INLINE.deriveFont(Font.BOLD, 30f), 
-            Theme.HEADER_RED, Theme.BG, Theme.BG, 
+            Theme.Block('Z'), Theme.BG(), Theme.BG(), 
             0, 0, 
             SwingConstants.CENTER, SwingConstants.CENTER
         );
@@ -42,7 +42,7 @@ public class GOPanel extends Animation {
         badge = new Animation(
             "HIGH SCORE!",
             Theme.GIANTS_INLINE.deriveFont(Font.BOLD, 45f),
-            Theme.TEXT_WHITE, Theme.BG, Theme.BADGE_YELLOW,
+            Theme.LIGHT_GRAY, Theme.BG(), Theme.Block('O'),
             1, 0,
             SwingConstants.CENTER, SwingConstants.CENTER
         );
@@ -53,9 +53,10 @@ public class GOPanel extends Animation {
         Animation.runLater(3.5f, () -> goFooter.startAnimations());
 
         badge.alpha = 0f;
+
         if(isHighScore) {
             Animation.runLater(3.8f, () -> badge.popOut(0.8f, 0.8f, 0.5f, 1.5f));
-            Animation.runLater(4.2f, () -> badge.move(0, 0, 0, 100, 1.5f, 0.3f, false));
+            Animation.runLater(4.2f, () -> badge.saturateBorder(2.5f, true));
         }
 
 

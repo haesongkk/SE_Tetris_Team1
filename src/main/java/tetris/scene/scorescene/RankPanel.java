@@ -3,15 +3,17 @@ package tetris.scene.scorescene;
 import tetris.GameSettings;
 import tetris.util.Animation;
 import tetris.util.Theme;
+import tetris.util.Theme.ColorType;
 import tetris.util.HighScore;
 
-import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import java.awt.*;
 import java.awt.event.ActionListener;
 
 import javax.swing.*;
+
+import java.util.List;
+import java.util.function.Consumer;
+
 
 
 public class RankPanel extends JPanel {
@@ -58,6 +60,7 @@ public class RankPanel extends JPanel {
             button = null;
         }
         buttonList = null;
+        removeAll();
     }
 
     
@@ -94,7 +97,7 @@ class ModeBtn extends Animation {
     ActionListener eventListener = null;
     ModeBtn(String mode, Consumer<String> clickCallback) {
         super(mode, Theme.GIANTS_INLINE.deriveFont(Font.BOLD, 20), 
-            Theme.TEXT_WHITE, Theme.TEXT_GRAY, Color.BLACK, 1, 15, 
+            Theme.WHITE, Theme.GRAY, Theme.DARK_GRAY, 1, 15, 
             SwingConstants.CENTER, SwingConstants.CENTER
         );
 
@@ -128,7 +131,15 @@ class RankTable extends JPanel {
     }
 
     void release() {
-        rankRowList = null;
+        if (rankRowList != null) {
+            for (RankRow row : rankRowList) {
+                if (row != null) {
+                    row.release();
+                }
+            }
+            rankRowList = null;
+        }
+        
         rankItemList = null;
     }
 
@@ -174,11 +185,17 @@ class RankTable extends JPanel {
 class RankRow extends Animation {
     RankRow() {
         super(null, Theme.GIANTS_INLINE, 
-            Theme.BG, Theme.BG, Theme.BG, 
+            Theme.BG(), Theme.BG(), Theme.BG(), 
             1, 15, 
             SwingConstants.CENTER, SwingConstants.CENTER
         );
         setLayout(new GridLayout(1,5,0,12));
+    }
+
+    @Override
+    public void release() {
+        super.release();
+        removeAll();
     }
 }
 
@@ -194,13 +211,13 @@ class RankItem extends JLabel {
             Theme.GIANTS_INLINE.deriveFont(Font.BOLD, bigFontSize) : 
             Theme.GIANTS_INLINE.deriveFont(Font.BOLD, smallFontSize);
 
-        Color color = row == 0 ? Theme.HEADER_RED : 
-            col == 0 ? Theme.STAND_BLUE : 
-            col == 1 ? Theme.LIGHT_GREY : 
-            col == 2 ? Theme.L_ORANGE : 
-            col == 3 ? Theme.T_PURPLE : 
-            col == 4 ? Theme.S_GREEN : 
-            Theme.LIGHT_GREY;
+        Color color = row == 0 ? Theme.Block(ColorType.RED) : 
+            col == 0 ? Theme.Block(ColorType.CYAN) : 
+            col == 1 ? Theme.Border() : 
+            col == 2 ? Theme.Block(ColorType.ORANGE) : 
+            col == 3 ? Theme.Block(ColorType.PURPLE) : 
+            col == 4 ? Theme.Block(ColorType.GREEN) : 
+            Theme.LIGHT_GRAY;
 
         int align = 
             col == 0 ? SwingConstants.CENTER : 
@@ -232,7 +249,7 @@ class RankItem extends JLabel {
         setText("NO DATA");
         setHorizontalAlignment(SwingConstants.CENTER);
         setFont(getFont().deriveFont(Font.BOLD, getFont().getSize() * 1.5f));
-        setForeground(Theme.TEXT_GRAY);
+        setForeground(Theme.GRAY);
     }
 
 }

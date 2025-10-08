@@ -20,7 +20,7 @@ public class GOFooter extends Animation {
     GOFooter(boolean isHighScore) {
         super(
             null, Theme.GIANTS_INLINE, 
-            Theme.BG, Theme.BG, Theme.BG, 
+            Theme.BG(), Theme.BG(), Theme.BG(), 
             0, 0, 
             SwingConstants.CENTER, SwingConstants.CENTER
         );
@@ -36,7 +36,7 @@ public class GOFooter extends Animation {
         if (isHighScore) {
             label = new JLabel("ENTER YOUR NAME:", SwingConstants.LEFT);
             label.setFont(Theme.GIANTS_REGULAR.deriveFont(Font.BOLD, 14f));
-            label.setForeground(Theme.TEXT_GRAY);
+            label.setForeground(Theme.GRAY);
             label.setAlignmentX(Component.LEFT_ALIGNMENT);
             label.setHorizontalAlignment(JLabel.LEFT);
 
@@ -62,7 +62,7 @@ public class GOFooter extends Animation {
         } else {
             label = new JLabel("", SwingConstants.CENTER);
             label.setFont(Theme.GIANTS_REGULAR.deriveFont(Font.BOLD, 18.f));
-            label.setForeground(Theme.O_YELLOW);
+            label.setForeground(Theme.Block('O'));
             
             retryButton = new JButton("RETRY?");
             
