@@ -1,9 +1,9 @@
 package tetris.scene.game.core;
 
 import tetris.scene.game.blocks.Block;
-import tetris.scene.game.blocks.BlockHardDrop;
 import tetris.scene.game.blocks.BlockShake;
 import tetris.scene.game.blocks.BombItemBlock;
+import tetris.scene.game.blocks.WeightItemBlock;
 import tetris.util.LineBlinkEffect;
 
 import java.awt.*;
@@ -192,25 +192,34 @@ public class RenderManager {
         if (currentBlock != null && !blockManager.isGameOver()) {
             int blockX = blockManager.getX();
             int blockY = blockManager.getY();
-            int ghostY = BlockHardDrop.calculateGhostPosition(currentBlock, blockX, blockY, 
-                boardManager.getBoard(), GAME_WIDTH, GAME_HEIGHT);
+            int ghostY = blockManager.getGhostY(); // BlockManager의 getGhostY() 사용
             
-            // 고스트 블록이 현재 블록과 다른 위치에 있을 때만 그리기
-            if (ghostY != blockY) {
-                // 반투명한 색상으로 고스트 블록 그리기
-                Color originalColor = currentBlock.getColor();
-                Color ghostColor = new Color(originalColor.getRed(), originalColor.getGreen(), originalColor.getBlue(), 80);
-                g2d.setColor(ghostColor);
-                
+            // 고스트 블록이 현재 블록과 다른 위치에 있고, 유효한 위치일 때만 그리기
+            if (ghostY != blockY && ghostY != -1) {
                 for (int blockRow = 0; blockRow < currentBlock.height(); blockRow++) {
                     for (int blockCol = 0; blockCol < currentBlock.width(); blockCol++) {
                         if (currentBlock.getShape(blockCol, blockRow) == 1) {
                             int drawX = (blockX + blockCol + 1) * CELL_SIZE + 1;
                             int drawY = (ghostY + blockRow + 1) * CELL_SIZE + 1;
                             
-                            // 고스트 블록은 외곽선만 그리기
-                            g2d.setStroke(new BasicStroke(2));
-                            g2d.drawRect(drawX, drawY, CELL_SIZE - 2, CELL_SIZE - 2);
+                            // 무게추 블록의 경우 특별한 고스트 렌더링
+                            if (currentBlock instanceof WeightItemBlock) {
+                                WeightItemBlock weightBlock = (WeightItemBlock) currentBlock;
+                                // 투명한 무게추 고스트 블록 그리기
+                                Graphics2D ghostG2d = (Graphics2D) g2d.create();
+                                ghostG2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.3f));
+                                weightBlock.drawWeightCell(ghostG2d, drawX, drawY, CELL_SIZE - 2);
+                                ghostG2d.dispose();
+                            } else {
+                                // 일반 블록의 경우 반투명한 색상으로 고스트 블록 그리기
+                                Color originalColor = currentBlock.getColor();
+                                Color ghostColor = new Color(originalColor.getRed(), originalColor.getGreen(), originalColor.getBlue(), 80);
+                                g2d.setColor(ghostColor);
+                                
+                                // 고스트 블록은 외곽선만 그리기
+                                g2d.setStroke(new BasicStroke(2));
+                                g2d.drawRect(drawX, drawY, CELL_SIZE - 2, CELL_SIZE - 2);
+                            }
                         }
                     }
                 }
@@ -259,6 +268,10 @@ public class RenderManager {
                                 g2d.setColor(bombBlock.getCellColor(blockCol, blockRow));
                                 g2d.fillRect(drawX, drawY, CELL_SIZE - 2, CELL_SIZE - 2);
                             }
+                        } else if (blockToDraw instanceof WeightItemBlock) {
+                            // WeightItemBlock인 경우 무게추 셀 처리
+                            WeightItemBlock weightBlock = (WeightItemBlock) blockToDraw;
+                            weightBlock.drawWeightCell((Graphics2D) g2d.create(), drawX, drawY, CELL_SIZE - 2);
                         } else {
                             // 일반 블록 그리기
                             g2d.setColor(blockToDraw.getColor());

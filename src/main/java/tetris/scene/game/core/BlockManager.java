@@ -115,11 +115,24 @@ public class BlockManager {
             y++;
             return false; // 단순 이동
         } else {
-            // 블록이 바닥에 닿았을 때 보드에 고정
-            placeBlockPermanently();
-            
-            // 다음 블록 생성은 줄 삭제 검사 이후에 GameScene에서 호출
-            return true; // 블록 고정됨
+            // 무게추 블록이 바닥이나 다른 블록에 닿았을 때 처리
+            if (currentBlock instanceof WeightItemBlock) {
+                WeightItemBlock weightBlock = (WeightItemBlock) currentBlock;
+                if (!weightBlock.isActivated()) {
+                    // 첫 번째로 블록에 닿은 경우 활성화
+                    weightBlock.activate();
+                    System.out.println("WeightItemBlock activated at position (" + x + ", " + y + ")");
+                    return false; // 아직 고정하지 않음, 자동 낙하 시작
+                } else {
+                    // 이미 활성화된 상태에서는 자동 낙하만 처리하므로 moveDown에서는 아무것도 하지 않음
+                    System.out.println("WeightItemBlock is already activated, automatic fall will be handled by updateWeightBlock()");
+                    return false; // 자동 낙하는 updateWeightBlock()에서 처리
+                }
+            } else {
+                // 일반 블록의 경우 기존 로직 유지
+                placeBlockPermanently();
+                return true; // 블록 고정됨
+            }
         }
     }
     
@@ -128,6 +141,15 @@ public class BlockManager {
      */
     public void moveLeft() {
         if (currentBlock == null || isGameOver) return;
+        
+        // 무게추 블록의 좌우 이동 제한 확인
+        if (currentBlock instanceof WeightItemBlock) {
+            WeightItemBlock weightBlock = (WeightItemBlock) currentBlock;
+            if (!weightBlock.canMoveHorizontally()) {
+                System.out.println("WeightItemBlock cannot move horizontally (activated)");
+                return;
+            }
+        }
         
         if (canMoveLeft()) {
             x--;
@@ -139,6 +161,15 @@ public class BlockManager {
      */
     public void moveRight() {
         if (currentBlock == null || isGameOver) return;
+        
+        // 무게추 블록의 좌우 이동 제한 확인
+        if (currentBlock instanceof WeightItemBlock) {
+            WeightItemBlock weightBlock = (WeightItemBlock) currentBlock;
+            if (!weightBlock.canMoveHorizontally()) {
+                System.out.println("WeightItemBlock cannot move horizontally (activated)");
+                return;
+            }
+        }
         
         if (canMoveRight()) {
             x++;
@@ -168,17 +199,36 @@ public class BlockManager {
     public boolean executeHardDrop() {
         if (currentBlock == null || isGameOver) return false;
         
-        // BlockHardDrop 클래스를 사용하여 하드 드롭 실행
-        int newY = BlockHardDrop.executeHardDrop(currentBlock, x, y, 
-                                                boardManager.getBoard(), gameWidth, gameHeight);
-        y = newY;
-        
-        // 블록이 바닥에 닿았으므로 즉시 고정
-        placeBlockPermanently();
-        
-        // 다음 블록 생성은 줄 삭제 검사 이후에 GameScene에서 호출
-        
-        return true;
+        // 무게추 블록의 경우 특별 처리
+        if (currentBlock instanceof WeightItemBlock) {
+            WeightItemBlock weightBlock = (WeightItemBlock) currentBlock;
+            
+            // BlockHardDrop 클래스를 사용하여 하드 드롭 실행
+            int newY = BlockHardDrop.executeHardDrop(currentBlock, x, y, 
+                                                    boardManager.getBoard(), gameWidth, gameHeight);
+            y = newY;
+            
+            // 무게추는 하드드롭 후 활성화되고 자동 낙하 시작
+            if (!weightBlock.isActivated()) {
+                weightBlock.activate();
+                System.out.println("WeightItemBlock activated after hard drop at position (" + x + ", " + y + ")");
+            }
+            
+            return false; // 무게추는 고정되지 않고 자동 낙하 시작
+        } else {
+            // 일반 블록의 경우 기존 로직 유지
+            // BlockHardDrop 클래스를 사용하여 하드 드롭 실행
+            int newY = BlockHardDrop.executeHardDrop(currentBlock, x, y, 
+                                                    boardManager.getBoard(), gameWidth, gameHeight);
+            y = newY;
+            
+            // 블록이 바닥에 닿았으므로 즉시 고정
+            placeBlockPermanently();
+            
+            // 다음 블록 생성은 줄 삭제 검사 이후에 GameScene에서 호출
+            
+            return true;
+        }
     }
     
     /**
@@ -358,5 +408,102 @@ public class BlockManager {
         if (blockShake != null) {
             blockShake.cleanup();
         }
+    }
+    
+    /**
+     * 무게추 블록의 업데이트를 처리합니다.
+     * @return true if 무게추가 사라져서 다음 블록을 생성해야 함
+     */
+    public boolean updateWeightBlock() {
+        if (currentBlock instanceof WeightItemBlock) {
+            WeightItemBlock weightBlock = (WeightItemBlock) currentBlock;
+            
+            // 무게추가 활성화되었고 파괴 중이 아니라면 자동 낙하 처리
+            if (weightBlock.isActivated() && !weightBlock.isDestroying()) {
+                // 낙하 타이머 업데이트
+                if (weightBlock.updateFall()) {
+                    // 게임보드 바닥(y=19)에 도달했는지 확인 (무게추 높이 2 고려)
+                    // 무게추의 맨 아래(y+1)가 게임보드 경계(19)를 넘지 않도록 함
+                    if (y + 1 < 19) { // 무게추 맨 아래가 바닥(19)에 닿지 않음
+                        // 한 칸 아래로 이동
+                        y++;
+                        System.out.println("WeightItemBlock moved down to y=" + y);
+                        
+                        // 현재 위치에서 아래의 모든 블록 제거
+                        int clearedCount = weightBlock.clearBlocksBelow(
+                            boardManager.getBoard(), 
+                            boardManager.getBoardColors(), 
+                            x, 
+                            y
+                        );
+                        
+                        if (clearedCount > 0) {
+                            System.out.println("WeightItemBlock cleared " + clearedCount + " blocks below at y=" + y);
+                        }
+                        
+                        return false; // 계속 떨어지는 중
+                    } else {
+                        // 게임보드 바닥에 도달했으면 파괴 모드로 전환
+                        weightBlock.startDestroying();
+                        System.out.println("WeightItemBlock reached game board bottom at y=" + y + ", starting destruction");
+                        return false;
+                    }
+                }
+            }
+            
+            // 파괴 중이라면 파괴 타이머 업데이트
+            if (weightBlock.isDestroying()) {
+                if (weightBlock.updateDestroy()) {
+                    // 무게추가 완전히 사라짐
+                    currentBlock = null;
+                    System.out.println("WeightItemBlock completely destroyed, generating next block");
+                    return true; // 다음 블록 생성 필요
+                }
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * 현재 블록의 고스트 블록 Y 위치를 계산합니다.
+     * 무게추의 경우 특별 처리를 합니다.
+     * 
+     * @return 고스트 블록의 Y 위치 (-1이면 고스트 블록 없음)
+     */
+    public int getGhostY() {
+        if (currentBlock == null) return -1;
+        
+        // 무게추 블록의 경우 특별 처리
+        if (currentBlock instanceof WeightItemBlock) {
+            WeightItemBlock weightBlock = (WeightItemBlock) currentBlock;
+            int ghostY = weightBlock.calculateGhostY(boardManager.getBoard(), x, y);
+            System.out.println("BlockManager: WeightItemBlock ghost Y = " + ghostY);
+            return ghostY;
+        }
+        
+        // 일반 블록의 경우 직접 계산
+        int ghostY = y;
+        while (canMoveToPosition(ghostY + 1)) {
+            ghostY++;
+        }
+        
+        System.out.println("BlockManager: Normal block ghost Y = " + ghostY);
+        return ghostY;
+    }
+    
+    /**
+     * 지정된 Y 위치로 블록이 이동할 수 있는지 확인합니다.
+     */
+    private boolean canMoveToPosition(int newY) {
+        if (currentBlock == null) return false;
+        
+        // BoardManager의 canMoveDown 메소드를 활용하여 임시 Y 위치 확인
+        int originalY = y;
+        y = newY - 1; // 목표 위치 -1로 설정
+        boolean canMove = boardManager.canMoveDown(currentBlock, x, y);
+        y = originalY; // 원래 위치로 복원
+        
+        return canMove;
     }
 }
