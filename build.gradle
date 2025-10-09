@@ -1,6 +1,8 @@
 plugins {
     id 'application'
     id 'jacoco'
+    id 'checkstyle'
+    id 'com.github.spotbugs' version '6.0.7'
 }
 
 // Version checking example using Gradle's version comparison
@@ -142,4 +144,36 @@ tasks.register('jpackageExe', Exec) {
         '--dest', 'dist'
         //'--icon', 'icon.ico'        // ★ Windows는 .ico 사용
         //,'--win-console'           // 콘솔창 필요하면 주석 해제
+}
+
+// Checkstyle 설정
+checkstyle {
+    toolVersion = '10.12.4'
+    configFile = file("${rootDir}/config/checkstyle/checkstyle.xml")
+    ignoreFailures = true  // 빌드 실패를 방지하고 경고로만 처리
+}
+
+// SpotBugs 설정
+spotbugs {
+    ignoreFailures = true  // 빌드 실패를 방지하고 경고로만 처리
+    reportLevel = 'medium'
+    effort = 'default'
+}
+
+spotbugsMain {
+    reports {
+        html {
+            required = true
+            outputLocation = file("$buildDir/reports/spotbugs/main/spotbugs.html")
+        }
+    }
+}
+
+spotbugsTest {
+    reports {
+        html {
+            required = true
+            outputLocation = file("$buildDir/reports/spotbugs/test/spotbugs.html")
+        }
+    }
 }
