@@ -57,19 +57,31 @@ jobs:
     - name: Setup Virtual Display for GUI Tests (${{ matrix.display_name }})
       run: |
         sudo apt-get update -qq
-        sudo apt-get install -y xvfb libxrender1 libxtst6 libxi6 libgl1-mesa-glx
+        # Ubuntu 22.04+ 호환 패키지 설치 (fallback 포함)
+        sudo apt-get install -y xvfb libxrender1 libxtst6 libxi6 || echo "Some packages failed to install"
+        # OpenGL 라이브러리 설치 시도 (여러 옵션)
+        sudo apt-get install -y libgl1-mesa-dri || sudo apt-get install -y libgl1-mesa-glx || echo "OpenGL library installation attempted"
         sudo apt-get install -y fontconfig fonts-dejavu-core fonts-liberation
+        sudo apt-get install -y x11-utils xauth
+        
         # 매트릭스에서 지정된 해상도로 가상 디스플레이 시작
         export DISPLAY=:99.0
         echo "🖥️ Starting virtual display with resolution: ${{ matrix.resolution }}"
         echo "📱 Category: ${{ matrix.category }} display"
         Xvfb :99 -ac -screen 0 ${{ matrix.resolution }} -nolisten tcp &
-        sleep 3
+        sleep 5  # 디스플레이 안정화 대기 시간 증가
         echo "DISPLAY=:99.0" >> $GITHUB_ENV
         echo "RESOLUTION=${{ matrix.resolution }}" >> $GITHUB_ENV
         echo "DISPLAY_CATEGORY=${{ matrix.category }}" >> $GITHUB_ENV
+        
         # 디스플레이 정상 작동 및 해상도 확인
-        xdpyinfo -display :99.0 | grep dimensions | head -1 || echo "Display info check completed"
+        echo "🔍 Verifying virtual display setup..."
+        ps aux | grep Xvfb | grep -v grep || echo "Xvfb process check"
+        if command -v xdpyinfo &> /dev/null; then
+          xdpyinfo -display :99.0 | grep dimensions | head -1 || echo "Display info check completed"
+        else
+          echo "xdpyinfo not available, skipping display verification"
+        fi
         echo "✅ ${{ matrix.display_name }} virtual display ready"
 
     # 캐시를 사용하여 빌드 시간 단축
