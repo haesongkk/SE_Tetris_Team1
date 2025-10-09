@@ -271,14 +271,14 @@ public class MainMenuScene extends Scene implements KeyListener {
         buttonPanel.setLayout(new GridLayout(3, 1, 0, 10));
         
         // Regular Mode 버튼
-        JButton regularButton = createDialogButton("🎮 Regular Mode");
+        JButton regularButton = createDialogButton("Regular Mode");
         regularButton.addActionListener(e -> {
             modeDialog.dispose();
             Game.setScene(new GameScene(frame));
         });
         
         // Item Mode 버튼 (활성화)
-        JButton itemButton = createDialogButton("🎁 Item Mode");
+        JButton itemButton = createDialogButton("Item Mode");
         itemButton.addActionListener(e -> {
             modeDialog.dispose();
             Game.setScene(new ItemGameScene(frame));
@@ -286,7 +286,7 @@ public class MainMenuScene extends Scene implements KeyListener {
         itemButton.setToolTipText("폭탄 아이템과 함께하는 테트리스!");
         
         // 취소 버튼
-        JButton cancelButton = createDialogButton("❌ 취소");
+        JButton cancelButton = createDialogButton("취소");
         cancelButton.setBackground(new Color(100, 50, 50));
         cancelButton.addActionListener(e -> modeDialog.dispose());
         
