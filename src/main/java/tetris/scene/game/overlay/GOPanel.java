@@ -7,16 +7,12 @@ import java.awt.*;
 import javax.swing.*;
 
 public class GOPanel extends Animation {
-    Animation gameOver;
-    ScorePanel scorePanel;
-    GOFooter goFooter;
 
-    Animation badge;
 
     GOPanel(String score, String lines, String time, String difficulty, boolean isHighScore) {
         super(
             null, Theme.GIANTS_INLINE, 
-            Theme.HEADER_RED, Theme.BG, Theme.BADGE_YELLOW,
+            Theme.Block('Z'), Theme.BG(), Theme.Block('O'),
             2, 0, 
             SwingConstants.CENTER, SwingConstants.CENTER
         );
@@ -26,8 +22,8 @@ public class GOPanel extends Animation {
 
         gameOver = new Animation(
             "GAME OVER!!",
-            Theme.GIANTS_INLINE.deriveFont(Font.BOLD, 30f), 
-            Theme.HEADER_RED, Theme.BG, Theme.BG, 
+            Theme.getFont(Theme.GIANTS_INLINE, 0.024f), 
+            Theme.Block('Z'), Theme.BG(), Theme.BG(), 
             0, 0, 
             SwingConstants.CENTER, SwingConstants.CENTER
         );
@@ -45,8 +41,8 @@ public class GOPanel extends Animation {
 
         badge = new Animation(
             "HIGH SCORE!",
-            Theme.GIANTS_INLINE.deriveFont(Font.BOLD, 45f),
-            Theme.TEXT_WHITE, Theme.BG, Theme.BADGE_YELLOW,
+            Theme.getFont(Theme.GIANTS_INLINE, 0.045f),
+            Theme.LIGHT_GRAY, Theme.BG(), Theme.Block('O'),
             1, 0,
             SwingConstants.CENTER, SwingConstants.CENTER
         );
@@ -57,21 +53,35 @@ public class GOPanel extends Animation {
         Animation.runLater(3.5f, () -> goFooter.startAnimations());
 
         badge.alpha = 0f;
+
         if(isHighScore) {
             Animation.runLater(3.8f, () -> badge.popOut(0.8f, 0.8f, 0.5f, 1.5f));
-            Animation.runLater(4.2f, () -> badge.move(0, 0, 0, 100, 1.5f, 0.3f, false));
+            Animation.runLater(4.2f, () -> badge.saturateBorder(2.5f, true));
         }
 
 
     }
 
+    Animation gameOver;
+    ScorePanel scorePanel;
+    GOFooter goFooter;
 
+    Animation badge;
     
+    @Override
+    public void release() {
+        super.release();
 
-    void free() {
+        gameOver.release();
         gameOver = null;
+
+        scorePanel.release();
         scorePanel = null;
+
+        goFooter.release();
         goFooter = null;
+
+        badge.release();
         badge = null;
     }
 
@@ -122,7 +132,6 @@ public class GOPanel extends Animation {
 
         final int badgeRadius = (int)(badgeHeight * 0.5f);
 
-        final float fontSize = width * 0.03f;
 
 
         // 배지 배경
@@ -131,7 +140,7 @@ public class GOPanel extends Animation {
 
         // 배지 텍스트
         g2.setColor(badge.getForeground());
-        g2.setFont(Theme.GIANTS_REGULAR.deriveFont(Font.BOLD, fontSize));
+        g2.setFont(Theme.getFont(Theme.GIANTS_BOLD, 0.009f));
         
         // 텍스트 중앙 정렬
         FontMetrics fm = g2.getFontMetrics();

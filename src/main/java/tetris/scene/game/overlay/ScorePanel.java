@@ -5,38 +5,35 @@ import javax.swing.*;
 
 import tetris.util.Animation;
 import tetris.util.Theme;
-import tetris.GameSettings;
 
 public class ScorePanel extends JPanel {
     ScorePanel(String score, String lines, String time, String difficulty) {
         setOpaque(false);
 
         
-        final int[] screenSize = GameSettings.getInstance().getResolutionSize();
-        int width = (int)(screenSize[0] * 0.05f);
-        int height = (int)(screenSize[1] * 0.03f);
+        int width = Theme.getPixelWidth(0.05f);
+        int height = Theme.getPixelHeight(0.03f);
 
         setLayout(new GridLayout(4,2,width/2,0));
         setBorder(BorderFactory.createEmptyBorder(height, width, height, width));
 
         
-        final float labelSize = screenSize[0] * 0.015f;
-        final float valueSize = screenSize[0] * 0.012f;
-        final Font f = Theme.GIANTS_INLINE.deriveFont(Font.BOLD);
+        final Font labelFont = Theme.getFont(Theme.GIANTS_INLINE, 0.015f);
+        final Font valueFont = Theme.getFont(Theme.GIANTS_INLINE, 0.012f);
 
 
         final Font[] scoreItemFont = {
-            f.deriveFont(labelSize), f.deriveFont(valueSize),
-            f.deriveFont(labelSize), f.deriveFont(valueSize),
-            f.deriveFont(labelSize), f.deriveFont(valueSize),
-            f.deriveFont(labelSize), f.deriveFont(valueSize)
+            labelFont, valueFont,
+            labelFont, valueFont,
+            labelFont, valueFont,
+            labelFont, valueFont
         };
         
         final Color[] scoreItemColor = {
-            Theme.I_CYAN,   Theme.SCORE_WHITE,
-            Theme.S_GREEN,  Theme.SCORE_WHITE,
-            Theme.T_PURPLE, Theme.SCORE_WHITE,
-            Theme.L_ORANGE, Theme.SCORE_WHITE
+            Theme.Block('I'),   Theme.LIGHT_GRAY,
+            Theme.Block('S'),   Theme.LIGHT_GRAY,
+            Theme.Block('T'),   Theme.LIGHT_GRAY,
+            Theme.Block('L'),   Theme.LIGHT_GRAY
         };
 
         final String[] scoreItemText = {
@@ -49,7 +46,7 @@ public class ScorePanel extends JPanel {
         for (int i = 0; i < 8; i++) {
             Animation anim = new Animation(
                 scoreItemText[i], scoreItemFont[i],
-                scoreItemColor[i], Theme.BG, Theme.BG,
+                scoreItemColor[i], Theme.BG(), Theme.BG(),
                 0, 0,
                 SwingConstants.LEFT, SwingConstants.CENTER
             );
@@ -73,18 +70,19 @@ public class ScorePanel extends JPanel {
     }
 
 
-    void free() {
+    void release() {
+
         animTimer.stop();
         animTimer = null;
         for(Animation anim: scoreItemList) {
-            //anim.deleteAnimTimer(anim.addAnimTimer());
+            anim.release();
         }
         scoreItemList = null;
     }
 
     int animIndex = 0;
-    Timer animTimer;
 
+    Timer animTimer;
     Animation[] scoreItemList = new Animation[8];
 
 }

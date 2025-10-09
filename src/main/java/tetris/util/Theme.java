@@ -1,45 +1,95 @@
 package tetris.util;
 
 import java.awt.*;
+import java.io.IOException;
+import java.io.InputStream;
+
+import tetris.ColorBlindHelper;
+import tetris.GameSettings;
 
 public final class Theme {
+    public enum ColorType {
+        RED, ORANGE, YELLOW, GREEN, CYAN, BLUE, PURPLE
+    }
     private Theme(){}
 
-    public static final Color BG             = new Color(0x00,0x00,0x00);
-    public static final Color TITLE_YELLOW   = new Color(200, 200, 30); 
-    public static final Color HEADER_RED = new Color(255, 60, 60);
+    public static Color BG() {
+        int colorBlindMode = GameSettings.getInstance().getColorBlindMode();
+        return ColorBlindHelper.getBackgroundColor(colorBlindMode);
+    }
 
-    public static final Color LIGHT_GREY  = new Color(200,200,200);
-    
-    // Tetromino-ish
-    public static final Color I_CYAN         = new Color(0x35,0xCF,0xF0);
-    public static final Color O_YELLOW       = new Color(0xF2,0xD2,0x4A);
-    public static final Color T_PURPLE       = new Color(0xA9,0x7B,0xE8);
-    public static final Color S_GREEN        = new Color(0x43,0xD6,0x86);
-    public static final Color Z_RED          = new Color(0xFF,0x5B,0x6B);
-    public static final Color J_BLUE         = new Color(0x5A,0x8C,0xFF);
-    public static final Color L_ORANGE       = new Color(0xFF,0xA5,0x57);
+    public static Color Border() {
+        int colorBlindMode = GameSettings.getInstance().getColorBlindMode();
+        return ColorBlindHelper.getBorderColor(colorBlindMode);
+    }
+
+    public static Color Block(char blockType) {
+        int colorBlindMode = GameSettings.getInstance().getColorBlindMode();
+        int blockId;
+        if(blockType == 'Z') blockId = 0;
+        else if(blockType == 'L') blockId = 1;
+        else if(blockType == 'O') blockId = 2;
+        else if(blockType == 'S') blockId = 3;
+        else if(blockType == 'I') blockId = 4;
+        else if(blockType == 'J') blockId = 5;
+        else if(blockType == 'T') blockId = 6;
+        else blockId = 0;
+        return ColorBlindHelper.getBlockColor(blockId, colorBlindMode);
+    }
+
+    public static Color Block(ColorType blockType) {
+        int colorBlindMode = GameSettings.getInstance().getColorBlindMode();
+        int blockId;
+        switch(blockType) {
+            case RED:       blockId = 0; break;
+            case ORANGE:    blockId = 1; break;
+            case YELLOW:    blockId = 2; break;
+            case GREEN:     blockId = 3; break;
+            case CYAN:      blockId = 4; break;
+            case BLUE:      blockId = 5; break;
+            case PURPLE:    blockId = 6; break;
+            default:        blockId = 0; break;
+        }
+        
+        return ColorBlindHelper.getBlockColor(blockId, colorBlindMode);
+    }
 
 
-    
+    public static final Color LIGHT_GRAY  = Color.LIGHT_GRAY;
+    public static final Color DARK_GRAY   = Color.DARK_GRAY;
+    public static final Color WHITE   = Color.WHITE;
+    public static final Color BLACK   = Color.BLACK;
+    public static final Color GRAY   = Color.GRAY;
 
 
-    public static final Color ROW_BG         = new Color(24, 24, 24);
-    public static final Color ROW_HILIGHT    = new Color(58, 58, 58, 120);
-    public static final Color ROW_SHADOW     = new Color(8, 8, 8, 160);
+    public static final Font GIANTS_INLINE = loadFont("Giants-Inline.ttf");
+    public static final Font GIANTS_BOLD = loadFont("Giants-Bold.ttf");
+    public static final Font GIANTS_REGULAR = loadFont("Giants-Regular.ttf");
 
-    public static final Color STAND_BLUE     = new Color(170, 190, 255);
-    public static final Color TEXT_WHITE     = new Color(235, 235, 235);
-    public static final Color TEXT_GRAY     = new Color(100,100,100);
-    public static final Color TEXT_LIGHTGRAY     = new Color(150,150,150);
-    public static final Color SCORE_WHITE    = new Color(245, 245, 245);
+    public static Font getFont(Font font, float sizeRatio) {
+        int[] screenSize = GameSettings.getInstance().getResolutionSize();
+        return font.deriveFont(sizeRatio * screenSize[0]);
+    }
 
-    public static final Color BADGE_YELLOW   = new Color(255, 223, 128);
-    public static final Color DIVIDER        = new Color(36, 36, 36);
+    public static int getPixelWidth(float sizeRatio) {
+        int[] screenSize = GameSettings.getInstance().getResolutionSize();
+        return (int)(sizeRatio * screenSize[0]);
+    }
+    public static int getPixelHeight(float sizeRatio) {
+        int[] screenSize = GameSettings.getInstance().getResolutionSize();
+        return (int)(sizeRatio * screenSize[1]);
+    }
 
-    public static final Font GIANTS_INLINE = Loader.loadFont("Giants-Inline.ttf");
-    public static final Font GIANTS_BOLD = Loader.loadFont("Giants-Bold.ttf");
-    public static final Font GIANTS_REGULAR = Loader.loadFont("Giants-Regular.ttf");
-    
+    static Font loadFont(String path) {
+        try (InputStream in = Thread.currentThread()
+                    .getContextClassLoader()
+                    .getResourceAsStream(path)) {
+            return Font.createFont(Font.TRUETYPE_FONT, in);
+        } catch (FontFormatException | IOException ex) {
+            ex.printStackTrace();
+            System.out.println("Failed to load custom font.");
+            return new Font("Dialog", Font.BOLD, 16);
+        }
+    }
 
 }

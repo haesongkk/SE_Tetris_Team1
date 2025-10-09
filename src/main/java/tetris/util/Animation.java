@@ -8,12 +8,16 @@ import java.util.ArrayList;
 
 import javax.swing.border.EmptyBorder;
 
-public class Animation extends JLabel {
+public class Animation extends JButton {
     final int delay = 16;
 
     public Animation(String text, Font font, Color foreground, Color background, Color border, int thickness, int radius, int hAlign, int vAlign) {
-        setOpaque(false);
-        
+        setOpaque(false);  
+        setContentAreaFilled(false);
+        setFocusPainted(false);
+        //setRolloverEnabled(false);
+        //setBorderPainted(false);
+
         setText(text);
         setFont(font);
         
@@ -22,14 +26,41 @@ public class Animation extends JLabel {
         
         setForeground(foreground);
         setBackground(background);
+        setBorderColor(border);
         
         setBorder(new EmptyBorder(thickness, thickness, thickness, thickness));
 
+
         borderRadius = radius;
         borderThickness = thickness;
-        borderHSB = Color.RGBtoHSB(border.getRed(), border.getGreen(), border.getBlue(), null);
+        counter.add(this);
+    }
+
+    @Override
+    public void setBackground(Color background) {
+        super.setBackground(background);
         backgroundHSB = Color.RGBtoHSB(background.getRed(), background.getGreen(), background.getBlue(), null);
     }
+
+    public void setBorderColor(Color border) {
+        borderHSB = Color.RGBtoHSB(border.getRed(), border.getGreen(), border.getBlue(), null);
+    }
+
+
+    public void release() {
+        if(animTimers != null) {
+            for(AnimTimer animTimer: animTimers) {
+                animTimer.timer.stop();
+                animTimer.timer = null;
+            }
+            animTimers.clear();
+            animTimers = null;
+        }
+        counter.remove(this);
+    }
+
+    static List<Animation> counter = new ArrayList<>();
+
 
     public float alpha = 0.f;
 
@@ -49,19 +80,27 @@ public class Animation extends JLabel {
     public float[] backgroundHSB = new float[3];
 
     static List<Timer> runningTimers = new ArrayList<>();
+
     static public void runLater(float delay, Runnable r) {
         final int delayMs = (int)(delay * 1000);
-        Timer t = new Timer(delayMs, e -> { ((Timer)e.getSource()).stop(); r.run(); });
+        Timer t = new Timer(delayMs, e -> { 
+            ((Timer)e.getSource()).stop(); 
+            runningTimers.remove(e.getSource());
+            r.run(); 
+        });
         t.setRepeats(false);
         runningTimers.add(t); 
         t.start();
+
     }
+
     static public void reset() {
         for(Timer t: runningTimers) {
             t.stop();
         }
         runningTimers.clear();
     }
+
 
 
     class AnimTimer {
@@ -82,6 +121,7 @@ public class Animation extends JLabel {
         animTimer.timer.stop();
         animTimers.remove(animTimer);
     }
+
 
     public void hueBackground(float duration, boolean bLoop) {
         alpha = 1f;

@@ -5,6 +5,7 @@ import tetris.util.Animation;
 import tetris.util.Theme;
 
 import java.awt.*;
+import java.awt.event.ActionListener;
 
 import javax.swing.*;
 
@@ -15,19 +16,10 @@ import javax.swing.text.BadLocationException;
 
 public class GOFooter extends Animation {
 
-    private JLabel label;
-
-    private JTextField nameField;
-    private JButton retryButton;
-    private Timer countdownTimer;
-    private int countdown = 5;
-
-    private boolean isHighScore;
-
     GOFooter(boolean isHighScore) {
         super(
-            null, Theme.GIANTS_INLINE, 
-            Theme.BG, Theme.BG, Theme.BG, 
+            null, null, 
+            Theme.BG(), Theme.BG(), Theme.BG(), 
             0, 0, 
             SwingConstants.CENTER, SwingConstants.CENTER
         );
@@ -42,23 +34,22 @@ public class GOFooter extends Animation {
 
         if (isHighScore) {
             label = new JLabel("ENTER YOUR NAME:", SwingConstants.LEFT);
-            label.setFont(Theme.GIANTS_REGULAR.deriveFont(Font.BOLD, 14f));
-            label.setForeground(Theme.TEXT_GRAY);
+            label.setFont(Theme.getFont(Theme.GIANTS_REGULAR, 0.012f));
+            label.setForeground(Theme.GRAY);
             label.setAlignmentX(Component.LEFT_ALIGNMENT);
             label.setHorizontalAlignment(JLabel.LEFT);
 
             nameField = new JTextField();
-            nameField.setFont(Theme.GIANTS_REGULAR.deriveFont(Font.PLAIN, 18f)); 
+            nameField.setFont(Theme.getFont(Theme.GIANTS_REGULAR, 0.016f)); 
             nameField.setHorizontalAlignment(JTextField.CENTER);
 
-            // [추가 1] 엔터로 onEnter 호출 (공백 이름은 무시)
-            nameField.addActionListener(e -> {
+            nameFieldAl = e -> {
                 String name = nameField.getText().strip();
                 if (!name.isEmpty()) {
                     onEnter(name);
-                } else {
                 }
-            });
+            };
+            nameField.addActionListener(nameFieldAl);
             ((AbstractDocument) nameField.getDocument())
             .setDocumentFilter(new NoCommaFilter());
 
@@ -69,12 +60,12 @@ public class GOFooter extends Animation {
 
         } else {
             label = new JLabel("", SwingConstants.CENTER);
-            label.setFont(Theme.GIANTS_REGULAR.deriveFont(Font.BOLD, 18.f));
-            label.setForeground(Theme.O_YELLOW);
+            label.setFont(Theme.getFont(Theme.GIANTS_REGULAR, 0.016f));
+            label.setForeground(Theme.Block('O'));
             
             retryButton = new JButton("RETRY?");
             
-            retryButton.setFont(Theme.GIANTS_BOLD.deriveFont(Font.ITALIC, 14.f));
+            retryButton.setFont(Theme.getFont(Theme.GIANTS_BOLD, 0.014f));
             retryButton.setForeground(new Color(60, 60, 60));
 
             retryButton.setFocusPainted(false);
@@ -84,11 +75,11 @@ public class GOFooter extends Animation {
             add(label);
             add(retryButton);
             
-            
-            retryButton.addActionListener(e -> {
+            retryButtonAl = e -> {
                 onRetry();
                 countdownTimer.stop();
-            });
+            };
+            retryButton.addActionListener(retryButtonAl);
             
         }
 
@@ -133,17 +124,51 @@ public class GOFooter extends Animation {
 
     void onRetry() {
         getGameOverInstance().onRetry();
-        free();
+        release();
     }
 
     void onEnter(String name) {
         getGameOverInstance().onNext(name);
-        free();
+        release();
     }
 
+    JLabel label;
+    JTextField nameField;
+    JButton retryButton;
+    Timer countdownTimer;
+
+    ActionListener nameFieldAl;
+    ActionListener retryButtonAl;
+
+    int countdown = 5;
+    boolean isHighScore;
 
 
-    void free() {
+    @Override
+    public void release() {
+        super.release();
+
+        if(countdownTimer != null) {
+            countdownTimer.stop();
+            countdownTimer = null;
+        }
+
+        if(nameField != null) {
+            nameField.removeActionListener(nameFieldAl);
+            nameFieldAl = null;
+        }
+
+        if(retryButton != null) {
+            retryButton.removeActionListener(retryButtonAl);
+            retryButtonAl = null;;
+        }
+        
+
+        label = null;
+        nameField = null;
+        retryButton = null;
+        isHighScore = false;
+
     }
 
     // 콤마(,)를 제거하는 DocumentFilter 
