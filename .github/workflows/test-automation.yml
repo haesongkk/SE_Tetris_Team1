@@ -151,9 +151,9 @@ jobs:
     # 테스트 결과 보고서 생성 (테스트가 실행된 경우에만)
     - name: Publish Test Results
       uses: dorny/test-reporter@v1
-      if: always() && hashFiles('build/test-results/test/*.xml') != ''
+      if: always() && hashFiles('build/test-results/test/*.xml') != '' && github.event_name != 'pull_request'
       with:
-        name: 'Test Results'
+        name: 'Test Results (${{ matrix.category }})'
         path: 'build/test-results/test/*.xml'
         reporter: 'java-junit'
         fail-on-error: false
@@ -170,7 +170,7 @@ jobs:
       uses: actions/upload-artifact@v4
       if: success() && hashFiles('build/libs/*.jar') != ''
       with:
-        name: tetris-jar
+        name: tetris-jar-${{ matrix.category }}
         path: build/libs/*.jar
 
     # 테스트 실패 시 로그 업로드 - 실제 로그가 존재할 때만
@@ -178,7 +178,7 @@ jobs:
       uses: actions/upload-artifact@v4
       if: failure() && (hashFiles('build/reports/tests/test/**/*') != '' || hashFiles('build/test-results/test/**/*') != '')
       with:
-        name: test-logs
+        name: test-logs-${{ matrix.category }}
         path: |
           build/reports/tests/test/
           build/test-results/test/
