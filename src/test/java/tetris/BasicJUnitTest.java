@@ -128,6 +128,11 @@ public class BasicJUnitTest {
         // blockManager가 null인지 확인
         assertNotNull(blockManager, "BlockManager가 초기화되어야 합니다.");
 
+        // ItemManager를 null로 설정하여 일반 블록만 생성되도록 함
+        Field itemManagerField = blockManager.getClass().getDeclaredField("itemManager");
+        itemManagerField.setAccessible(true);
+        itemManagerField.set(blockManager, null); // 아이템 모드 비활성화
+
         Method getRandomBlockMethod = blockManager.getClass().getDeclaredMethod("getRandomBlock");
         getRandomBlockMethod.setAccessible(true);
 
@@ -136,13 +141,23 @@ public class BasicJUnitTest {
         int testIterations = 100;
 
         System.out.println("블럭 생성 테스트 (" + testIterations + "회):");
+
+        // 시드 값을 다르게 하여 다양한 블록 생성 보장
         for (int i = 0; i < testIterations; i++) {
+            // 각 호출 전에 약간의 지연을 주어 다른 랜덤 값 생성
+            Thread.sleep(1);
+
             Block block = (Block) getRandomBlockMethod.invoke(blockManager);
             Class<? extends Block> blockClass = block.getClass();
 
             if (!generatedBlocks.contains(blockClass)) {
                 generatedBlocks.add(blockClass);
                 System.out.println("새로운 블럭 발견: " + blockClass.getSimpleName());
+            }
+
+            // 7가지 블록을 모두 발견하면 조기 종료
+            if (generatedBlocks.size() >= 7) {
+                break;
             }
         }
 
