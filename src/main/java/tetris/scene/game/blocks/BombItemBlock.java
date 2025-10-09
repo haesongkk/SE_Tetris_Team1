@@ -263,28 +263,8 @@ public class BombItemBlock extends Block {
      * I블록의 회전 처리
      */
     private void handleIBlockRotation(int oldBombX, int oldBombY) {
-        // I블록의 현재 회전 상태 확인
-        if (originalBlock instanceof IBlock) {
-            IBlock iBlock = (IBlock) originalBlock;
-            int rotationState = iBlock.getRotationState();
-            
-            System.out.println("I-Block rotation state: " + rotationState + ", bombCellIndex: " + bombCellIndex);
-            
-            // 가로/세로 상태에 따라 인덱스 매핑
-            if (rotationState % 2 == 0) { // 가로 상태 (1x4)
-                bombCellIndex = Math.min(bombCellIndex, 3); // 0~3 범위 제한
-                bombX = bombCellIndex;
-                bombY = 0;
-                System.out.println("I-Block horizontal: bombX=" + bombX + ", bombY=" + bombY);
-            } else { // 세로 상태 (4x2, 두 번째 열 사용)
-                bombCellIndex = Math.min(bombCellIndex, 3); // 0~3 범위 제한
-                bombX = 1; // 두 번째 열 (I블록의 세로 형태에서 블록이 있는 열)
-                bombY = bombCellIndex;
-                System.out.println("I-Block vertical: bombX=" + bombX + ", bombY=" + bombY);
-            }
-            
-            setBombAtPosition(bombX, bombY, oldBombX, oldBombY);
-        }
+        // I블록이 일반 블록의 회전 공식을 사용하므로 기하학적 회전 적용
+        handleGeometricRotation(oldBombX, oldBombY);
     }
 
     
