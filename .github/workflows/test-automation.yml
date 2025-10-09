@@ -12,6 +12,28 @@ jobs:
     permissions:
       contents: read
       checks: write  # 테스트 결과 보고서를 위한 권한
+    
+    strategy:
+      matrix:
+        resolution: 
+          - "1920x1080x24"   # Full HD - 가장 일반적인 해상도
+          - "1280x720x24"    # HD - 최소 요구사항
+          - "1024x768x24"    # XGA - 구형 모니터 지원
+          - "800x600x24"     # SVGA - 저해상도 호환성
+        include:
+          - resolution: "1920x1080x24"
+            display_name: "Full HD (1920×1080)"
+            category: "1920×1080"
+          - resolution: "1280x720x24"
+            display_name: "HD (1280×720)"
+            category: "1280×720"
+          - resolution: "1024x768x24"
+            display_name: "XGA (1024×768)"
+            category: "1024×768"
+          - resolution: "800x600x24"
+            display_name: "SVGA (800×600)"
+            category: "800×600"
+      fail-fast: false  # 한 해상도 실패해도 다른 해상도 계속 테스트
 
     steps:
     - uses: actions/checkout@v4
@@ -31,6 +53,25 @@ jobs:
       run: chmod +x ./gradlew
       if: runner.os != 'Windows'
 
+    # GUI 테스트를 위한 가상 디스플레이 설정 (Xvfb)
+    - name: Setup Virtual Display for GUI Tests (${{ matrix.display_name }})
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y xvfb libxrender1 libxtst6 libxi6 libgl1-mesa-glx
+        sudo apt-get install -y fontconfig fonts-dejavu-core fonts-liberation
+        # 매트릭스에서 지정된 해상도로 가상 디스플레이 시작
+        export DISPLAY=:99.0
+        echo "🖥️ Starting virtual display with resolution: ${{ matrix.resolution }}"
+        echo "📱 Category: ${{ matrix.category }} display"
+        Xvfb :99 -ac -screen 0 ${{ matrix.resolution }} -nolisten tcp &
+        sleep 3
+        echo "DISPLAY=:99.0" >> $GITHUB_ENV
+        echo "RESOLUTION=${{ matrix.resolution }}" >> $GITHUB_ENV
+        echo "DISPLAY_CATEGORY=${{ matrix.category }}" >> $GITHUB_ENV
+        # 디스플레이 정상 작동 및 해상도 확인
+        xdpyinfo -display :99.0 | grep dimensions | head -1 || echo "Display info check completed"
+        echo "✅ ${{ matrix.display_name }} virtual display ready"
+
     # 캐시를 사용하여 빌드 시간 단축
     - name: Cache Gradle packages
       uses: actions/cache@v4
@@ -43,18 +84,25 @@ jobs:
           ${{ runner.os }}-gradle-
 
     # 컴파일 확인
-    - name: Compile Java code
+    - name: Compile Java code (${{ matrix.display_name }})
       run: |
-        echo "🔨 Compiling Java source and test code..."
+        echo "🔨 Compiling Java source and test code for ${{ matrix.display_name }}..."
         ./gradlew compileJava compileTestJava --no-daemon --stacktrace
       continue-on-error: false
+      env:
+        DISPLAY: :99.0
+        RESOLUTION: ${{ matrix.resolution }}
 
-    # 테스트 실행 (JUnit 5 기반)
-    - name: Run JUnit Tests
+    # 테스트 실행 (JUnit 5 기반) - 가상 디스플레이 환경에서
+    - name: Run JUnit Tests (${{ matrix.display_name }})
       run: |
-        echo "🧪 Running JUnit 5 tests..."
+        echo "🧪 Running JUnit 5 tests with ${{ matrix.display_name }} resolution..."
+        echo "📊 Testing on ${{ matrix.category }} category display"
         ./gradlew test --no-daemon --stacktrace || echo "Some tests failed, but continuing..."
       continue-on-error: true
+      env:
+        DISPLAY: :99.0
+        JAVA_OPTS: "-Djava.awt.headless=false -Dtest.resolution=${{ matrix.resolution }} -Dtest.category=${{ matrix.category }}"
 
     # 커스텀 테스트 실행 (BasicTest.java)
     - name: Run BasicTest
@@ -66,6 +114,9 @@ jobs:
           echo "BasicTest.class not found, skipping..."
         fi
       continue-on-error: true
+      env:
+        DISPLAY: :99.0
+        JAVA_OPTS: "-Djava.awt.headless=false"
 
     # 커스텀 테스트 실행 (GameScreenTest.java) - 존재하는 경우에만
     - name: Run GameScreenTest
@@ -77,6 +128,9 @@ jobs:
           echo "GameScreenTest.class not found, skipping..."
         fi
       continue-on-error: true
+      env:
+        DISPLAY: :99.0
+        JAVA_OPTS: "-Djava.awt.headless=false"
 
     # 테스트 결과 보고서 생성 (테스트가 실행된 경우에만)
     - name: Publish Test Results
@@ -92,6 +146,8 @@ jobs:
     - name: Generate Test Coverage Report
       run: ./gradlew jacocoTestReport
       continue-on-error: true
+      env:
+        DISPLAY: :99.0
 
     # 빌드 아티팩트 저장 (JAR 파일) - 빌드 성공 시에만
     - name: Upload JAR artifact
@@ -127,12 +183,30 @@ jobs:
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582
 
+    # gradlew 실행 권한 부여
+    - name: Make gradlew executable
+      run: chmod +x ./gradlew
+
+    # 가상 디스플레이 설정 (정적 분석에도 필요할 수 있음)
+    - name: Setup Virtual Display
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y xvfb
+        export DISPLAY=:99.0
+        Xvfb :99 -ac -screen 0 1920x1080x24 -nolisten tcp &
+        sleep 3
+        echo "DISPLAY=:99.0" >> $GITHUB_ENV
+
     # 코드 스타일 검사
     - name: Run checkstyle
       run: ./gradlew checkstyleMain checkstyleTest
       continue-on-error: true
+      env:
+        DISPLAY: :99.0
 
     # SpotBugs 정적 분석 (선택사항)
     - name: Run SpotBugs
       run: ./gradlew spotbugsMain spotbugsTest
       continue-on-error: true
+      env:
+        DISPLAY: :99.0
