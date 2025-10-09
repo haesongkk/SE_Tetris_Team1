@@ -477,9 +477,7 @@ public class BlockManager {
         // 무게추 블록의 경우 특별 처리
         if (currentBlock instanceof WeightItemBlock) {
             WeightItemBlock weightBlock = (WeightItemBlock) currentBlock;
-            int ghostY = weightBlock.calculateGhostY(boardManager.getBoard(), x, y);
-            System.out.println("BlockManager: WeightItemBlock ghost Y = " + ghostY);
-            return ghostY;
+            return weightBlock.calculateGhostY(boardManager.getBoard(), x, y);
         }
         
         // 일반 블록의 경우 직접 계산
@@ -488,7 +486,6 @@ public class BlockManager {
             ghostY++;
         }
         
-        System.out.println("BlockManager: Normal block ghost Y = " + ghostY);
         return ghostY;
     }
     
