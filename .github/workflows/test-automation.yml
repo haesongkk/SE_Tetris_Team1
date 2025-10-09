@@ -1,0 +1,123 @@
+name: Java CI with Gradle - Test Automation
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write  # 테스트 결과 보고서를 위한 권한
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    # Configure Gradle for optimal use in GitHub Actions, including caching of downloaded dependencies.
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
+
+    # 캐시를 사용하여 빌드 시간 단축
+    - name: Cache Gradle packages
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+
+    # 컴파일 확인
+    - name: Compile Java code
+      run: ./gradlew compileJava compileTestJava
+
+    # 테스트 실행 (JUnit 5 기반)
+    - name: Run JUnit Tests
+      run: ./gradlew test
+      continue-on-error: false
+
+    # 커스텀 테스트 실행 (BasicTest.java)
+    - name: Run BasicTest
+      run: |
+        echo "🎮 Running BasicTest for Tetris game requirements..."
+        java -cp "build/classes/java/main:build/classes/java/test" tetris.BasicTest
+      continue-on-error: true
+
+    # 커스텀 테스트 실행 (GameScreenTest.java) - 존재하는 경우에만
+    - name: Run GameScreenTest
+      run: |
+        echo "🖥️ Running GameScreenTest for UI requirements..."
+        if [ -f "src/test/java/tetris/GameScreenTest.java" ]; then
+          java -cp "build/classes/java/main:build/classes/java/test" tetris.GameScreenTest || echo "GameScreenTest completed with warnings"
+        else
+          echo "GameScreenTest.java not found, skipping..."
+        fi
+      continue-on-error: true
+
+    # 테스트 결과 보고서 생성
+    - name: Publish Test Results
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: 'Test Results'
+        path: 'build/test-results/test/*.xml'
+        reporter: 'java-junit'
+
+    # 테스트 커버리지 리포트 (선택사항)
+    - name: Generate Test Coverage Report
+      run: ./gradlew jacocoTestReport
+      continue-on-error: true
+
+    # 빌드 아티팩트 저장 (JAR 파일)
+    - name: Upload JAR artifact
+      uses: actions/upload-artifact@v3
+      if: success()
+      with:
+        name: tetris-jar
+        path: build/libs/*.jar
+
+    # 테스트 실패 시 로그 업로드
+    - name: Upload test logs on failure
+      uses: actions/upload-artifact@v3
+      if: failure()
+      with:
+        name: test-logs
+        path: |
+          build/reports/tests/test/
+          build/test-results/test/
+
+  # 정적 코드 분석 (선택사항)
+  static-analysis:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582
+
+    # 코드 스타일 검사
+    - name: Run checkstyle
+      run: ./gradlew checkstyleMain checkstyleTest
+      continue-on-error: true
+
+    # SpotBugs 정적 분석 (선택사항)
+    - name: Run SpotBugs
+      run: ./gradlew spotbugsMain spotbugsTest
+      continue-on-error: true

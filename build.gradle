@@ -1,5 +1,6 @@
 plugins {
     id 'application'
+    id 'jacoco'
 }
 
 // Version checking example using Gradle's version comparison
@@ -39,11 +40,61 @@ application {
 dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    
+    // 테스트 리포팅을 위한 의존성
+    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.10.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-params:5.10.2'
 }
+
 test {
     useJUnitPlatform()
-    // GUI/Swing/JavaFX 테스트가 헤드리스에서 필요하면:
-    // systemProperty 'java.awt.headless', 'true'
+    
+    // 테스트 리포트 생성 설정
+    reports {
+        junitXml.required = true
+        html.required = true
+    }
+    
+    // 테스트 결과를 XML 형태로 출력 (GitHub Actions 호환)
+    testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+        showStandardStreams = false
+    }
+    
+    // GUI 테스트를 위한 헤드리스 모드 설정 (CI 환경에서만)
+    if (System.getenv("CI") == "true") {
+        systemProperty 'java.awt.headless', 'true'
+    }
+    
+    // 테스트 타임아웃 설정
+    timeout = Duration.ofMinutes(10)
+    
+    // 테스트 실패 시에도 계속 진행
+    ignoreFailures = false
+}
+
+// 테스트 커버리지 설정
+jacoco {
+    toolVersion = "0.8.8"
+}
+
+jacocoTestReport {
+    reports {
+        xml.required = true
+        html.required = true
+        csv.required = false
+    }
+    
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                // 메인 클래스나 UI 클래스 제외 (선택사항)
+                '**/Tetris.class',
+                '**/Main.class'
+            ])
+        }))
+    }
 }
 
 // JAR 파일 생성 설정
