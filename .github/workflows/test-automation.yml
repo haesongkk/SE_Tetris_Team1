@@ -107,21 +107,24 @@ jobs:
 
     # 테스트 실행 (JUnit 5 기반) - 가상 디스플레이 환경에서
     - name: Run JUnit Tests (${{ matrix.display_name }})
+      timeout-minutes: 10  # 10분 타임아웃 설정
       run: |
         echo "🧪 Running JUnit 5 tests with ${{ matrix.display_name }} resolution..."
         echo "📊 Testing on ${{ matrix.category }} category display"
-        ./gradlew test --no-daemon --stacktrace || echo "Some tests failed, but continuing..."
+        # 타임아웃과 함께 테스트 실행
+        timeout 8m ./gradlew test --no-daemon --stacktrace --info --continue || echo "Some tests failed or timed out, but continuing..."
       continue-on-error: true
       env:
         DISPLAY: :99.0
         JAVA_OPTS: "-Djava.awt.headless=false -Dtest.resolution=${{ matrix.resolution }} -Dtest.category=${{ matrix.category }}"
 
-    # 커스텀 테스트 실행 (BasicTest.java)
+    # 커스텀 테스트 실행 (BasicTest.java) - 타임아웃 적용
     - name: Run BasicTest
+      timeout-minutes: 3  # 3분 타임아웃
       run: |
         echo "🎮 Running BasicTest for Tetris game requirements..."
         if [ -f "build/classes/java/test/tetris/BasicTest.class" ]; then
-          java -cp "build/classes/java/main:build/classes/java/test" tetris.BasicTest || echo "BasicTest completed with warnings"
+          timeout 2m java -cp "build/classes/java/main:build/classes/java/test" tetris.BasicTest || echo "BasicTest completed with warnings or timeout"
         else
           echo "BasicTest.class not found, skipping..."
         fi
@@ -130,12 +133,13 @@ jobs:
         DISPLAY: :99.0
         JAVA_OPTS: "-Djava.awt.headless=false"
 
-    # 커스텀 테스트 실행 (GameScreenTest.java) - 존재하는 경우에만
+    # 커스텀 테스트 실행 (GameScreenTest.java) - 타임아웃 적용
     - name: Run GameScreenTest
+      timeout-minutes: 3  # 3분 타임아웃
       run: |
         echo "🖥️ Running GameScreenTest for UI requirements..."
         if [ -f "build/classes/java/test/tetris/GameScreenTest.class" ]; then
-          java -cp "build/classes/java/main:build/classes/java/test" tetris.GameScreenTest || echo "GameScreenTest completed with warnings"
+          timeout 2m java -cp "build/classes/java/main:build/classes/java/test" tetris.GameScreenTest || echo "GameScreenTest completed with warnings or timeout"
         else
           echo "GameScreenTest.class not found, skipping..."
         fi

@@ -23,10 +23,14 @@ public class Game {
     }
 
     public static void setScene(Scene scene) {
-        instance.curScene.onExit();                     // 현재 씬 종료 처리    
+        if (instance.curScene != null) {               // null 체크 추가
+            instance.curScene.onExit();                 // 현재 씬 종료 처리    
+        }
         Animation.reset();
         instance.curScene = scene;                      // 씬 교체     
-        instance.curScene.onEnter();                    // 새 씬 진입 처리
+        if (instance.curScene != null) {               // null 체크 추가
+            instance.curScene.onEnter();                // 새 씬 진입 처리
+        }
     }
 
     public static void quit() {
