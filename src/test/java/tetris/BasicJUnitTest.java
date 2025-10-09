@@ -24,7 +24,7 @@ import java.util.ArrayList;
  */
 @DisplayName("기본 테트리스 게임 기능 요구사항 테스트")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class BasicJUnitTest {
+public class BasicJUnitTest {
 
     private static JFrame testFrame;
 
@@ -115,8 +115,20 @@ class BasicJUnitTest {
 
         GameScene gameScene = new GameScene(testFrame);
 
-        // getRandomBlock 메서드 접근
-        Method getRandomBlockMethod = GameScene.class.getDeclaredMethod("getRandomBlock");
+        // GameScene 초기화 - blockManager 생성을 위해 필요
+        Method initGameStateMethod = GameScene.class.getDeclaredMethod("initGameState");
+        initGameStateMethod.setAccessible(true);
+        initGameStateMethod.invoke(gameScene);
+
+        // BlockManager의 getRandomBlock 메서드 접근
+        Field blockManagerField = GameScene.class.getDeclaredField("blockManager");
+        blockManagerField.setAccessible(true);
+        Object blockManager = blockManagerField.get(gameScene);
+
+        // blockManager가 null인지 확인
+        assertNotNull(blockManager, "BlockManager가 초기화되어야 합니다.");
+
+        Method getRandomBlockMethod = blockManager.getClass().getDeclaredMethod("getRandomBlock");
         getRandomBlockMethod.setAccessible(true);
 
         // 여러 번 호출하여 다양한 블럭이 생성되는지 확인
@@ -125,7 +137,7 @@ class BasicJUnitTest {
 
         System.out.println("블럭 생성 테스트 (" + testIterations + "회):");
         for (int i = 0; i < testIterations; i++) {
-            Block block = (Block) getRandomBlockMethod.invoke(gameScene);
+            Block block = (Block) getRandomBlockMethod.invoke(blockManager);
             Class<? extends Block> blockClass = block.getClass();
 
             if (!generatedBlocks.contains(blockClass)) {
@@ -135,31 +147,29 @@ class BasicJUnitTest {
         }
 
         // 7가지 블럭 타입이 모두 생성되었는지 확인
-        assertTrue(generatedBlocks.size() >= 7, 
+        assertTrue(generatedBlocks.size() >= 7,
             "7가지 블럭 타입이 모두 생성되어야 합니다. 발견된 타입 수: " + generatedBlocks.size());
 
         // 각 블럭 타입이 올바른지 확인
-        assertTrue(generatedBlocks.stream().anyMatch(c -> c.getSimpleName().equals("IBlock")), 
+        assertTrue(generatedBlocks.stream().anyMatch(c -> c.getSimpleName().equals("IBlock")),
             "IBlock이 생성되어야 합니다.");
-        assertTrue(generatedBlocks.stream().anyMatch(c -> c.getSimpleName().equals("JBlock")), 
+        assertTrue(generatedBlocks.stream().anyMatch(c -> c.getSimpleName().equals("JBlock")),
             "JBlock이 생성되어야 합니다.");
-        assertTrue(generatedBlocks.stream().anyMatch(c -> c.getSimpleName().equals("LBlock")), 
+        assertTrue(generatedBlocks.stream().anyMatch(c -> c.getSimpleName().equals("LBlock")),
             "LBlock이 생성되어야 합니다.");
-        assertTrue(generatedBlocks.stream().anyMatch(c -> c.getSimpleName().equals("OBlock")), 
+        assertTrue(generatedBlocks.stream().anyMatch(c -> c.getSimpleName().equals("OBlock")),
             "OBlock이 생성되어야 합니다.");
-        assertTrue(generatedBlocks.stream().anyMatch(c -> c.getSimpleName().equals("SBlock")), 
+        assertTrue(generatedBlocks.stream().anyMatch(c -> c.getSimpleName().equals("SBlock")),
             "SBlock이 생성되어야 합니다.");
-        assertTrue(generatedBlocks.stream().anyMatch(c -> c.getSimpleName().equals("TBlock")), 
+        assertTrue(generatedBlocks.stream().anyMatch(c -> c.getSimpleName().equals("TBlock")),
             "TBlock이 생성되어야 합니다.");
-        assertTrue(generatedBlocks.stream().anyMatch(c -> c.getSimpleName().equals("ZBlock")), 
+        assertTrue(generatedBlocks.stream().anyMatch(c -> c.getSimpleName().equals("ZBlock")),
             "ZBlock이 생성되어야 합니다.");
 
         System.out.println("총 발견된 블럭 타입: " + generatedBlocks.size());
         System.out.println("I, J, L, O, S, T, Z 블럭 모두 확인됨");
         System.out.println("✅ 테트로미노 무작위 생성 JUnit 테스트 통과");
-    }
-
-    @Test
+    }    @Test
     @Order(4)
     @DisplayName("4. 행 완성 및 삭제 테스트")
     void testLineCompletionAndDeletion() throws Exception {
@@ -167,27 +177,32 @@ class BasicJUnitTest {
 
         GameScene gameScene = new GameScene(testFrame);
 
+        // BoardManager 접근
+        Field boardManagerField = GameScene.class.getDeclaredField("boardManager");
+        boardManagerField.setAccessible(true);
+        Object boardManager = boardManagerField.get(gameScene);
+
         // 보드 배열 접근
-        Field boardField = GameScene.class.getDeclaredField("board");
+        Field boardField = boardManager.getClass().getDeclaredField("board");
         boardField.setAccessible(true);
-        int[][] board = (int[][]) boardField.get(gameScene);
+        int[][] board = (int[][]) boardField.get(boardManager);
 
         // 보드가 null이 아닌지 확인
         assertNotNull(board, "게임 보드가 초기화되어야 합니다.");
 
         // isLineFull 메서드 접근
-        Method isLineFullMethod = GameScene.class.getDeclaredMethod("isLineFull", int.class);
+        Method isLineFullMethod = boardManager.getClass().getDeclaredMethod("isLineFull", int.class);
         isLineFullMethod.setAccessible(true);
 
         // 테스트 1: 빈 행은 완성되지 않음
-        boolean emptyLineFull = (Boolean) isLineFullMethod.invoke(gameScene, 0);
+        boolean emptyLineFull = (Boolean) isLineFullMethod.invoke(boardManager, 0);
         assertFalse(emptyLineFull, "빈 행은 완성된 것으로 판단되어서는 안 됩니다.");
 
         // 테스트 2: 가득 찬 행은 완성됨
         for (int col = 0; col < 10; col++) {
             board[5][col] = 1; // 5번째 행을 가득 채움
         }
-        boolean fullLineFull = (Boolean) isLineFullMethod.invoke(gameScene, 5);
+        boolean fullLineFull = (Boolean) isLineFullMethod.invoke(boardManager, 5);
         assertTrue(fullLineFull, "가득 찬 행은 완성된 것으로 판단되어야 합니다.");
 
         // 테스트 3: 부분적으로 채워진 행은 완성되지 않음
@@ -195,18 +210,21 @@ class BasicJUnitTest {
         for (int col = 0; col < 10; col++) {
             if (col != 5) board[10][col] = 1;
         }
-        boolean partialLineFull = (Boolean) isLineFullMethod.invoke(gameScene, 10);
+        boolean partialLineFull = (Boolean) isLineFullMethod.invoke(boardManager, 10);
         assertFalse(partialLineFull, "부분적으로 채워진 행은 완성된 것으로 판단되어서는 안 됩니다.");
 
         System.out.println("행 완성 판단 로직 테스트 완료");
 
-        // removeLine 메서드 직접 테스트
-        Method removeLineMethod = GameScene.class.getDeclaredMethod("removeLine", int.class);
-        removeLineMethod.setAccessible(true);
+        // clearLines 메서드를 통한 줄 삭제 테스트
+        Method clearLinesMethod = boardManager.getClass().getDeclaredMethod("clearLines", boolean[].class);
+        clearLinesMethod.setAccessible(true);
 
         // 3번째 행 삭제 테스트
+        boolean[] linesToClear = new boolean[20]; // GAME_HEIGHT = 20
+        linesToClear[3] = true; // 3번째 행 삭제
+
         System.out.println("3번째 행 삭제 테스트 진행");
-        removeLineMethod.invoke(gameScene, 3);
+        clearLinesMethod.invoke(boardManager, (Object) linesToClear);
 
         // 삭제된 행이 빈 행으로 되었는지 확인
         boolean deletedRowEmpty = true;
@@ -229,9 +247,14 @@ class BasicJUnitTest {
 
         GameScene newGameScene = new GameScene(testFrame);
 
-        Field boardField = GameScene.class.getDeclaredField("board");
+        // BoardManager를 통해 보드 접근
+        Field boardManagerField = GameScene.class.getDeclaredField("boardManager");
+        boardManagerField.setAccessible(true);
+        Object boardManager = boardManagerField.get(newGameScene);
+
+        Field boardField = boardManager.getClass().getDeclaredField("board");
         boardField.setAccessible(true);
-        int[][] board = (int[][]) boardField.get(newGameScene);
+        int[][] board = (int[][]) boardField.get(boardManager);
 
         // 보드가 null이 아닌지 확인
         assertNotNull(board, "게임 보드가 생성되어야 합니다.");
