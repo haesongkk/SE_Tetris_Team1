@@ -46,8 +46,23 @@ public class ItemManager {
     public Block createItemBlock(Block originalBlock) {
         if (originalBlock == null) return null;
         
-        // 폭탄 아이템 블록 생성
-        BombItemBlock itemBlock = new BombItemBlock(originalBlock);
+        Block itemBlock;
+        
+        if (debugMode) {
+            // 디버그 모드일 때는 폭탄 블록만 생성
+            itemBlock = new BombItemBlock(originalBlock);
+        } else {
+            // 50% 확률로 폭탄 또는 무게추 아이템 선택
+            if (random.nextBoolean()) {
+                // 폭탄 아이템 블록 생성
+                itemBlock = new BombItemBlock(originalBlock);
+                System.out.println("Created BombItemBlock from " + originalBlock.getClass().getSimpleName());
+            } else {
+                // 무게추 아이템 블록 생성
+                itemBlock = new WeightItemBlock();
+                System.out.println("Created WeightItemBlock (independent item)");
+            }
+        }
         
         // 아이템 블록 생성 후 카운트 초기화
         int previousTotal = totalLinesCleared;

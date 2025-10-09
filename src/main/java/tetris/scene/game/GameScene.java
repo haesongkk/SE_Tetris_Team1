@@ -519,11 +519,39 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
     
     @Override
     public void onDropTick() {
-        moveBlockDown();
+        // 무게추 블록 업데이트 확인
+        if (blockManager.updateWeightBlock()) {
+            // 무게추가 사라졌으면 다음 블록 생성
+            blockManager.generateNextBlock();
+        } else {
+            // 일반 블록 이동 처리
+            moveBlockDown();
+        }
     }
     
     @Override
     public void onBlinkTick() {
+        // 무게추 블록의 빠른 업데이트 (점멸 타이머는 더 자주 실행됨)
+        if (blockManager.getCurrentBlock() instanceof WeightItemBlock) {
+            WeightItemBlock weightBlock = (WeightItemBlock) blockManager.getCurrentBlock();
+            
+            // 활성화된 무게추의 자동 낙하 처리 (빠른 업데이트)
+            if (weightBlock.isActivated() && !weightBlock.isDestroying()) {
+                if (blockManager.updateWeightBlock()) {
+                    // 무게추가 사라졌으면 다음 블록 생성
+                    blockManager.generateNextBlock();
+                }
+            }
+            
+            // 파괴 중인 무게추의 점멸 효과 업데이트
+            if (weightBlock.isDestroying()) {
+                if (weightBlock.updateDestroy()) {
+                    // 무게추가 완전히 사라짐
+                    blockManager.generateNextBlock();
+                }
+            }
+        }
+        
         repaintGamePanel();
     }
     

@@ -19,7 +19,6 @@ public class LineBlinkEffect {
     
     private static final int EFFECT_DURATION = 900; // 연출 지속 시간 (ms) - 150ms * 6 = 900ms (3번 점멸)
     private static final int BLINK_CYCLE = 150; // 150ms마다 토글
-    private static final int TOTAL_BLINKS = 3; // 총 점멸 횟수
     
     private List<Integer> blinkingLines; // 점멸하고 있는 줄들
     private long effectStartTime; // 연출 시작 시간
