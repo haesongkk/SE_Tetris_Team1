@@ -21,7 +21,7 @@ public class ScorePanel extends JPanel {
 
         
         final Font labelFont = Theme.getFont(Theme.GIANTS_INLINE, 0.015f);
-        final Font valueFont = Theme.getFont(Theme.GIANTS_INLINE, 0.012f);
+        final Font valueFont = Theme.getFont(Theme.GIANTS_BOLD, 0.012f).deriveFont(3);
 
 
         final Font[] scoreItemFont = {
@@ -65,6 +65,7 @@ public class ScorePanel extends JPanel {
 
         animTimer = new Timer((int)(delay * 1000), e -> {
             new RunLater(0.1f, () -> beep.play(false));
+            
             scoreItemList[animOrder[animIndex]].move(-50, 0, 0, 0, 1.5f, delay, false);
             animIndex++;
 
