@@ -29,6 +29,7 @@ class StartMenuTest {
     
     private static MainMenuScene mainMenu;
     private static JFrame testFrame;
+    private static Timer dialogCloser; // 다이얼로그 자동 닫기용 타이머
     
     @BeforeAll
     @DisplayName("테스트 환경 설정")
@@ -43,6 +44,9 @@ class StartMenuTest {
         
         // 헤드리스 환경 체크 및 안전한 프레임 생성
         try {
+            // 다이얼로그 자동 닫기 타이머 설정 (모달 다이얼로그 문제 해결)
+            setupDialogCloser();
+            
             if (!GraphicsEnvironment.isHeadless()) {
                 // 테스트용 프레임 생성
                 testFrame = new JFrame("Tetris Test");
@@ -86,6 +90,12 @@ class StartMenuTest {
     @AfterAll
     @DisplayName("테스트 환경 정리")
     static void cleanup() {
+        // 다이얼로그 자동 닫기 타이머 정리
+        if (dialogCloser != null && dialogCloser.isRunning()) {
+            dialogCloser.stop();
+            System.out.println("다이얼로그 자동 닫기 타이머 정리 완료");
+        }
+        
         if (testFrame != null) {
             testFrame.dispose();
         }
@@ -397,5 +407,61 @@ class StartMenuTest {
         }
         
         return components.toArray(new Component[0]);
+    }
+    
+    /**
+     * 모달 다이얼로그 자동 닫기 타이머를 설정합니다.
+     * 테스트 진행 중 나타나는 모달 다이얼로그를 자동으로 감지하고 닫아서
+     * 테스트가 중단되지 않도록 합니다.
+     */
+    private static void setupDialogCloser() {
+        dialogCloser = new Timer(300, e -> {
+            // 현재 열려있는 모든 윈도우를 확인
+            Window[] windows = Window.getWindows();
+            for (Window window : windows) {
+                // JDialog이고 모달이며 현재 표시 중인 경우
+                if (window instanceof JDialog) {
+                    JDialog dialog = (JDialog) window;
+                    if (dialog.isModal() && dialog.isVisible()) {
+                        System.out.println("🔄 StartMenuTest용 모달 다이얼로그 자동 닫기: " + dialog.getTitle());
+                        
+                        // 다이얼로그 내부의 첫 번째 버튼을 찾아서 클릭
+                        Component[] components = dialog.getContentPane().getComponents();
+                        JButton firstButton = findFirstButton(components);
+                        if (firstButton != null) {
+                            firstButton.doClick(); // 버튼 클릭 시뮬레이션
+                            System.out.println("✅ 첫 번째 버튼 클릭함: " + firstButton.getText());
+                        } else {
+                            // 버튼을 찾지 못한 경우 강제로 닫기
+                            dialog.dispose();
+                            System.out.println("✅ 다이얼로그 강제 닫기 완료");
+                        }
+                    }
+                }
+            }
+        });
+        
+        dialogCloser.setRepeats(true); // 반복 실행
+        dialogCloser.start();
+        System.out.println("🔧 StartMenuTest용 다이얼로그 자동 닫기 타이머 시작됨");
+    }
+    
+    /**
+     * 컴포넌트 배열에서 첫 번째 JButton을 재귀적으로 찾습니다.
+     */
+    private static JButton findFirstButton(Component[] components) {
+        for (Component comp : components) {
+            if (comp instanceof JButton) {
+                return (JButton) comp;
+            }
+            if (comp instanceof Container) {
+                Container container = (Container) comp;
+                JButton button = findFirstButton(container.getComponents());
+                if (button != null) {
+                    return button;
+                }
+            }
+        }
+        return null;
     }
 }
