@@ -86,8 +86,7 @@ public final class Theme {
                     .getResourceAsStream(path)) {
             return Font.createFont(Font.TRUETYPE_FONT, in);
         } catch (FontFormatException | IOException ex) {
-            ex.printStackTrace();
-            System.out.println("Failed to load custom font.");
+            System.out.println("Failed to load custom font:"+ path);
             return new Font("Dialog", Font.BOLD, 16);
         }
     }
