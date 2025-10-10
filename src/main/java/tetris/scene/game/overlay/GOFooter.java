@@ -2,6 +2,7 @@ package tetris.scene.game.overlay;
 
 import tetris.GameSettings;
 import tetris.util.Animation;
+import tetris.util.RunLater;
 import tetris.util.Theme;
 import tetris.util.Theme.ColorType;
 
@@ -104,7 +105,7 @@ public class GOFooter extends Animation {
     void startAnimations() {
         move(0, 100, 0, 0, 1.5f, 0.3f, false);
         if(!isHighScore) {
-            Animation.runLater(0.3f, () -> countdown());
+            new RunLater(0.3f, () -> countdown());
         }
     }
 

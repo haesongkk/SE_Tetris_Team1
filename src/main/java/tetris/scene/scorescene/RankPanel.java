@@ -5,6 +5,7 @@ import tetris.util.Animation;
 import tetris.util.Theme;
 import tetris.util.Theme.ColorType;
 import tetris.util.HighScore;
+import tetris.util.RunLater;
 import tetris.util.Sound;
 
 import java.awt.*;
@@ -12,6 +13,7 @@ import java.awt.event.ActionListener;
 
 import javax.swing.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -36,15 +38,15 @@ public class RankPanel extends JPanel {
         add(panel, BorderLayout.NORTH);
 
 
-        final String[] modeList = {"normal", "hard", "easy", "item"};
+        final String[] modeList = {"easy", "normal", "hard", "item"};
         for(int i = 0; i < modeList.length; i++) {
             buttonList[i] = new ModeBtn(modeList[i], this::reload);
             panel.add(buttonList[i]);
         }
 
-        rankTable = new RankTable();
+        rankTable = new RankTable(highScore.get(mode).size());
         add(rankTable, BorderLayout.CENTER);
-        reload(modeList[0]);
+        load(mode);
 
     }
 
@@ -72,6 +74,7 @@ public class RankPanel extends JPanel {
     HighScore highScore = null;
     RankTable rankTable = null;
     ModeBtn[] buttonList = new ModeBtn[4];
+    boolean reloadOk = false;
 
 
 
@@ -81,19 +84,23 @@ public class RankPanel extends JPanel {
 
         for(int i=0; i<buttonList.length; i++) {
             ModeBtn button = buttonList[i];
-            Animation.runLater(btnAnimDuration * i, () -> button.popOut(0.6f, 0.6f, btnAnimDuration, 1.4f));
+            new RunLater(btnAnimDuration * i, () -> button.popOut(0.6f, 0.6f, btnAnimDuration, 1.4f));
         }
-        Animation.runLater(btnAnimTotalDuration, () -> {
+        new RunLater(btnAnimTotalDuration, () -> {
             rankTable.startAnimations(duration, highlightRank);
+            reloadOk = true;
+
         });
-        Animation.runLater(duration + 0.3f, () -> {
+        new RunLater(duration + 0.3f, () -> {
             if(nextAnimation != null) {
                 nextAnimation.run();
             }
         });
+        
+
     }
 
-    void reload(String mode) {
+    void load(String mode) {
         List<List<String>> rankData = highScore.get(mode);
         for(ModeBtn button: buttonList) {
             if(button.getText().equals(mode)) {
@@ -105,6 +112,11 @@ public class RankPanel extends JPanel {
             }
         }
         rankTable.reload(rankData);
+    }
+
+    void reload(String mode) {
+        if(!reloadOk) return;
+        load(mode);
         rankTable.startAnimations(0f, -1);
     }
 }
@@ -139,15 +151,19 @@ class RankTable extends JPanel {
     RankRow[] rankRowList = new RankRow[RANK_ROW_COUNT];
     RankItem[][] rankItemList = new RankItem[RANK_ROW_COUNT][COL_COUNT];
 
+    List<RunLater> runLaters = new ArrayList<>();
+
+    int validRowCount = 0;
     Sound sound = null;
 
-    RankTable() {
+    RankTable(int validRowCount) {
         setOpaque(false);
         setLayout(new GridLayout(11,1,0,12));
         setBorder(BorderFactory.createEmptyBorder(12,48,24,48));
         sound = new Sound("gameboy-pluck-41265.mp3");
 
     }
+    
 
     void release() {
         if (rankRowList != null) {
@@ -169,22 +185,29 @@ class RankTable extends JPanel {
 
     void startAnimations(float duration, int highlightRank) {
         final float delay = duration / rankRowList.length;
-        for(int i = 0; i < rankRowList.length; i++) {
+        runLaters.forEach(e -> e.release());
+        runLaters.clear();
+        for(int i = 0; i < this.validRowCount + 1; i++) {
             final float startTime = delay * i;
             final RankRow row = rankRowList[i];
-            Animation.runLater(startTime, () -> row.popOut(0.6f, 0.6f, delay, 1.4f));
-            Animation.runLater(startTime, () -> sound.play(false));
+            runLaters.add(new RunLater(startTime, () -> row.popOut(0.6f, 0.6f, delay, 1.4f)));
+             runLaters.add(new RunLater(startTime, () -> sound.play(false)));
         }
         if(highlightRank > 0 && highlightRank < rankRowList.length) {
-            Animation.runLater(duration, () -> rankRowList[highlightRank].hueBackground(3.5f, true));
-            Animation.runLater(duration, () -> rankRowList[highlightRank].hueBorder(3.5f, true));
+             runLaters.add(new RunLater(duration, () -> rankRowList[highlightRank].hueBackground(3.5f, true)));
+             runLaters.add(new RunLater(duration, () -> rankRowList[highlightRank].hueBorder(3.5f, true)));
             
+        }
+        if(validRowCount == 0) {
+             runLaters.add(new RunLater(delay, () -> rankRowList[RANK_ROW_COUNT / 2 + 1].popOut(0.6f, 0.6f, delay, 1.4f)));
+             runLaters.add(new RunLater(delay, () -> sound.play(false)));
         }
     }
 
 
     void reload(List<List<String>> rankTableData) {
         removeAll();
+        this.validRowCount = rankTableData.size();
         for(int i = 0; i < RANK_ROW_COUNT; i++) {
             rankRowList[i] = new RankRow();
             add(rankRowList[i]);

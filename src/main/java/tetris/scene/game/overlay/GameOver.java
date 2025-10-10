@@ -7,6 +7,7 @@ import tetris.GameSettings;
 import tetris.scene.game.GameScene;
 import tetris.scene.scorescene.ScoreScene;
 import tetris.util.HighScore;
+import tetris.util.RunLater;
 import tetris.util.Theme;
 
 import java.awt.*;
@@ -55,8 +56,8 @@ public class GameOver extends JPanel {
     }
 
     void onRetry() {
-        Game.setScene(new GameScene(frame));
         this.release();
+        Game.setScene(new GameScene(frame));
     }
 
     void onNext(String name) {
@@ -64,8 +65,8 @@ public class GameOver extends JPanel {
             highScore.updateUserName(difficulty, rankIndex, name);
             highScore.save();
         }
-        Game.setScene(new ScoreScene(frame, rankIndex + 1, difficulty));
         this.release();
+        Game.setScene(new ScoreScene(frame, rankIndex + 1, difficulty));
     }
 
 
@@ -98,7 +99,7 @@ public class GameOver extends JPanel {
         popup.release();
         popup = null;
 
-        frame = null;
+        RunLater.clear();
     }
 
 

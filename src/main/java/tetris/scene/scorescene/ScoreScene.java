@@ -4,6 +4,7 @@ import tetris.scene.Scene;
 import tetris.Game;
 import tetris.scene.menu.MainMenuScene;
 import tetris.util.Animation;
+import tetris.util.RunLater;
 import tetris.util.Sound;
 import tetris.util.Theme;
 
@@ -56,17 +57,17 @@ public class ScoreScene extends Scene {
     }
 
     public ScoreScene(JFrame frame) {
-        this(frame, -1, "normal");
+        this(frame, -1, "easy");
     }
 
 
     void startAnimations() {
-        Animation.runLater(0, () -> titleLabel.popIn(0.8f, 0.8f, 0.3f, 2.f));
-        Animation.runLater(
+        new RunLater(0, () -> titleLabel.popIn(0.8f, 0.8f, 0.3f, 2.f));
+        new RunLater(
             0.3f, 
             () -> rankPanel.startAnimations(
                 2.5f, 
-                () -> Animation.runLater(0.5f, () -> exitLabel.blink(0.8f, 0.4f))
+                () -> new RunLater(0.5f, () -> exitLabel.blink(0.8f, 0.4f))
             )
         );
     }
@@ -79,21 +80,34 @@ public class ScoreScene extends Scene {
 
     Sound sound = null;
 
-
     @Override public void onEnter() {
         startAnimations();
+
         sound = new Sound("8-bit-game-music-122259.mp3");
         sound.play(true);
     }
     @Override public void onExit() {
-        titleLabel.release();
-        titleLabel = null;
-        exitLabel.release();
-        exitLabel = null;
-        rankPanel.release();
-        rankPanel = null;
-        sound.release();
-        sound = null;
+        if(titleLabel != null) {
+            titleLabel.release();
+            titleLabel = null;
+        }
+
+        if(exitLabel != null) {
+            exitLabel.release();
+            exitLabel = null;
+        }
+
+        if(rankPanel != null) {
+            rankPanel.release();
+            rankPanel = null;
+        }
+
+        if(sound != null) {
+            sound.release();
+            sound = null;
+        }
+
+        RunLater.clear();
     }
 }
 

@@ -3,7 +3,6 @@ package tetris;
 import javax.swing.JFrame;
 import tetris.scene.*;
 import tetris.scene.menu.MainMenuScene;
-import tetris.util.Animation;
 
 public class Game {
     private Game() {}
@@ -26,7 +25,6 @@ public class Game {
         if (instance.curScene != null) {               // null 체크 추가
             instance.curScene.onExit();                 // 현재 씬 종료 처리    
         }
-        Animation.reset();
         instance.curScene = scene;                      // 씬 교체     
         if (instance.curScene != null) {               // null 체크 추가
             instance.curScene.onEnter();                // 새 씬 진입 처리
