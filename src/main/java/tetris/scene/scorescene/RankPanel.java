@@ -200,7 +200,7 @@ class RankTable extends JPanel {
             }
         }
         if(rankTableData.size() == 0) {
-            rankItemList[5][2].setNoData();
+            rankRowList[RANK_ROW_COUNT / 2 + 1].setText("아직 기록이 없습니다. 첫 기록을 세워주세요!");
         }
         revalidate();
         repaint();
@@ -210,8 +210,8 @@ class RankTable extends JPanel {
 
 class RankRow extends Animation {
     RankRow() {
-        super(null, Theme.GIANTS_INLINE, 
-            Theme.BG(), Theme.BG(), Theme.BG(), 
+        super(null, Theme.getFont(Theme.GIANTS_REGULAR, 0.012f), 
+            Theme.LIGHT_GRAY, Theme.BG(), Theme.BG(), 
             1, 15, 
             SwingConstants.CENTER, SwingConstants.CENTER
         );
@@ -266,12 +266,4 @@ class RankItem extends JLabel {
         setHorizontalAlignment(align);
         setText(text);
     }
-
-    void setNoData() {
-        setText("NO DATA");
-        setHorizontalAlignment(SwingConstants.CENTER);
-        setFont(getFont().deriveFont(Font.BOLD, getFont().getSize() * 1.5f));
-        setForeground(Theme.GRAY);
-    }
-
 }
