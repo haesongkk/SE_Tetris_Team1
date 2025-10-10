@@ -29,11 +29,13 @@ public class RankPanel extends JPanel {
         this.highlightRank = highlightRank;
         int[] screenSize = GameSettings.getInstance().getResolutionSize();
         int gap = (int)(screenSize[0] * 0.02f);
+        int left = (int)(screenSize[0] * 0.08f);
+        int right = (int)(screenSize[0] * 0.2f);
 
         JPanel panel = new JPanel();
         panel.setOpaque(false);
         panel.setLayout(new GridLayout(1,4,gap,0));
-        panel.setBorder(BorderFactory.createEmptyBorder(0, gap*4, 10, gap*30));
+        panel.setBorder(BorderFactory.createEmptyBorder(0, right, 25, right));
         
         add(panel, BorderLayout.NORTH);
 
@@ -105,10 +107,12 @@ public class RankPanel extends JPanel {
         for(ModeBtn button: buttonList) {
             if(button.getText().equals(mode)) {
                 button.setForeground(Theme.WHITE);
-                button.setBackground(Theme.LIGHT_GRAY);
+                button.setBorderColor(Theme.WHITE);
+                //button.setBackground(new Color(255, 60, 60));
             } else {
                 button.setForeground(Theme.GRAY);
-                button.setBackground(Theme.DARK_GRAY);
+                button.setBorderColor(Theme.GRAY);
+                //button.setBackground(new Color(200, 200, 30));
             }
         }
         rankTable.reload(rankData);
@@ -125,7 +129,8 @@ class ModeBtn extends Animation {
     ActionListener eventListener = null;
     ModeBtn(String mode, Consumer<String> clickCallback) {
         super(mode, Theme.getFont(Theme.GIANTS_INLINE, 0.015f), 
-            Theme.WHITE, Theme.GRAY, Theme.DARK_GRAY, 1, 15, 
+            Theme.WHITE, Theme.BG(), Theme.WHITE, 
+            2, 30, 
             SwingConstants.CENTER, SwingConstants.CENTER
         );
 
@@ -158,7 +163,7 @@ class RankTable extends JPanel {
 
     RankTable(int validRowCount) {
         setOpaque(false);
-        setLayout(new GridLayout(11,1,0,12));
+        setLayout(new GridLayout(11,1,0,6));
 //         setBorder(BorderFactory.createCompoundBorder(
 //     BorderFactory.createEmptyBorder(0, 48, 0, 48),                     // 바깥 패딩
 //     BorderFactory.createCompoundBorder(
@@ -166,7 +171,7 @@ class RankTable extends JPanel {
 //         BorderFactory.createEmptyBorder(18, 0, 18, 0)                  // 선과 내용 사이 내부 패딩
 //     )
 // ));
-        //setBorder(BorderFactory.createEmptyBorder(12,48,24,48));
+        setBorder(BorderFactory.createEmptyBorder(12,60,24,60));
 
 
         
@@ -249,7 +254,8 @@ class RankRow extends Animation {
             1, 15, 
             SwingConstants.CENTER, SwingConstants.CENTER
         );
-        setLayout(new GridLayout(1,5,0,12));
+        setLayout(new GridLayout(1,5,0,6));
+        setBorder(BorderFactory.createEmptyBorder(3,0,0,0));
     }
 
     @Override
@@ -269,7 +275,7 @@ class RankItem extends JLabel {
 
         Color color = row == 0 ? Theme.Block(ColorType.RED) : 
             col == 0 ? Theme.Block(ColorType.CYAN) : 
-            col == 1 ? Theme.Border() : 
+            col == 1 ? Theme.LIGHT_GRAY : 
             col == 2 ? Theme.Block(ColorType.ORANGE) : 
             col == 3 ? Theme.Block(ColorType.PURPLE) : 
             col == 4 ? Theme.Block(ColorType.GREEN) : 
