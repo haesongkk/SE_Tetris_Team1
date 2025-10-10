@@ -8,6 +8,7 @@ import tetris.scene.game.GameScene;
 import tetris.scene.scorescene.ScoreScene;
 import tetris.util.HighScore;
 import tetris.util.RunLater;
+import tetris.util.Sound;
 import tetris.util.Theme;
 
 import java.awt.*;
@@ -49,6 +50,9 @@ public class GameOver extends JPanel {
             rankIndex >= 0 && rankIndex < 10
         );
         add(popup);
+
+        bgm = new Sound("arcade-beat-323176.mp3");
+        bgm.play(true);
 
         frame.getRootPane().setGlassPane(this);
         this.setVisible(true);
@@ -99,6 +103,11 @@ public class GameOver extends JPanel {
         popup.release();
         popup = null;
 
+        if(bgm != null) {
+            bgm.release();
+            bgm = null;
+        }
+
         RunLater.clear();
     }
 
@@ -106,6 +115,7 @@ public class GameOver extends JPanel {
     JFrame frame;
     GOPanel popup;
     HighScore highScore;
+    Sound bgm = null;
 
     int score;
     int lines;

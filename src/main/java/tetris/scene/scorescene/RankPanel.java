@@ -28,12 +28,12 @@ public class RankPanel extends JPanel {
 
         this.highlightRank = highlightRank;
         int[] screenSize = GameSettings.getInstance().getResolutionSize();
-        int gap = (int)(screenSize[0] * 0.05f);
+        int gap = (int)(screenSize[0] * 0.02f);
 
         JPanel panel = new JPanel();
         panel.setOpaque(false);
         panel.setLayout(new GridLayout(1,4,gap,0));
-        panel.setBorder(BorderFactory.createEmptyBorder(0, gap, 6, gap));
+        panel.setBorder(BorderFactory.createEmptyBorder(0, gap*4, 10, gap*30));
         
         add(panel, BorderLayout.NORTH);
 
@@ -124,7 +124,7 @@ public class RankPanel extends JPanel {
 class ModeBtn extends Animation {
     ActionListener eventListener = null;
     ModeBtn(String mode, Consumer<String> clickCallback) {
-        super(mode, Theme.getFont(Theme.GIANTS_INLINE, 0.020f), 
+        super(mode, Theme.getFont(Theme.GIANTS_INLINE, 0.015f), 
             Theme.WHITE, Theme.GRAY, Theme.DARK_GRAY, 1, 15, 
             SwingConstants.CENTER, SwingConstants.CENTER
         );
@@ -159,7 +159,18 @@ class RankTable extends JPanel {
     RankTable(int validRowCount) {
         setOpaque(false);
         setLayout(new GridLayout(11,1,0,12));
-        setBorder(BorderFactory.createEmptyBorder(12,48,24,48));
+//         setBorder(BorderFactory.createCompoundBorder(
+//     BorderFactory.createEmptyBorder(0, 48, 0, 48),                     // 바깥 패딩
+//     BorderFactory.createCompoundBorder(
+//         BorderFactory.createLineBorder(Theme.Border(), 2, true),         // 선
+//         BorderFactory.createEmptyBorder(18, 0, 18, 0)                  // 선과 내용 사이 내부 패딩
+//     )
+// ));
+        //setBorder(BorderFactory.createEmptyBorder(12,48,24,48));
+
+
+        
+        
         sound = new Sound("gameboy-pluck-41265.mp3");
 
     }

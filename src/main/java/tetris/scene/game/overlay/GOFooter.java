@@ -93,7 +93,6 @@ public class GOFooter extends Animation {
             
             retryButtonAl = e -> {
                 onRetry();
-                countdownTimer.stop();
             };
             retryButton.addActionListener(retryButtonAl);
             
