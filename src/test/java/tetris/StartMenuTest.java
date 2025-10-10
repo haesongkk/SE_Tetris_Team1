@@ -90,16 +90,30 @@ class StartMenuTest {
     @AfterAll
     @DisplayName("테스트 환경 정리")
     static void cleanup() {
-        // 다이얼로그 자동 닫기 타이머 정리
-        if (dialogCloser != null && dialogCloser.isRunning()) {
-            dialogCloser.stop();
-            System.out.println("다이얼로그 자동 닫기 타이머 정리 완료");
-        }
+        // 다이얼로그 자동 닫기 타이머 완전 정리
+        cleanupDialogCloser();
+        
+        // 모든 열린 윈도우 정리
+        cleanupAllWindows();
         
         if (testFrame != null) {
             testFrame.dispose();
+            testFrame = null;
         }
+        
+        if (mainMenu != null) {
+            try {
+                mainMenu.onExit();
+            } catch (Exception e) {
+                System.out.println("메인 메뉴 정리 중 오류 (무시): " + e.getMessage());
+            }
+            mainMenu = null;
+        }
+        
         System.out.println("🧹 테스트 환경 정리 완료");
+        
+        // 최종 강제 정리 (백그라운드 프로세스 완전 제거)
+        forceSystemCleanup();
     }
     
     @Test
@@ -463,5 +477,122 @@ class StartMenuTest {
             }
         }
         return null;
+    }
+    
+    /**
+     * 다이얼로그 자동 닫기 타이머를 완전히 정리합니다.
+     */
+    private static void cleanupDialogCloser() {
+        if (dialogCloser != null) {
+            try {
+                if (dialogCloser.isRunning()) {
+                    dialogCloser.stop();
+                    System.out.println("🔧 StartMenuTest 다이얼로그 자동 닫기 타이머 중지됨");
+                }
+                
+                // ActionListener 강제 제거 (안전한 방법)
+                java.awt.event.ActionListener[] listeners = dialogCloser.getActionListeners();
+                for (java.awt.event.ActionListener listener : listeners) {
+                    dialogCloser.removeActionListener(listener);
+                }
+                
+                dialogCloser = null;
+                System.out.println("✅ StartMenuTest 다이얼로그 자동 닫기 타이머 완전 정리됨");
+            } catch (Exception e) {
+                System.out.println("StartMenuTest 타이머 정리 중 오류 (무시): " + e.getMessage());
+                dialogCloser = null;
+            }
+        }
+        
+        // 강제 가비지 컬렉션 및 최종화
+        System.runFinalization();
+        System.gc();
+    }
+    
+    /**
+     * 모든 열린 윈도우를 정리합니다.
+     */
+    private static void cleanupAllWindows() {
+        try {
+            Window[] windows = Window.getWindows();
+            int closedCount = 0;
+            
+            for (Window window : windows) {
+                if (window != null && window.isDisplayable()) {
+                    // JDialog나 JFrame 등을 닫기
+                    if (window instanceof JDialog || window instanceof JFrame) {
+                        window.dispose();
+                        closedCount++;
+                    }
+                }
+            }
+            
+            if (closedCount > 0) {
+                System.out.println("🔧 StartMenuTest에서 " + closedCount + "개의 윈도우 정리됨");
+                
+                // 정리 후 짧은 대기
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("StartMenuTest 윈도우 정리 중 오류 (무시): " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 시스템 레벨에서 강제 정리를 수행합니다.
+     * VSCode Test Execution이 계속 실행되는 것을 방지하기 위한 최종 정리 작업입니다.
+     */
+    private static void forceSystemCleanup() {
+        try {
+            System.out.println("🔧 StartMenuTest 시스템 강제 정리 시작...");
+            
+            // 1. AWT/Swing EventQueue 정리
+            try {
+                java.awt.EventQueue eventQueue = java.awt.Toolkit.getDefaultToolkit().getSystemEventQueue();
+                while (eventQueue.peekEvent() != null) {
+                    eventQueue.getNextEvent();
+                }
+            } catch (Exception e) {
+                // 무시
+            }
+            
+            // 2. 활성 GUI 스레드 정리
+            ThreadGroup rootGroup = Thread.currentThread().getThreadGroup();
+            ThreadGroup parentGroup;
+            while ((parentGroup = rootGroup.getParent()) != null) {
+                rootGroup = parentGroup;
+            }
+            
+            Thread[] threads = new Thread[rootGroup.activeCount()];
+            int count = rootGroup.enumerate(threads);
+            
+            for (int i = 0; i < count; i++) {
+                Thread thread = threads[i];
+                if (thread != null && !thread.isDaemon() && thread != Thread.currentThread()) {
+                    String threadName = thread.getName();
+                    if (threadName.contains("AWT-EventQueue") || 
+                        threadName.contains("TimerQueue") ||
+                        threadName.contains("Swing-Timer")) {
+                        System.out.println("⚠️ StartMenuTest 활성 GUI 스레드 감지: " + threadName);
+                        thread.interrupt();
+                    }
+                }
+            }
+            
+            // 3. 강제 메모리 정리
+            System.runFinalization();
+            System.gc();
+            Thread.sleep(100);
+            System.gc();
+            
+            System.out.println("✅ StartMenuTest 시스템 강제 정리 완료");
+            
+        } catch (Exception e) {
+            System.out.println("StartMenuTest 시스템 정리 중 오류 (무시): " + e.getMessage());
+        }
     }
 }
