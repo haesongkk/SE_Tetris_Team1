@@ -1,11 +1,12 @@
 # SE_Tetris_Team1
 
-8-bit-game-music-122259.mp3
-https://pixabay.com/ko/music/%EB%B9%84%EB%94%94%EC%98%A4-%EA%B2%8C%EC%9E%84-8-bit-game-music-122259/
+리소스 출처 임시 기록 
 
-gameboy-pluck-41265.mp3
-https://pixabay.com/ko/sound-effects/gameboy-pluck-41265/
+[8-bit-game-music-122259.mp3](https://pixabay.com/ko/music/%EB%B9%84%EB%94%94%EC%98%A4-%EA%B2%8C%EC%9E%84-8-bit-game-music-122259/)
 
-Giants-Bold.ttf 외 2개
-https://www.giantsclub.com/html/?pcode=1007
+[gameboy-pluck-41265.mp3](https://pixabay.com/ko/sound-effects/gameboy-pluck-41265/)
+
+[Giants-Bold.ttf 외 2개](https://www.giantsclub.com/html/?pcode=1007)
+
+[arcade-beat-323176.mp3](https://pixabay.com/ko/music/%EB%B9%84%EB%94%94%EC%98%A4-%EA%B2%8C%EC%9E%84-arcade-beat-323176/)
 
