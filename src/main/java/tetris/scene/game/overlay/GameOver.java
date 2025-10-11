@@ -14,6 +14,8 @@ import tetris.util.Theme;
 import java.awt.*;
 import java.awt.event.*;
 
+import static java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager;
+
 public class GameOver extends JPanel {
 
 
@@ -31,7 +33,24 @@ public class GameOver extends JPanel {
 
         setOpaque(false);
         
-        addMouseListener(new MouseAdapter() {});
+        // 마우스 클릭 차단
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                e.consume();
+            }
+            
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                e.consume();
+                onNext("unknown");
+            }
+            
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                e.consume();
+            }
+        });
 
         // 캔버스 사이즈 맞추기
         final int[] screenSize = GameSettings.getInstance().getResolutionSize();
@@ -56,7 +75,27 @@ public class GameOver extends JPanel {
 
         frame.getRootPane().setGlassPane(this);
         this.setVisible(true);
-        this.requestFocusInWindow();
+        
+        // 전역 KeyEventDispatcher 등록 - 포커스 위치와 관계없이 ESC 키를 최우선으로 처리
+        keyEventDispatcher = new KeyEventDispatcher() {
+            @Override
+            public boolean dispatchKeyEvent(KeyEvent e) {
+                // ESC 키만 처리
+                if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                    if (e.getID() == KeyEvent.KEY_PRESSED) {
+                        // keyPressed는 그냥 소비만
+                        e.consume();
+                    } else if (e.getID() == KeyEvent.KEY_RELEASED) {
+                        // keyReleased에서 onNext 실행
+                        e.consume();
+                        onNext("unknown");
+                    }
+                    return true; // 이벤트 처리 완료, 더 이상 전달하지 않음
+                }
+                return false; // 다른 키는 정상적으로 전달
+            }
+        };
+        getCurrentKeyboardFocusManager().addKeyEventDispatcher(keyEventDispatcher);
     }
 
     void onRetry() {
@@ -96,6 +135,12 @@ public class GameOver extends JPanel {
 
     void release() {
         //frame.getRootPane().setGlassPane(null);
+        
+        // KeyEventDispatcher 제거
+        if (keyEventDispatcher != null) {
+            getCurrentKeyboardFocusManager().removeKeyEventDispatcher(keyEventDispatcher);
+            keyEventDispatcher = null;
+        }
 
         highScore.release();
         highScore = null;
@@ -116,6 +161,7 @@ public class GameOver extends JPanel {
     GOPanel popup;
     HighScore highScore;
     Sound bgm = null;
+    KeyEventDispatcher keyEventDispatcher;
 
     int score;
     int lines;
