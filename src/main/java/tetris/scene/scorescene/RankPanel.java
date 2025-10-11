@@ -5,6 +5,7 @@ import tetris.util.Animation;
 import tetris.util.Theme;
 import tetris.util.Theme.ColorType;
 import tetris.util.HighScore;
+import tetris.util.RunLater;
 import tetris.util.Sound;
 
 import java.awt.*;
@@ -12,6 +13,7 @@ import java.awt.event.ActionListener;
 
 import javax.swing.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -26,25 +28,27 @@ public class RankPanel extends JPanel {
 
         this.highlightRank = highlightRank;
         int[] screenSize = GameSettings.getInstance().getResolutionSize();
-        int gap = (int)(screenSize[0] * 0.05f);
+        int gap = (int)(screenSize[0] * 0.02f);
+        int left = (int)(screenSize[0] * 0.08f);
+        int right = (int)(screenSize[0] * 0.2f);
 
         JPanel panel = new JPanel();
         panel.setOpaque(false);
         panel.setLayout(new GridLayout(1,4,gap,0));
-        panel.setBorder(BorderFactory.createEmptyBorder(0, gap, 6, gap));
+        panel.setBorder(BorderFactory.createEmptyBorder(0, right, 25, right));
         
         add(panel, BorderLayout.NORTH);
 
 
-        final String[] modeList = {"normal", "hard", "easy", "item"};
+        final String[] modeList = {"easy", "normal", "hard", "item"};
         for(int i = 0; i < modeList.length; i++) {
             buttonList[i] = new ModeBtn(modeList[i], this::reload);
             panel.add(buttonList[i]);
         }
 
-        rankTable = new RankTable();
+        rankTable = new RankTable(highScore.get(mode).size());
         add(rankTable, BorderLayout.CENTER);
-        reload(modeList[0]);
+        load(mode);
 
     }
 
@@ -72,6 +76,7 @@ public class RankPanel extends JPanel {
     HighScore highScore = null;
     RankTable rankTable = null;
     ModeBtn[] buttonList = new ModeBtn[4];
+    boolean reloadOk = false;
 
 
 
@@ -81,30 +86,41 @@ public class RankPanel extends JPanel {
 
         for(int i=0; i<buttonList.length; i++) {
             ModeBtn button = buttonList[i];
-            Animation.runLater(btnAnimDuration * i, () -> button.popOut(0.6f, 0.6f, btnAnimDuration, 1.4f));
+            new RunLater(btnAnimDuration * i, () -> button.popOut(0.6f, 0.6f, btnAnimDuration, 1.4f));
         }
-        Animation.runLater(btnAnimTotalDuration, () -> {
+        new RunLater(btnAnimTotalDuration, () -> {
             rankTable.startAnimations(duration, highlightRank);
+            reloadOk = true;
+
         });
-        Animation.runLater(duration + 0.3f, () -> {
+        new RunLater(duration + 0.3f, () -> {
             if(nextAnimation != null) {
                 nextAnimation.run();
             }
         });
+        
+
     }
 
-    void reload(String mode) {
+    void load(String mode) {
         List<List<String>> rankData = highScore.get(mode);
         for(ModeBtn button: buttonList) {
             if(button.getText().equals(mode)) {
                 button.setForeground(Theme.WHITE);
-                button.setBackground(Theme.LIGHT_GRAY);
+                button.setBorderColor(Theme.WHITE);
+                //button.setBackground(new Color(255, 60, 60));
             } else {
                 button.setForeground(Theme.GRAY);
-                button.setBackground(Theme.DARK_GRAY);
+                button.setBorderColor(Theme.GRAY);
+                //button.setBackground(new Color(200, 200, 30));
             }
         }
         rankTable.reload(rankData);
+    }
+
+    void reload(String mode) {
+        if(!reloadOk) return;
+        load(mode);
         rankTable.startAnimations(0f, -1);
     }
 }
@@ -112,8 +128,9 @@ public class RankPanel extends JPanel {
 class ModeBtn extends Animation {
     ActionListener eventListener = null;
     ModeBtn(String mode, Consumer<String> clickCallback) {
-        super(mode, Theme.getFont(Theme.GIANTS_INLINE, 0.020f), 
-            Theme.WHITE, Theme.GRAY, Theme.DARK_GRAY, 1, 15, 
+        super(mode, Theme.getFont(Theme.GIANTS_INLINE, 0.015f), 
+            Theme.WHITE, Theme.BG(), Theme.WHITE, 
+            2, 30, 
             SwingConstants.CENTER, SwingConstants.CENTER
         );
 
@@ -139,15 +156,30 @@ class RankTable extends JPanel {
     RankRow[] rankRowList = new RankRow[RANK_ROW_COUNT];
     RankItem[][] rankItemList = new RankItem[RANK_ROW_COUNT][COL_COUNT];
 
+    List<RunLater> runLaters = new ArrayList<>();
+
+    int validRowCount = 0;
     Sound sound = null;
 
-    RankTable() {
+    RankTable(int validRowCount) {
         setOpaque(false);
-        setLayout(new GridLayout(11,1,0,12));
-        setBorder(BorderFactory.createEmptyBorder(12,48,24,48));
+        setLayout(new GridLayout(11,1,0,6));
+//         setBorder(BorderFactory.createCompoundBorder(
+//     BorderFactory.createEmptyBorder(0, 48, 0, 48),                     // 바깥 패딩
+//     BorderFactory.createCompoundBorder(
+//         BorderFactory.createLineBorder(Theme.Border(), 2, true),         // 선
+//         BorderFactory.createEmptyBorder(18, 0, 18, 0)                  // 선과 내용 사이 내부 패딩
+//     )
+// ));
+        setBorder(BorderFactory.createEmptyBorder(12,60,24,60));
+
+
+        
+        
         sound = new Sound("gameboy-pluck-41265.mp3");
 
     }
+    
 
     void release() {
         if (rankRowList != null) {
@@ -169,22 +201,29 @@ class RankTable extends JPanel {
 
     void startAnimations(float duration, int highlightRank) {
         final float delay = duration / rankRowList.length;
-        for(int i = 0; i < rankRowList.length; i++) {
+        runLaters.forEach(e -> e.release());
+        runLaters.clear();
+        for(int i = 0; i < this.validRowCount + 1; i++) {
             final float startTime = delay * i;
             final RankRow row = rankRowList[i];
-            Animation.runLater(startTime, () -> row.popOut(0.6f, 0.6f, delay, 1.4f));
-            Animation.runLater(startTime, () -> sound.play(false));
+            runLaters.add(new RunLater(startTime, () -> row.popOut(0.6f, 0.6f, delay, 1.4f)));
+             runLaters.add(new RunLater(startTime, () -> sound.play(false)));
         }
         if(highlightRank > 0 && highlightRank < rankRowList.length) {
-            Animation.runLater(duration, () -> rankRowList[highlightRank].hueBackground(3.5f, true));
-            Animation.runLater(duration, () -> rankRowList[highlightRank].hueBorder(3.5f, true));
+             runLaters.add(new RunLater(duration, () -> rankRowList[highlightRank].hueBackground(3.5f, true)));
+             runLaters.add(new RunLater(duration, () -> rankRowList[highlightRank].hueBorder(3.5f, true)));
             
+        }
+        if(validRowCount == 0) {
+             runLaters.add(new RunLater(delay, () -> rankRowList[RANK_ROW_COUNT / 2 + 1].popOut(0.6f, 0.6f, delay, 1.4f)));
+             runLaters.add(new RunLater(delay, () -> sound.play(false)));
         }
     }
 
 
     void reload(List<List<String>> rankTableData) {
         removeAll();
+        this.validRowCount = rankTableData.size();
         for(int i = 0; i < RANK_ROW_COUNT; i++) {
             rankRowList[i] = new RankRow();
             add(rankRowList[i]);
@@ -200,7 +239,7 @@ class RankTable extends JPanel {
             }
         }
         if(rankTableData.size() == 0) {
-            rankItemList[5][2].setNoData();
+            rankRowList[RANK_ROW_COUNT / 2 + 1].setText("아직 기록이 없습니다. 첫 기록을 세워주세요!");
         }
         revalidate();
         repaint();
@@ -210,12 +249,13 @@ class RankTable extends JPanel {
 
 class RankRow extends Animation {
     RankRow() {
-        super(null, Theme.GIANTS_INLINE, 
-            Theme.BG(), Theme.BG(), Theme.BG(), 
+        super(null, Theme.getFont(Theme.GIANTS_REGULAR, 0.012f), 
+            Theme.LIGHT_GRAY, Theme.BG(), Theme.BG(), 
             1, 15, 
             SwingConstants.CENTER, SwingConstants.CENTER
         );
-        setLayout(new GridLayout(1,5,0,12));
+        setLayout(new GridLayout(1,5,0,6));
+        setBorder(BorderFactory.createEmptyBorder(3,0,0,0));
     }
 
     @Override
@@ -235,7 +275,7 @@ class RankItem extends JLabel {
 
         Color color = row == 0 ? Theme.Block(ColorType.RED) : 
             col == 0 ? Theme.Block(ColorType.CYAN) : 
-            col == 1 ? Theme.Border() : 
+            col == 1 ? Theme.LIGHT_GRAY : 
             col == 2 ? Theme.Block(ColorType.ORANGE) : 
             col == 3 ? Theme.Block(ColorType.PURPLE) : 
             col == 4 ? Theme.Block(ColorType.GREEN) : 
@@ -266,12 +306,4 @@ class RankItem extends JLabel {
         setHorizontalAlignment(align);
         setText(text);
     }
-
-    void setNoData() {
-        setText("NO DATA");
-        setHorizontalAlignment(SwingConstants.CENTER);
-        setFont(getFont().deriveFont(Font.BOLD, getFont().getSize() * 1.5f));
-        setForeground(Theme.GRAY);
-    }
-
 }

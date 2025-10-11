@@ -15,12 +15,24 @@ public final class Theme {
 
     public static Color BG() {
         int colorBlindMode = GameSettings.getInstance().getColorBlindMode();
+        if(colorBlindMode == 0) return new Color(0x00,0x00,0x00);
         return ColorBlindHelper.getBackgroundColor(colorBlindMode);
     }
 
     public static Color Border() {
         int colorBlindMode = GameSettings.getInstance().getColorBlindMode();
         return ColorBlindHelper.getBorderColor(colorBlindMode);
+    }
+
+    public static Color getCustomeBlock(int i) {
+        if(i==0) return new Color(0xFF,0x5B,0x6B);
+        else if(i==1) return new Color(0xFF,0xA5,0x57);
+        else if(i==2) return new Color(255, 225, 0); 
+        else if(i==3) return new Color(0x43,0xD6,0x86);
+        else if(i==4) return new Color(0x35,0xCF,0xF0);
+        else if(i==5) return new Color(0x5A,0x8C,0xFF);
+        else if(i==6) return new Color(0xA9,0x7B,0xE8);
+        else return new Color(0xFF,0x5B,0x6B);
     }
 
     public static Color Block(char blockType) {
@@ -34,6 +46,9 @@ public final class Theme {
         else if(blockType == 'J') blockId = 5;
         else if(blockType == 'T') blockId = 6;
         else blockId = 0;
+
+
+        if(colorBlindMode == 0) return getCustomeBlock(blockId);
         return ColorBlindHelper.getBlockColor(blockId, colorBlindMode);
     }
 
@@ -50,7 +65,7 @@ public final class Theme {
             case PURPLE:    blockId = 6; break;
             default:        blockId = 0; break;
         }
-        
+        if(colorBlindMode == 0) return getCustomeBlock(blockId);
         return ColorBlindHelper.getBlockColor(blockId, colorBlindMode);
     }
 

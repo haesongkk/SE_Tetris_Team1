@@ -79,29 +79,6 @@ public class Animation extends JButton {
     public float[] borderHSB = new float[3];
     public float[] backgroundHSB = new float[3];
 
-    static List<Timer> runningTimers = new ArrayList<>();
-
-    static public void runLater(float delay, Runnable r) {
-        final int delayMs = (int)(delay * 1000);
-        Timer t = new Timer(delayMs, e -> { 
-            ((Timer)e.getSource()).stop(); 
-            runningTimers.remove(e.getSource());
-            r.run(); 
-        });
-        t.setRepeats(false);
-        runningTimers.add(t); 
-        t.start();
-
-    }
-
-    static public void reset() {
-        for(Timer t: runningTimers) {
-            t.stop();
-        }
-        runningTimers.clear();
-    }
-
-
 
     class AnimTimer {
         Timer timer;

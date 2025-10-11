@@ -1,6 +1,7 @@
 package tetris.scene.game.overlay;
 
 import tetris.util.Animation;
+import tetris.util.RunLater;
 import tetris.util.Theme;
 import tetris.GameSettings;
 import java.awt.*;
@@ -48,15 +49,15 @@ public class GOPanel extends Animation {
         );
 
         hueBorder(4.5f, true);
-        Animation.runLater(0, () -> gameOver.move(50, 0, 0, 0, 1.5f, 0.3f, false)); 
-        Animation.runLater(0.3f, () -> scorePanel.startAnimations(2.5f));
-        Animation.runLater(3.5f, () -> goFooter.startAnimations());
+        new RunLater(0, () -> gameOver.move(50, 0, 0, 0, 1.5f, 0.3f, false)); 
+        new RunLater(0.3f, () -> scorePanel.startAnimations(2.5f));
+        new RunLater(3.5f, () -> goFooter.startAnimations());
 
         badge.alpha = 0f;
 
         if(isHighScore) {
-            Animation.runLater(3.8f, () -> badge.popOut(0.8f, 0.8f, 0.5f, 1.5f));
-            Animation.runLater(4.2f, () -> badge.saturateBorder(2.5f, true));
+            new RunLater(3.8f, () -> badge.popOut(0.8f, 0.8f, 0.5f, 1.5f));
+            new RunLater(4.2f, () -> badge.saturateBorder(2.5f, true));
         }
 
 
