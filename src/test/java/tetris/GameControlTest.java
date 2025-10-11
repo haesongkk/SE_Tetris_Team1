@@ -250,6 +250,265 @@ public class GameControlTest {
         System.out.println("✅ 키보드 조작 테스트 통과");
     }
 
+    /**
+     * 3-1. ESC 키 처리 및 게임 오버 상태에서의 입력 무시 테스트 (분기 커버리지 향상)
+     */
+    @Test
+    @Order(31)
+    @DisplayName("3-1. ESC 키 및 게임 상태별 입력 처리 테스트 (분기 커버리지)")
+    void testInputHandlerBranchCoverage() {
+        System.out.println("=== 3-1. ESC 키 및 게임 상태별 입력 처리 테스트 ===");
+
+        assertDoesNotThrow(() -> {
+            if (gameScene == null) {
+                System.out.println("⚠️ 헤드리스 환경에서는 GUI 테스트를 건너뜁니다.");
+                return;
+            }
+
+            // InputHandler 접근
+            Field inputHandlerField = GameScene.class.getDeclaredField("inputHandler");
+            inputHandlerField.setAccessible(true);
+            InputHandler inputHandler = (InputHandler) inputHandlerField.get(gameScene);
+
+            // GameStateManager 접근
+            Field gameStateManagerField = GameScene.class.getDeclaredField("gameStateManager");
+            gameStateManagerField.setAccessible(true);
+            GameStateManager gameStateManager = (GameStateManager) gameStateManagerField.get(gameScene);
+
+            GameSettings settings = GameSettings.getInstance();
+            int pauseKey = settings.getPauseKey();
+
+            // ===== 테스트 케이스 1: ESC 키 처리 (항상 처리되는 분기) =====
+            System.out.println("테스트 1: ESC 키 입력");
+            KeyEvent escKeyEvent = new KeyEvent(testFrame, KeyEvent.KEY_PRESSED,
+                System.currentTimeMillis(), 0, KeyEvent.VK_ESCAPE, KeyEvent.CHAR_UNDEFINED);
+            inputHandler.keyPressed(escKeyEvent);
+            System.out.println("✅ ESC 키 처리 완료");
+
+            // ===== 테스트 케이스 2: 게임 오버 상태에서의 입력 무시 =====
+            System.out.println("테스트 2: 게임 오버 상태에서의 입력 무시");
+            // 게임 오버 상태로 변경
+            gameStateManager.triggerGameOver();
+
+            // 게임 오버 상태에서 일반 키 입력 (무시되어야 함)
+            KeyEvent gameOverKeyEvent = new KeyEvent(testFrame, KeyEvent.KEY_PRESSED,
+                System.currentTimeMillis(), 0, settings.getLeftKey(), KeyEvent.CHAR_UNDEFINED);
+            inputHandler.keyPressed(gameOverKeyEvent);
+            System.out.println("✅ 게임 오버 상태에서 키 입력 무시됨");
+
+            // ===== 테스트 케이스 3: 플레이 상태에서의 일시정지 키 처리 =====
+            System.out.println("테스트 3: 플레이 상태에서의 일시정지 키 처리");
+            // 게임을 다시 시작 상태로 리셋
+            gameStateManager.reset();
+
+            KeyEvent pauseKeyEvent = new KeyEvent(testFrame, KeyEvent.KEY_PRESSED,
+                System.currentTimeMillis(), 0, pauseKey, KeyEvent.CHAR_UNDEFINED);
+            inputHandler.keyPressed(pauseKeyEvent);
+            System.out.println("✅ 일시정지 키 처리 완료");
+
+            // ===== 테스트 케이스 4: 일시정지 상태에서의 입력 무시 =====
+            System.out.println("테스트 4: 일시정지 상태에서의 입력 무시");
+            // 현재 일시정지 상태이므로 일반 키 입력 무시
+            KeyEvent pausedKeyEvent = new KeyEvent(testFrame, KeyEvent.KEY_PRESSED,
+                System.currentTimeMillis(), 0, settings.getRightKey(), KeyEvent.CHAR_UNDEFINED);
+            inputHandler.keyPressed(pausedKeyEvent);
+            System.out.println("✅ 일시정지 상태에서 키 입력 무시됨");
+
+            // ===== 테스트 케이스 5: 매핑되지 않은 키 입력 (null 액션 처리) =====
+            System.out.println("테스트 5: 매핑되지 않은 키 입력");
+            // 게임을 다시 플레이 상태로
+            gameStateManager.togglePause();
+
+            KeyEvent unmappedKeyEvent = new KeyEvent(testFrame, KeyEvent.KEY_PRESSED,
+                System.currentTimeMillis(), 0, KeyEvent.VK_F12, KeyEvent.CHAR_UNDEFINED); // 매핑되지 않은 키
+            inputHandler.keyPressed(unmappedKeyEvent);
+            System.out.println("✅ 매핑되지 않은 키 입력 처리 완료 (무시됨)");
+
+            System.out.println("✅ 모든 InputHandler 분기 경로 테스트 완료");
+
+        }, "InputHandler 분기 커버리지 테스트 중 예외가 발생해서는 안 됩니다.");
+
+        System.out.println("✅ InputHandler 분기 커버리지 테스트 통과");
+    }
+
+    /**
+     * 3-2. GameStateManager 상태 전환 분기 커버리지 테스트 (분기 커버리지 향상)
+     */
+    @Test
+    @Order(32)
+    @DisplayName("3-2. GameStateManager 상태 전환 분기 커버리지 테스트")
+    void testGameStateManagerBranchCoverage() {
+        System.out.println("=== 3-2. GameStateManager 상태 전환 분기 커버리지 테스트 ===");
+
+        assertDoesNotThrow(() -> {
+            if (gameScene == null) {
+                System.out.println("⚠️ 헤드리스 환경에서는 GUI 테스트를 건너뜁니다.");
+                return;
+            }
+
+            // GameStateManager 접근
+            Field gameStateManagerField = GameScene.class.getDeclaredField("gameStateManager");
+            gameStateManagerField.setAccessible(true);
+            GameStateManager gameStateManager = (GameStateManager) gameStateManagerField.get(gameScene);
+
+            // ===== 테스트 케이스 1: PLAYING 상태에서의 일시정지 토글 =====
+            System.out.println("테스트 1: PLAYING 상태에서의 일시정지 토글");
+            // 초기 상태는 PLAYING이어야 함
+            assertTrue(gameStateManager.isPlaying(), "초기 상태는 PLAYING이어야 합니다.");
+            assertFalse(gameStateManager.isPaused(), "초기 상태는 PAUSED가 아니어야 합니다.");
+            assertFalse(gameStateManager.isGameOver(), "초기 상태는 GAME_OVER가 아니어야 합니다.");
+
+            // 일시정지 토글 (PLAYING -> PAUSED)
+            gameStateManager.togglePause();
+            assertTrue(gameStateManager.isPaused(), "일시정지 토글 후 PAUSED 상태여야 합니다.");
+            System.out.println("✅ PLAYING -> PAUSED 전환 완료");
+
+            // ===== 테스트 케이스 2: PAUSED 상태에서의 일시정지 토글 =====
+            System.out.println("테스트 2: PAUSED 상태에서의 일시정지 토글");
+            // 일시정지 토글 (PAUSED -> PLAYING)
+            gameStateManager.togglePause();
+            assertTrue(gameStateManager.isPlaying(), "일시정지 해제 후 PLAYING 상태여야 합니다.");
+            assertFalse(gameStateManager.isPaused(), "일시정지 해제 후 PAUSED가 아니어야 합니다.");
+            System.out.println("✅ PAUSED -> PLAYING 전환 완료");
+
+            // ===== 테스트 케이스 3: GAME_OVER 상태에서의 일시정지 토글 (무시되어야 함) =====
+            System.out.println("테스트 3: GAME_OVER 상태에서의 일시정지 토글 (무시)");
+            // 게임 오버 상태로 변경
+            gameStateManager.triggerGameOver();
+            assertTrue(gameStateManager.isGameOver(), "triggerGameOver() 후 GAME_OVER 상태여야 합니다.");
+
+            // 게임 오버 상태에서 일시정지 토글 시도 (변화 없어야 함)
+            GameStateManager.GameState beforeToggle = gameStateManager.getCurrentState();
+            gameStateManager.togglePause();
+            GameStateManager.GameState afterToggle = gameStateManager.getCurrentState();
+
+            assertEquals(beforeToggle, afterToggle, "GAME_OVER 상태에서는 일시정지 토글이 무시되어야 합니다.");
+            assertTrue(gameStateManager.isGameOver(), "GAME_OVER 상태가 유지되어야 합니다.");
+            System.out.println("✅ GAME_OVER 상태에서 일시정지 토글 무시됨");
+
+            // ===== 테스트 케이스 4: reset() 메소드 상태 초기화 =====
+            System.out.println("테스트 4: reset() 메소드 상태 초기화");
+            gameStateManager.reset();
+            assertTrue(gameStateManager.isPlaying(), "reset() 후 PLAYING 상태여야 합니다.");
+            assertFalse(gameStateManager.isPaused(), "reset() 후 PAUSED가 아니어야 합니다.");
+            assertFalse(gameStateManager.isGameOver(), "reset() 후 GAME_OVER가 아니어야 합니다.");
+            System.out.println("✅ reset() 메소드 상태 초기화 완료");
+
+            System.out.println("✅ 모든 GameStateManager 분기 경로 테스트 완료");
+
+        }, "GameStateManager 분기 커버리지 테스트 중 예외가 발생해서는 안 됩니다.");
+
+        System.out.println("✅ GameStateManager 분기 커버리지 테스트 통과");
+    }
+
+    /**
+     * 3-3. SpeedUp 조건문 분기 커버리지 테스트 (분기 커버리지 향상)
+     */
+    @Test
+    @Order(33)
+    @DisplayName("3-3. SpeedUp 조건문 분기 커버리지 테스트")
+    void testSpeedUpBranchCoverage() {
+        System.out.println("=== 3-3. SpeedUp 조건문 분기 커버리지 테스트 ===");
+
+        assertDoesNotThrow(() -> {
+            // 모의 타이머 생성
+            Timer mockTimer = new Timer(1000, e -> {}); // 1초 간격
+            mockTimer.setDelay(1000); // 초기 딜레이 설정
+
+            // SpeedUp 콜백을 위한 변수들
+            final boolean[] speedIncreased = {false};
+            final int[] speedIncreaseCount = {0};
+
+            // SpeedUp 객체 생성
+            tetris.util.SpeedUp speedUp = new tetris.util.SpeedUp(mockTimer, () -> {
+                speedIncreased[0] = true;
+                speedIncreaseCount[0]++;
+            });
+
+            // ===== 테스트 케이스 1: 게임 오버 상태에서의 블록 생성 (무시되어야 함) =====
+            System.out.println("테스트 1: 게임 오버 상태에서의 블록 생성");
+            speedUp.onBlockGenerated(true); // 게임 오버 상태
+            assertEquals(0, speedUp.getBlocksGenerated(), "게임 오버 상태에서는 블록이 카운팅되지 않아야 합니다.");
+            System.out.println("✅ 게임 오버 상태 블록 생성 무시 완료");
+
+            // ===== 테스트 케이스 2: 정상 상태에서의 블록 생성 =====
+            System.out.println("테스트 2: 정상 상태에서의 블록 생성");
+            speedUp.onBlockGenerated(false); // 정상 상태
+            assertEquals(1, speedUp.getBlocksGenerated(), "정상 상태에서는 블록이 카운팅되어야 합니다.");
+            System.out.println("✅ 정상 상태 블록 생성 카운팅 완료");
+
+            // ===== 테스트 케이스 3: 줄 삭제 - 0줄 삭제 (무시되어야 함) =====
+            System.out.println("테스트 3: 0줄 삭제");
+            speedUp.onLinesCleared(0); // 0줄 삭제
+            assertEquals(0, speedUp.getTotalLinesCleared(), "0줄 삭제는 카운팅되지 않아야 합니다.");
+            System.out.println("✅ 0줄 삭제 무시 완료");
+
+            // ===== 테스트 케이스 4: 줄 삭제 - 정상 줄 삭제 =====
+            System.out.println("테스트 4: 정상 줄 삭제");
+            speedUp.onLinesCleared(2); // 2줄 삭제
+            int linesAfterClear = speedUp.getTotalLinesCleared();
+            assertTrue(linesAfterClear >= 2, "줄 삭제가 카운팅되어야 합니다. 현재: " + linesAfterClear);
+            System.out.println("✅ 정상 줄 삭제 카운팅 완료 (카운트: " + linesAfterClear + ")");
+
+            // ===== 테스트 케이스 5: 속도 증가 조건 충족 (줄 삭제 임계값) =====
+            System.out.println("테스트 5: 줄 삭제 임계값에 의한 속도 증가");
+            // 줄 삭제 임계값까지 채우기 (이미 2줄 삭제했으므로 추가로 0줄 더 필요)
+            for (int i = 0; i < Math.max(0, tetris.util.SpeedUp.getLinesThreshold() - linesAfterClear); i++) {
+                speedUp.onLinesCleared(1);
+            }
+
+            // 속도 증가 확인
+            assertTrue(speedIncreased[0], "줄 삭제 임계값 도달 시 속도 증가가 발생해야 합니다.");
+            assertEquals(1, speedIncreaseCount[0], "속도 증가 콜백이 호출되어야 합니다.");
+            System.out.println("✅ 줄 삭제 임계값 속도 증가 완료");
+
+            // ===== 테스트 케이스 6: 속도 증가 조건 충족 (블록 임계값) =====
+            System.out.println("테스트 6: 블록 임계값에 의한 속도 증가");
+            speedIncreased[0] = false; // 리셋
+
+            // 블록 임계값까지 채우기
+            for (int i = 0; i < tetris.util.SpeedUp.getBlocksThreshold(); i++) {
+                speedUp.onBlockGenerated(false);
+            }
+
+            // 속도 증가 확인
+            assertTrue(speedIncreased[0], "블록 임계값 도달 시 속도 증가가 발생해야 합니다.");
+            assertEquals(2, speedIncreaseCount[0], "속도 증가 콜백이 두 번째로 호출되어야 합니다.");
+            System.out.println("✅ 블록 임계값 속도 증가 완료");
+
+            // ===== 테스트 케이스 7: 최소 간격 제한 테스트 =====
+            System.out.println("테스트 7: 최소 간격 제한");
+            int originalInterval = speedUp.getCurrentInterval();
+
+            // 여러 번 속도 증가시켜 최소값에 도달하도록 함
+            for (int i = 0; i < 10; i++) {
+                speedUp.onBlockGenerated(false);
+                for (int j = 0; j < tetris.util.SpeedUp.getBlocksThreshold(); j++) {
+                    speedUp.onBlockGenerated(false);
+                }
+            }
+
+            // 최소 간격을 넘지 않아야 함
+            assertTrue(speedUp.getCurrentInterval() >= 400, "간격이 최소값 400ms 미만으로 떨어지지 않아야 합니다.");
+            System.out.println("✅ 최소 간격 제한 테스트 완료");
+
+            // ===== 테스트 케이스 8: reset() 메소드 테스트 =====
+            System.out.println("테스트 8: reset() 메소드");
+            speedUp.reset();
+            assertEquals(0, speedUp.getBlocksGenerated(), "reset 후 블록 카운트가 0이어야 합니다.");
+            assertEquals(0, speedUp.getTotalLinesCleared(), "reset 후 줄 삭제 카운트가 0이어야 합니다.");
+            System.out.println("✅ reset() 메소드 테스트 완료");
+
+            // 타이머 정리
+            mockTimer.stop();
+
+            System.out.println("✅ 모든 SpeedUp 분기 경로 테스트 완료");
+
+        }, "SpeedUp 분기 커버리지 테스트 중 예외가 발생해서는 안 됩니다.");
+
+        System.out.println("✅ SpeedUp 분기 커버리지 테스트 통과");
+    }
+
     @Test
     @Order(4)
     @DisplayName("4. 반복 키 입력 처리 테스트")

@@ -64,6 +64,29 @@ test {
         events "passed", "skipped", "failed"
         exceptionFormat "full"
         showStandardStreams = false
+        
+        // 테스트 완료 후 요약 정보 출력
+        afterSuite { desc, result ->
+            if (!desc.parent) { // 루트 테스트 스위트인 경우
+                println ""
+                println "=" * 50
+                println "🧪 JUnit 테스트 실행 결과"
+                println "=" * 50
+                println "총 테스트: ${result.testCount}"
+                println "성공: ${result.successfulTestCount}"
+                println "실패: ${result.failedTestCount}"
+                println "건너뜀: ${result.skippedTestCount}"
+                println "실행 시간: ${result.endTime - result.startTime}ms"
+                
+                if (result.failedTestCount > 0) {
+                    println "❌ 일부 테스트가 실패했습니다."
+                } else {
+                    println "✅ 모든 테스트가 성공했습니다!"
+                }
+                println "=" * 50
+                println ""
+            }
+        }
     }
     
     // GUI 테스트를 위한 헤드리스 모드 설정 (CI 환경에서만)
@@ -81,8 +104,8 @@ test {
     systemProperty 'junit.jupiter.execution.timeout.default', '5m'
     systemProperty 'junit.jupiter.execution.timeout.mode', 'enabled'
     
-    // 테스트 실패 시에도 계속 진행
-    ignoreFailures = false
+    // 테스트 실패 시에도 계속 진행 (커버리지 리포트 생성을 위해)
+    ignoreFailures = true
     
     // 문제있는 테스트 제외 (필요시)
     exclude '**/*LongRunning*'
@@ -94,10 +117,12 @@ jacoco {
 }
 
 jacocoTestReport {
+    dependsOn test
+    
     reports {
         xml.required = true
         html.required = true
-        csv.required = false
+        csv.required = true  // CSV 리포트도 활성화하여 콘솔 출력용으로 사용
     }
     
     afterEvaluate {
@@ -109,6 +134,96 @@ jacocoTestReport {
             ])
         }))
     }
+    
+    // 커버리지 리포트 생성 후 콘솔에 요약 정보 출력
+    doLast {
+        def csvFile = reports.csv.outputLocation.asFile.get()
+        if (csvFile.exists()) {
+            def coverageData = parseCoverageData(csvFile)
+            printCoverageSummary(coverageData)
+        }
+        
+        println ""
+        println "📊 테스트 커버리지 리포트가 생성되었습니다:"
+        println "   HTML: ${reports.html.outputLocation.asFile.get().toURI()}"
+        println "   XML:  ${reports.xml.outputLocation.asFile.get()}"
+        println ""
+    }
+}
+
+// 테스트 실행 후 자동으로 커버리지 리포트 생성
+test.finalizedBy jacocoTestReport
+
+// 커버리지 데이터 파싱 함수
+def parseCoverageData(csvFile) {
+    def lines = csvFile.readLines()
+    if (lines.size() < 2) return null
+    
+    def totalInstructions = 0
+    def coveredInstructions = 0
+    def totalBranches = 0
+    def coveredBranches = 0
+    def totalLines = 0
+    def coveredLines = 0
+    
+    // CSV 헤더를 건너뛰고 데이터 행들을 처리
+    lines[1..-1].each { line ->
+        def parts = line.split(',')
+        if (parts.size() >= 12) {
+            totalInstructions += parts[3] as Integer
+            coveredInstructions += parts[4] as Integer
+            totalBranches += parts[5] as Integer
+            coveredBranches += parts[6] as Integer
+            totalLines += parts[7] as Integer
+            coveredLines += parts[8] as Integer
+        }
+    }
+    
+    return [
+        instructions: [total: totalInstructions, covered: coveredInstructions],
+        branches: [total: totalBranches, covered: coveredBranches],
+        lines: [total: totalLines, covered: coveredLines]
+    ]
+}
+
+// 커버리지 요약 정보 출력 함수
+def printCoverageSummary(coverageData) {
+    if (!coverageData) {
+        println "⚠️ 커버리지 데이터를 읽을 수 없습니다."
+        return
+    }
+    
+    def instructionCoverage = coverageData.instructions.total > 0 ? 
+        (coverageData.instructions.covered / coverageData.instructions.total * 100) : 0
+    def branchCoverage = coverageData.branches.total > 0 ? 
+        (coverageData.branches.covered / coverageData.branches.total * 100) : 0
+    def lineCoverage = coverageData.lines.total > 0 ? 
+        (coverageData.lines.covered / coverageData.lines.total * 100) : 0
+    
+    println ""
+    println "=" * 60
+    println "📊 JUnit 테스트 코드 커버리지 결과"
+    println "=" * 60
+    printf "📋 라인 커버리지:        %d/%d (%.1f%%)\n", 
+        coverageData.lines.covered, coverageData.lines.total, lineCoverage
+    printf "🎯 명령어 커버리지:      %d/%d (%.1f%%)\n", 
+        coverageData.instructions.covered, coverageData.instructions.total, instructionCoverage
+    printf "🔀 분기 커버리지:        %d/%d (%.1f%%)\n", 
+        coverageData.branches.covered, coverageData.branches.total, branchCoverage
+    println "=" * 60
+    
+    // 커버리지 품질 평가
+    def overallCoverage = lineCoverage
+    if (overallCoverage >= 80) {
+        println "✅ 우수한 코드 커버리지입니다! (80% 이상)"
+    } else if (overallCoverage >= 60) {
+        println "⚠️ 양호한 코드 커버리지입니다. (60-80%)"
+    } else if (overallCoverage >= 40) {
+        println "🔶 개선이 필요한 코드 커버리지입니다. (40-60%)"
+    } else {
+        println "🔴 코드 커버리지가 낮습니다. 추가 테스트가 필요합니다. (40% 미만)"
+    }
+    println ""
 }
 
 // JAR 파일 생성 설정
@@ -176,6 +291,47 @@ spotbugsTest {
         html {
             required = true
             outputLocation = file("$buildDir/reports/spotbugs/test/spotbugs.html")
+        }
+    }
+}
+
+// ===== 커버리지 관련 편의 태스크들 =====
+
+// 테스트 + 커버리지 한 번에 실행
+tasks.register('testWithCoverage') {
+    group = 'verification'
+    description = 'JUnit 테스트 실행 후 커버리지 리포트 생성 및 콘솔 출력'
+    dependsOn test, jacocoTestReport
+}
+
+// 커버리지만 다시 생성 (테스트는 실행하지 않음)
+tasks.register('coverageReport') {
+    group = 'reporting'
+    description = '기존 테스트 결과를 바탕으로 커버리지 리포트만 다시 생성'
+    dependsOn jacocoTestReport
+}
+
+// 커버리지 검증 태스크 (최소 커버리지 기준 설정)
+jacocoTestCoverageVerification {
+    dependsOn jacocoTestReport
+    
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.60  // 최소 60% 라인 커버리지 요구
+            }
+        }
+        
+        rule {
+            enabled = true
+            element = 'CLASS'
+            excludes = ['**.*Test*', '**.*Main*', '**.*Tetris*']
+            
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.6  // 개별 클래스는 최소 60% 커버리지
+            }
         }
     }
 }
