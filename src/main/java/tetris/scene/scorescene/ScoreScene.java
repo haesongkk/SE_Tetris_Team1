@@ -4,6 +4,7 @@ import tetris.scene.Scene;
 import tetris.Game;
 import tetris.scene.menu.MainMenuScene;
 import tetris.util.Animation;
+import tetris.util.Sound;
 import tetris.util.Theme;
 
 import javax.swing.*;
@@ -14,16 +15,16 @@ public class ScoreScene extends Scene {
         super(frame);
         setBackground(Theme.BG());
         setLayout(new BorderLayout());
-        setBorder(BorderFactory.createEmptyBorder(24, 0, 24, 0));
 
         // 제목 라벨
         titleLabel = new Animation(
             "HIGH SCORE", 
-            Theme.getFont(Theme.GIANTS_INLINE, 0.08f), 
+            Theme.getFont(Theme.GIANTS_INLINE, 0.07f), 
             Theme.Block('O'), Theme.BG(), Theme.BG(), 
             0, 0, 
             SwingConstants.CENTER, SwingConstants.CENTER
         );
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(24, 0, 12, 0));
         add(titleLabel, BorderLayout.NORTH);
         
         // 랭크 패널
@@ -38,6 +39,7 @@ public class ScoreScene extends Scene {
             0, 0, 
             SwingConstants.CENTER, SwingConstants.CENTER
         );
+        exitLabel.setBorder(BorderFactory.createEmptyBorder(12, 0, 24, 0));
         add(exitLabel, BorderLayout.SOUTH);
 
 
@@ -75,18 +77,23 @@ public class ScoreScene extends Scene {
     Animation exitLabel;
     RankPanel rankPanel;
 
+    Sound sound = null;
 
 
     @Override public void onEnter() {
         startAnimations();
+        sound = new Sound("8-bit-game-music-122259.mp3");
+        sound.play(true);
     }
     @Override public void onExit() {
         titleLabel.release();
-        exitLabel.release();
-        rankPanel.release();
         titleLabel = null;
+        exitLabel.release();
         exitLabel = null;
+        rankPanel.release();
         rankPanel = null;
+        sound.release();
+        sound = null;
     }
 }
 

@@ -3,6 +3,7 @@ package tetris.scene.game.overlay;
 import tetris.GameSettings;
 import tetris.util.Animation;
 import tetris.util.Theme;
+import tetris.util.Theme.ColorType;
 
 import java.awt.*;
 import java.awt.event.ActionListener;
@@ -27,7 +28,7 @@ public class GOFooter extends Animation {
         this.isHighScore = isHighScore;
 
         int[] screenSize = GameSettings.getInstance().getResolutionSize();
-        int width = (int)(screenSize[0] * 0.03f);
+        int width = (int)(screenSize[0] * 0.06f);
         int height = (int)(screenSize[1] * 0.04f);
         setLayout(new GridLayout(2, 1));
         setBorder(BorderFactory.createEmptyBorder(0, width, height, width));
@@ -61,16 +62,30 @@ public class GOFooter extends Animation {
         } else {
             label = new JLabel("", SwingConstants.CENTER);
             label.setFont(Theme.getFont(Theme.GIANTS_REGULAR, 0.016f));
-            label.setForeground(Theme.Block('O'));
+            label.setForeground(Theme.Block(ColorType.YELLOW));
             
             retryButton = new JButton("RETRY?");
             
             retryButton.setFont(Theme.getFont(Theme.GIANTS_BOLD, 0.014f));
-            retryButton.setForeground(new Color(60, 60, 60));
+            retryButton.setForeground(Theme.GRAY);
 
             retryButton.setFocusPainted(false);
             retryButton.setContentAreaFilled(false);
-            retryButton.setOpaque(false);
+            //retryButton.setOpaque(true);
+
+            retryButton.addMouseListener(new java.awt.event.MouseAdapter() {
+                @Override
+                public void mouseEntered(java.awt.event.MouseEvent e) {
+                    retryButton.setForeground(Theme.LIGHT_GRAY);
+                    //retryButton.repaint();
+                }
+                
+                @Override
+                public void mouseExited(java.awt.event.MouseEvent e) {
+                    retryButton.setForeground(Theme.GRAY);
+                    //retryButton.repaint();
+                }
+            });
 
             add(label);
             add(retryButton);
@@ -162,7 +177,7 @@ public class GOFooter extends Animation {
             retryButton.removeActionListener(retryButtonAl);
             retryButtonAl = null;;
         }
-        
+
 
         label = null;
         nameField = null;
