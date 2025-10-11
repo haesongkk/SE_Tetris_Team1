@@ -10,12 +10,16 @@ import tetris.util.Theme;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.*;
+
+import static java.awt.Toolkit.getDefaultToolkit;
 
 public class ScoreScene extends Scene {
     public ScoreScene(JFrame frame, int highlightRank, String mode) {
         super(frame);
         setBackground(Theme.BG());
         setLayout(new BorderLayout());
+        this.frame = frame;
 
         // 제목 라벨
         titleLabel = new Animation(
@@ -79,14 +83,46 @@ public class ScoreScene extends Scene {
     RankPanel rankPanel;
 
     Sound sound = null;
+    JFrame frame;
+    AWTEventListener mouseEventListener;
 
     @Override public void onEnter() {
         startAnimations();
 
         sound = new Sound("8-bit-game-music-122259.mp3");
         sound.play(true);
+        
+        // 전역 마우스 이벤트 리스너 등록 - 버튼 외의 클릭 차단
+        mouseEventListener = new AWTEventListener() {
+            @Override
+            public void eventDispatched(AWTEvent event) {
+                if (event instanceof MouseEvent) {
+                    MouseEvent mouseEvent = (MouseEvent) event;
+                    Component source = mouseEvent.getComponent();
+                    
+                    // 버튼 클릭은 허용 (Animation 클래스는 JButton을 상속)
+                    if (source instanceof ModeBtn) {
+                        return; // 버튼 이벤트는 정상 전달
+                    }
+                    
+                    // 버튼이 아닌 곳 클릭 차단
+                    if (mouseEvent.getID() == MouseEvent.MOUSE_RELEASED) {
+                        Game.setScene(new MainMenuScene(frame));
+                    }
+                }
+            }
+        };
+        
+        // MOUSE_EVENT_MASK로 마우스 이벤트만 감지
+        getDefaultToolkit().addAWTEventListener(mouseEventListener, AWTEvent.MOUSE_EVENT_MASK);
     }
     @Override public void onExit() {
+        // 마우스 이벤트 리스너 제거
+        if (mouseEventListener != null) {
+            getDefaultToolkit().removeAWTEventListener(mouseEventListener);
+            mouseEventListener = null;
+        }
+        
         if(titleLabel != null) {
             titleLabel.release();
             titleLabel = null;
