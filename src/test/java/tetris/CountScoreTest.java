@@ -284,7 +284,7 @@ public class CountScoreTest {
             e.printStackTrace();
         } finally {
             // 백그라운드 프로세스 정리
-            forceSystemCleanup();
+            TestCleanupHelper.forceCompleteSystemCleanup("CountScoreTest");
         }
         
         System.out.println("==========================================");

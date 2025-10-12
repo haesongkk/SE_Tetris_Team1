@@ -105,6 +105,9 @@ public class SafeGameTest {
         }
         
         System.out.println("=== SafeGameTest 백그라운드 프로세스 완전 정리 완료 ===");
+        
+        // TestCleanupHelper를 통한 추가 정리
+        TestCleanupHelper.forceCompleteSystemCleanup("SafeGameTest");
     }
 
     @Test

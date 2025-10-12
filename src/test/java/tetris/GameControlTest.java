@@ -103,7 +103,7 @@ public class GameControlTest {
         System.out.println("✅ 테스트 환경 정리 완료");
         
         // 최종 강제 정리 (백그라운드 프로세스 완전 제거)
-        forceSystemCleanup();
+        TestCleanupHelper.forceCompleteSystemCleanup("GameControlTest");
     }
 
     @Test

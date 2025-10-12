@@ -86,8 +86,8 @@ public class ColorBlindModeTest {
         
         System.out.println("✅ 테스트 환경 정리 완료");
         
-        // 최종 강제 정리
-        forceSystemCleanup();
+        // 강화된 시스템 정리 실행
+        TestCleanupHelper.forceCompleteSystemCleanup("ColorBlindModeTest");
     }
 
     @Test
