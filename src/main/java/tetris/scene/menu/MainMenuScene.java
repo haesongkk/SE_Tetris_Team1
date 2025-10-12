@@ -69,21 +69,27 @@ public class MainMenuScene extends Scene implements KeyListener {
         titlePanel.setLayout(new BoxLayout(titlePanel, BoxLayout.Y_AXIS));
         titlePanel.setBorder(BorderFactory.createEmptyBorder(50, 0, 30, 0));
 
+        // 해상도에 따른 폰트 크기 조정
+        int[] resolution = gameSettings.getResolutionSize();
+        int screenWidth = resolution[0];
+        int titleFontSize = Math.max(48, screenWidth / 18);     // 최소 48px, 화면 너비에 비례
+        int subtitleFontSize = Math.max(14, screenWidth / 60);  // 최소 14px, 화면 너비에 비례
+
         // 메인 제목
         JLabel titleLabel = new JLabel("TETRIS");
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 72));
+        titleLabel.setFont(new Font("Arial", Font.BOLD, titleFontSize));
         titleLabel.setForeground(TITLE_COLOR);
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         
         // 그림자 효과를 위한 백그라운드 제목
         JLabel shadowLabel = new JLabel("TETRIS");
-        shadowLabel.setFont(new Font("Arial", Font.BOLD, 72));
+        shadowLabel.setFont(new Font("Arial", Font.BOLD, titleFontSize));
         shadowLabel.setForeground(new Color(40, 40, 80));
         shadowLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         
         // 서브타이틀
         JLabel subtitleLabel = new JLabel("Team 1 Edition");
-        subtitleLabel.setFont(new Font("Arial", Font.ITALIC, 16));
+        subtitleLabel.setFont(new Font("Arial", Font.ITALIC, subtitleFontSize));
         subtitleLabel.setForeground(TEXT_COLOR);
         subtitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
@@ -104,15 +110,22 @@ public class MainMenuScene extends Scene implements KeyListener {
         
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
-        gbc.insets = new Insets(10, 0, 10, 0);
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.anchor = GridBagConstraints.CENTER;
         
         // 메뉴 버튼들
         String[] buttonTexts = {"Start Game", "Settings", "Score", "Exit"};
         menuButtons = new JButton[buttonTexts.length];
         
+        // 해상도에 따른 버튼 간격 조정 (고정된 작은 간격)
+        int buttonSpacing = 20; // 고정된 간격
+        
         for (int i = 0; i < buttonTexts.length; i++) {
             menuButtons[i] = createMenuButton(buttonTexts[i], i);
+            
             gbc.gridy = i;
+            gbc.insets = new Insets(buttonSpacing / 2, 0, buttonSpacing / 2, 0);
+            
             menuPanel.add(menuButtons[i], gbc);
         }
         
@@ -124,8 +137,21 @@ public class MainMenuScene extends Scene implements KeyListener {
     // 개별 메뉴 버튼을 생성하고 스타일을 설정하는 메서드
     private JButton createMenuButton(String text, int index) {
         JButton button = new JButton(text);
-        button.setFont(new Font("Arial", Font.BOLD, 24));
-        button.setPreferredSize(new Dimension(250, 60));
+        
+        // 해상도에 따른 버튼 크기 조정 (더 합리적인 크기)
+        int[] resolution = gameSettings.getResolutionSize();
+        int screenWidth = resolution[0];
+        int screenHeight = resolution[1];
+        
+        // 해상도에 따른 동적 크기 조정 (더 합리적인 크기)
+        int buttonWidth = Math.max(200, Math.min(400, screenWidth / 3));  // 최소 200px, 최대 400px
+        int buttonHeight = Math.max(50, Math.min(80, screenHeight / 12)); // 최소 50px, 최대 80px
+        int fontSize = Math.max(18, Math.min(28, screenWidth / 30));      // 최소 18px, 최대 28px
+        
+        button.setFont(new Font("Arial", Font.BOLD, fontSize));
+        button.setPreferredSize(new Dimension(buttonWidth, buttonHeight));
+        button.setMinimumSize(new Dimension(buttonWidth, buttonHeight));
+        button.setMaximumSize(new Dimension(buttonWidth, buttonHeight));
 
         button.setFocusable(false);
         button.setFocusPainted(false);
@@ -152,8 +178,13 @@ public class MainMenuScene extends Scene implements KeyListener {
         infoPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
         infoPanel.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
         
+        // 해상도에 따른 폰트 크기 조정
+        int[] resolution = gameSettings.getResolutionSize();
+        int screenWidth = resolution[0];
+        int infoFontSize = Math.max(14, screenWidth / 50);  // 최소 14px, 화면 너비에 비례
+        
         JLabel infoLabel = new JLabel("↑↓ 키로 선택, Enter로 확인, ESC로 종료");
-        infoLabel.setFont(new Font("Malgun Gothic", Font.BOLD, 18));
+        infoLabel.setFont(new Font("Malgun Gothic", Font.BOLD, infoFontSize));
         infoLabel.setForeground(TEXT_COLOR);
         
         infoPanel.add(infoLabel);
