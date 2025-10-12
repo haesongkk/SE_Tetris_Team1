@@ -277,8 +277,16 @@ public class MainMenuScene extends Scene implements KeyListener {
         modeDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
         modeDialog.setResizable(false);
         
-        // 다이얼로그 크기 설정 (작은 크기)
-        modeDialog.setSize(350, 250);
+        // 해상도에 따른 다이얼로그 크기 조정
+        int[] resolution = gameSettings.getResolutionSize();
+        int screenWidth = resolution[0];
+        int screenHeight = resolution[1];
+        
+        int dialogWidth = Math.max(300, Math.min(400, screenWidth / 2));
+        int dialogHeight = Math.max(200, Math.min(300, screenHeight / 3));
+        
+        // 다이얼로그 크기 설정
+        modeDialog.setSize(dialogWidth, dialogHeight);
         modeDialog.setLocationRelativeTo(frame);
         
         // 다이얼로그 내용 패널 설정
@@ -292,7 +300,8 @@ public class MainMenuScene extends Scene implements KeyListener {
         
         // 제목 라벨
         JLabel titleLabel = new JLabel("게임 모드 선택", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Malgun Gothic", Font.BOLD, 20));
+        int titleFontSize = Math.max(16, screenWidth / 50);
+        titleLabel.setFont(new Font("Malgun Gothic", Font.BOLD, titleFontSize));
         titleLabel.setForeground(new Color(255, 255, 100));
         titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0));
         
@@ -305,6 +314,8 @@ public class MainMenuScene extends Scene implements KeyListener {
         JButton regularButton = createDialogButton("Regular Mode");
         regularButton.addActionListener(e -> {
             modeDialog.dispose();
+            // 해상도 설정을 유지하며 GameScene으로 전환
+            System.out.println("Starting Regular Mode game...");
             Game.setScene(new GameScene(frame));
         });
         
@@ -312,6 +323,8 @@ public class MainMenuScene extends Scene implements KeyListener {
         JButton itemButton = createDialogButton("Item Mode");
         itemButton.addActionListener(e -> {
             modeDialog.dispose();
+            // 해상도 설정을 유지하며 ItemGameScene으로 전환
+            System.out.println("Starting Item Mode game...");
             Game.setScene(new ItemGameScene(frame));
         });
         itemButton.setToolTipText("폭탄 아이템과 함께하는 테트리스!");
@@ -319,7 +332,10 @@ public class MainMenuScene extends Scene implements KeyListener {
         // 취소 버튼
         JButton cancelButton = createDialogButton("취소");
         cancelButton.setBackground(new Color(100, 50, 50));
-        cancelButton.addActionListener(e -> modeDialog.dispose());
+        cancelButton.addActionListener(e -> {
+            System.out.println("Game start cancelled.");
+            modeDialog.dispose();
+        });
         
         buttonPanel.add(regularButton);
         buttonPanel.add(itemButton);

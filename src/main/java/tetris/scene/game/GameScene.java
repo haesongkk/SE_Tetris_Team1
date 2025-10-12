@@ -22,11 +22,9 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
     private JFrame m_frame;
     private static final int GAME_HEIGHT = 20; // 실제 블록이 놓이는 높이
     private static final int GAME_WIDTH = 10; // 실제 블록이 놓이는 너비
-    private static final int CELL_SIZE = 30; // 각 셀의 픽셀 크기
 
     // 다음 블록 미리보기 관련 상수
     private static final int PREVIEW_SIZE = 4; // 미리보기 영역 크기 (4x4)
-    private static final int PREVIEW_CELL_SIZE = 20; // 미리보기 셀 크기
 
     private final BoardManager boardManager; // 보드 관리자
     private BlockManager blockManager; // 블록 관리자
@@ -66,11 +64,15 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
 
     @Override
     public void onEnter() {
+        System.out.println("GameScene: Entering game scene");
+        
         // Scene이 활성화될 때마다 초기화
         initUI();
         initGameState();
         
         timerManager.startTimers();
+        
+        System.out.println("GameScene: Initialization complete");
     }
 
     @Override
@@ -80,6 +82,9 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
     }
 
     private void initUI() {
+        // 프레임의 ContentPane을 이 GameScene으로 설정
+        m_frame.setContentPane(this);
+        
         // UIManager를 사용하여 UI 초기화
         uiManager.initializeUI(this, m_frame, inputHandler);
         
@@ -94,6 +99,10 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
         
         // 포커스 요청
         uiManager.requestFocus(this);
+        
+        // 화면 갱신
+        m_frame.revalidate();
+        m_frame.repaint();
     }
     
     /**
@@ -128,7 +137,7 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
         
         // RenderManager 초기화
         renderManager = new RenderManager(
-            GAME_WIDTH, GAME_HEIGHT, CELL_SIZE, PREVIEW_SIZE, PREVIEW_CELL_SIZE,
+            GAME_WIDTH, GAME_HEIGHT, uiManager.getCellSize(), PREVIEW_SIZE, uiManager.getPreviewCellSize(),
             boardManager, blockManager, gameStateManager, scoreManager
         );
         
