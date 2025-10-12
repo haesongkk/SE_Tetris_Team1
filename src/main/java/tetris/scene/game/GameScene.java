@@ -11,6 +11,8 @@ import tetris.scene.game.core.TimerManager;
 import tetris.scene.game.core.UIManager;
 import tetris.scene.game.overlay.GameOver;
 import tetris.scene.game.core.ScoreManager;
+import tetris.Game;
+import tetris.scene.menu.MainMenuScene;
 
 import javax.swing.*;
 import java.awt.*;
@@ -198,7 +200,7 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
                 // holdBlock(); // 예시 - 실제 구현에 따라 달라질 수 있음
                 break;
             case EXIT_TO_MENU:
-                // InputHandler에서 직접 처리됨
+                handleExitToMenu();
                 break;
         }
     }
@@ -558,5 +560,12 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
     @Override
     public void onLineDeletion() {
         executeLineDeletion();
+    }
+    
+    /**
+     * 메인 메뉴로 나가기 처리
+     */
+    private void handleExitToMenu() {
+        Game.setScene(new MainMenuScene(m_frame));
     }
 }

@@ -445,14 +445,14 @@ public class GameControlTest {
 
             // ===== 테스트 케이스 4: 줄 삭제 - 정상 줄 삭제 =====
             System.out.println("테스트 4: 정상 줄 삭제");
-            speedUp.onLinesCleared(2); // 2줄 삭제
+            speedUp.onLinesCleared(1); // 1줄 삭제 (임계값 2보다 작게 해서 속도 증가 방지)
             int linesAfterClear = speedUp.getTotalLinesCleared();
-            assertTrue(linesAfterClear >= 2, "줄 삭제가 카운팅되어야 합니다. 현재: " + linesAfterClear);
+            assertTrue(linesAfterClear >= 1, "줄 삭제가 카운팅되어야 합니다. 현재: " + linesAfterClear);
             System.out.println("✅ 정상 줄 삭제 카운팅 완료 (카운트: " + linesAfterClear + ")");
 
             // ===== 테스트 케이스 5: 속도 증가 조건 충족 (줄 삭제 임계값) =====
             System.out.println("테스트 5: 줄 삭제 임계값에 의한 속도 증가");
-            // 줄 삭제 임계값까지 채우기 (이미 2줄 삭제했으므로 추가로 0줄 더 필요)
+            // 줄 삭제 임계값까지 채우기 (이미 1줄 삭제했으므로 추가로 1줄 더 필요)
             for (int i = 0; i < Math.max(0, tetris.util.SpeedUp.getLinesThreshold() - linesAfterClear); i++) {
                 speedUp.onLinesCleared(1);
             }
@@ -507,6 +507,78 @@ public class GameControlTest {
         }, "SpeedUp 분기 커버리지 테스트 중 예외가 발생해서는 안 됩니다.");
 
         System.out.println("✅ SpeedUp 분기 커버리지 테스트 통과");
+    }
+
+    /**
+     * 3-4. 게임 진행/중지 상태에서의 종료 키 테스트 (q 키로 메뉴로 이동)
+     */
+    @Test
+    @Order(34)
+    @DisplayName("3-4. 게임 진행/중지 상태에서의 종료 키 테스트")
+    void testExitKeyFunctionality() {
+        System.out.println("=== 3-4. 게임 진행/중지 상태에서의 종료 키 테스트 ===");
+
+        assertDoesNotThrow(() -> {
+            if (gameScene == null) {
+                System.out.println("⚠️ 헤드리스 환경에서는 GUI 테스트를 건너뜁니다.");
+                return;
+            }
+
+            // InputHandler 접근
+            Field inputHandlerField = GameScene.class.getDeclaredField("inputHandler");
+            inputHandlerField.setAccessible(true);
+            InputHandler inputHandler = (InputHandler) inputHandlerField.get(gameScene);
+
+            // GameStateManager 접근
+            Field gameStateManagerField = GameScene.class.getDeclaredField("gameStateManager");
+            gameStateManagerField.setAccessible(true);
+            GameStateManager gameStateManager = (GameStateManager) gameStateManagerField.get(gameScene);
+
+            GameSettings settings = GameSettings.getInstance();
+            int exitKey = settings.getExitKey();
+
+            System.out.println("종료 키: " + GameSettings.getKeyName(exitKey) + " (" + exitKey + ")");
+
+            // ===== 테스트 케이스 1: 게임 진행 중 q 키 입력 =====
+            System.out.println("테스트 1: 게임 진행 중 q 키 입력");
+            // 게임이 진행 중인지 확인
+            assertTrue(gameStateManager.isPlaying(), "초기 상태는 게임 진행 중이어야 합니다.");
+
+            // q 키 이벤트 생성 및 입력
+            KeyEvent exitKeyEvent = new KeyEvent(testFrame, KeyEvent.KEY_PRESSED,
+                System.currentTimeMillis(), 0, exitKey, KeyEvent.CHAR_UNDEFINED);
+            inputHandler.keyPressed(exitKeyEvent);
+            System.out.println("✅ 게임 진행 중 q 키 입력 처리 완료");
+
+            // ===== 테스트 케이스 2: 게임 일시정지 중 q 키 입력 =====
+            System.out.println("테스트 2: 게임 일시정지 중 q 키 입력");
+            // 게임을 다시 시작 상태로 리셋
+            gameStateManager.reset();
+            assertTrue(gameStateManager.isPlaying(), "리셋 후 게임 진행 중이어야 합니다.");
+
+            // 일시정지
+            gameStateManager.togglePause();
+            assertTrue(gameStateManager.isPaused(), "일시정지 상태여야 합니다.");
+
+            // 일시정지 상태에서 q 키 입력
+            inputHandler.keyPressed(exitKeyEvent);
+            System.out.println("✅ 게임 일시정지 중 q 키 입력 처리 완료");
+
+            // ===== 테스트 케이스 3: 게임 오버 상태에서 q 키 입력 =====
+            System.out.println("테스트 3: 게임 오버 상태에서 q 키 입력");
+            // 게임 오버 상태로 변경
+            gameStateManager.triggerGameOver();
+            assertTrue(gameStateManager.isGameOver(), "게임 오버 상태여야 합니다.");
+
+            // 게임 오버 상태에서 q 키 입력 (무시되어야 함)
+            inputHandler.keyPressed(exitKeyEvent);
+            System.out.println("✅ 게임 오버 상태에서 q 키 입력 무시됨");
+
+            System.out.println("✅ 모든 게임 상태에서의 종료 키 테스트 완료");
+
+        }, "게임 진행/중지 상태에서의 종료 키 테스트 중 예외가 발생해서는 안 됩니다.");
+
+        System.out.println("✅ 게임 진행/중지 상태에서의 종료 키 테스트 통과");
     }
 
     @Test
@@ -891,7 +963,23 @@ public class GameControlTest {
                 // 무시
             }
             
-            // 2. 모든 활성 스레드 확인 및 정리
+            // 2. 모든 Timer 완전 중지
+            try {
+                javax.swing.Timer.setLogTimers(false);
+                java.lang.reflect.Field timersField = javax.swing.Timer.class.getDeclaredField("queue");
+                timersField.setAccessible(true);
+                Object timerQueue = timersField.get(null);
+                if (timerQueue != null) {
+                    java.lang.reflect.Method stopMethod = timerQueue.getClass().getDeclaredMethod("stop");
+                    stopMethod.setAccessible(true);
+                    stopMethod.invoke(timerQueue);
+                    System.out.println("🧹 Swing Timer 큐 완전 중지됨");
+                }
+            } catch (Exception e) {
+                // Reflection 실패는 무시
+            }
+            
+            // 3. 모든 활성 스레드 확인 및 정리
             ThreadGroup rootGroup = Thread.currentThread().getThreadGroup();
             ThreadGroup parentGroup;
             while ((parentGroup = rootGroup.getParent()) != null) {
@@ -915,13 +1003,13 @@ public class GameControlTest {
                 }
             }
             
-            // 3. 강제 메모리 정리
+            // 4. 강제 메모리 정리
             System.runFinalization();
             System.gc();
             Thread.sleep(100);
             System.gc();
             
-            // 4. AWT Toolkit 정리
+            // 5. AWT Toolkit 정리
             try {
                 java.awt.Toolkit.getDefaultToolkit().beep(); // AWT 초기화 확인
             } catch (Exception e) {

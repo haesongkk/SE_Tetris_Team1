@@ -560,7 +560,23 @@ class StartMenuTest {
                 // 무시
             }
             
-            // 2. 활성 GUI 스레드 정리
+            // 2. 모든 Timer 완전 중지
+            try {
+                javax.swing.Timer.setLogTimers(false);
+                java.lang.reflect.Field timersField = javax.swing.Timer.class.getDeclaredField("queue");
+                timersField.setAccessible(true);
+                Object timerQueue = timersField.get(null);
+                if (timerQueue != null) {
+                    java.lang.reflect.Method stopMethod = timerQueue.getClass().getDeclaredMethod("stop");
+                    stopMethod.setAccessible(true);
+                    stopMethod.invoke(timerQueue);
+                    System.out.println("🧹 Swing Timer 큐 완전 중지됨");
+                }
+            } catch (Exception e) {
+                // Reflection 실패는 무시
+            }
+            
+            // 3. 활성 GUI 스레드 정리
             ThreadGroup rootGroup = Thread.currentThread().getThreadGroup();
             ThreadGroup parentGroup;
             while ((parentGroup = rootGroup.getParent()) != null) {
@@ -583,7 +599,7 @@ class StartMenuTest {
                 }
             }
             
-            // 3. 강제 메모리 정리
+            // 4. 강제 메모리 정리
             System.runFinalization();
             System.gc();
             Thread.sleep(100);

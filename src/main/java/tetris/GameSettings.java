@@ -16,6 +16,7 @@ public class GameSettings {
     private int dropKey = 32;   // VK_SPACE
     private int pauseKey = 80;  // VK_P
     private int holdKey = 16;   // VK_SHIFT
+    private int exitKey = 81;   // VK_Q
     
     // 싱글톤 패턴 - 생성자를 private으로 설정
     private GameSettings() {}
@@ -97,6 +98,7 @@ public class GameSettings {
     public int getDropKey() { return dropKey; }
     public int getPauseKey() { return pauseKey; }
     public int getHoldKey() { return holdKey; }
+    public int getExitKey() { return exitKey; }
     
     // 키 설정 setter 메서드들
     public void setLeftKey(int keyCode) { this.leftKey = keyCode; }

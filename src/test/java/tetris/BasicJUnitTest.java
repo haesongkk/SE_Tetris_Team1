@@ -61,10 +61,75 @@ public class BasicJUnitTest {
     @AfterAll
     @DisplayName("테스트 환경 정리")
     static void cleanup() {
-        if (testFrame != null) {
-            testFrame.dispose();
+        try {
+            System.out.println("🧹 BasicJUnitTest 백그라운드 프로세스 정리 시작...");
+            
+            // 1. 테스트 프레임 정리
+            if (testFrame != null) {
+                testFrame.dispose();
+                testFrame = null;
+            }
+            
+            // 2. 모든 Timer 완전 중지
+            try {
+                javax.swing.Timer.setLogTimers(false);
+                java.lang.reflect.Field timersField = javax.swing.Timer.class.getDeclaredField("queue");
+                timersField.setAccessible(true);
+                Object timerQueue = timersField.get(null);
+                if (timerQueue != null) {
+                    java.lang.reflect.Method stopMethod = timerQueue.getClass().getDeclaredMethod("stop");
+                    stopMethod.setAccessible(true);
+                    stopMethod.invoke(timerQueue);
+                    System.out.println("🧹 Swing Timer 큐 완전 중지됨");
+                }
+            } catch (Exception e) {
+                // Reflection 실패는 무시
+            }
+            
+            // 3. AWT/Swing EventQueue 정리
+            try {
+                java.awt.EventQueue eventQueue = java.awt.Toolkit.getDefaultToolkit().getSystemEventQueue();
+                while (eventQueue.peekEvent() != null) {
+                    eventQueue.getNextEvent();
+                }
+            } catch (Exception e) {
+                // 무시
+            }
+            
+            // 4. 활성 GUI 스레드 정리
+            ThreadGroup rootGroup = Thread.currentThread().getThreadGroup();
+            ThreadGroup parentGroup;
+            while ((parentGroup = rootGroup.getParent()) != null) {
+                rootGroup = parentGroup;
+            }
+            
+            Thread[] threads = new Thread[rootGroup.activeCount()];
+            int count = rootGroup.enumerate(threads);
+            
+            for (int i = 0; i < count; i++) {
+                Thread thread = threads[i];
+                if (thread != null && !thread.isDaemon() && thread != Thread.currentThread()) {
+                    String threadName = thread.getName();
+                    if (threadName.contains("AWT-EventQueue") || 
+                        threadName.contains("TimerQueue") ||
+                        threadName.contains("Swing-Timer")) {
+                        System.out.println("⚠️ BasicJUnitTest 활성 GUI 스레드 감지: " + threadName);
+                        thread.interrupt();
+                    }
+                }
+            }
+            
+            // 5. 강제 메모리 정리
+            System.runFinalization();
+            System.gc();
+            Thread.sleep(100);
+            System.gc();
+            
+        } catch (Exception e) {
+            System.out.println("BasicJUnitTest 정리 중 오류 (무시): " + e.getMessage());
         }
-        System.out.println("🧹 JUnit 테스트 환경 정리 완료");
+        
+        System.out.println("✅ BasicJUnitTest 백그라운드 프로세스 정리 완료");
     }
 
     @Test

@@ -29,7 +29,23 @@ public class SafeGameTest {
                 }
             }
             
-            // 2. EDT 이벤트 큐 완전 정리
+            // 2. 모든 Timer 완전 중지
+            try {
+                javax.swing.Timer.setLogTimers(false);
+                java.lang.reflect.Field timersField = javax.swing.Timer.class.getDeclaredField("queue");
+                timersField.setAccessible(true);
+                Object timerQueue = timersField.get(null);
+                if (timerQueue != null) {
+                    java.lang.reflect.Method stopMethod = timerQueue.getClass().getDeclaredMethod("stop");
+                    stopMethod.setAccessible(true);
+                    stopMethod.invoke(timerQueue);
+                    System.out.println("🧹 Swing Timer 큐 완전 중지됨");
+                }
+            } catch (Exception e) {
+                // Reflection 실패는 무시
+            }
+            
+            // 3. EDT 이벤트 큐 완전 정리
             try {
                 java.awt.EventQueue eventQueue = java.awt.Toolkit.getDefaultToolkit().getSystemEventQueue();
                 int cleared = 0;
@@ -44,7 +60,7 @@ public class SafeGameTest {
                 // 무시
             }
             
-            // 3. 백그라운드 스레드 강제 정리
+            // 4. 백그라운드 스레드 강제 정리
             ThreadGroup root = Thread.currentThread().getThreadGroup();
             while (root.getParent() != null) {
                 root = root.getParent();
@@ -76,7 +92,7 @@ public class SafeGameTest {
                 }
             }
             
-            // 4. 최종 시스템 정리
+            // 5. 최종 시스템 정리
             System.runFinalization();
             System.gc();
             Thread.sleep(100);

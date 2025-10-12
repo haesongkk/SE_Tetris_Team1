@@ -233,17 +233,93 @@ public class CountScoreTest {
         System.out.println("📊 점수 계산 기능 요구사항 테스트 시작");
         System.out.println("==========================================");
         
-        CountScoreTest test = new CountScoreTest();
-        
-        test.testBasicScoreCalculation();
-        test.testLinesClearedScoring();
-        test.testSpeedBonusScoring();
-        test.testScoreMultiplierSystem();
-        test.testRealTimeScoreUpdate();
-        test.testOverallScoringSystem();
+        try {
+            CountScoreTest test = new CountScoreTest();
+            
+            test.testBasicScoreCalculation();
+            test.testLinesClearedScoring();
+            test.testSpeedBonusScoring();
+            test.testScoreMultiplierSystem();
+            test.testRealTimeScoreUpdate();
+            test.testOverallScoringSystem();
+            
+        } catch (Exception e) {
+            System.err.println("❌ CountScoreTest 실행 중 예외 발생: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            // 백그라운드 프로세스 정리
+            forceSystemCleanup();
+        }
         
         System.out.println("==========================================");
         System.out.println("📊 점수 계산 기능 요구사항 테스트 종료");
         System.out.println("==========================================");
+    }
+    
+    /**
+     * 시스템 리소스 완전 정리
+     */
+    private static void forceSystemCleanup() {
+        try {
+            System.out.println("🧹 CountScoreTest 백그라운드 프로세스 정리 시작...");
+            
+            // 1. 모든 Timer 완전 중지
+            try {
+                javax.swing.Timer.setLogTimers(false);
+                java.lang.reflect.Field timersField = javax.swing.Timer.class.getDeclaredField("queue");
+                timersField.setAccessible(true);
+                Object timerQueue = timersField.get(null);
+                if (timerQueue != null) {
+                    java.lang.reflect.Method stopMethod = timerQueue.getClass().getDeclaredMethod("stop");
+                    stopMethod.setAccessible(true);
+                    stopMethod.invoke(timerQueue);
+                    System.out.println("🧹 Swing Timer 큐 완전 중지됨");
+                }
+            } catch (Exception e) {
+                // Reflection 실패는 무시
+            }
+            
+            // 2. AWT/Swing EventQueue 정리
+            try {
+                java.awt.EventQueue eventQueue = java.awt.Toolkit.getDefaultToolkit().getSystemEventQueue();
+                while (eventQueue.peekEvent() != null) {
+                    eventQueue.getNextEvent();
+                }
+            } catch (Exception e) {
+                // 무시
+            }
+            
+            // 3. 활성 GUI 스레드 정리
+            ThreadGroup rootGroup = Thread.currentThread().getThreadGroup();
+            ThreadGroup parentGroup;
+            while ((parentGroup = rootGroup.getParent()) != null) {
+                rootGroup = parentGroup;
+            }
+            
+            Thread[] threads = new Thread[rootGroup.activeCount()];
+            int count = rootGroup.enumerate(threads);
+            
+            for (int i = 0; i < count; i++) {
+                Thread thread = threads[i];
+                if (thread != null && !thread.isDaemon() && thread != Thread.currentThread()) {
+                    String threadName = thread.getName();
+                    if (threadName.contains("AWT-EventQueue") || 
+                        threadName.contains("TimerQueue") ||
+                        threadName.contains("Swing-Timer")) {
+                        System.out.println("⚠️ CountScoreTest 활성 GUI 스레드 감지: " + threadName);
+                        thread.interrupt();
+                    }
+                }
+            }
+            
+            // 4. 강제 메모리 정리
+            System.runFinalization();
+            System.gc();
+            
+        } catch (Exception e) {
+            System.out.println("CountScoreTest 정리 중 오류 (무시): " + e.getMessage());
+        }
+        
+        System.out.println("✅ CountScoreTest 백그라운드 프로세스 정리 완료");
     }
 }
