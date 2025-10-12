@@ -290,8 +290,7 @@ public class GameSettings {
             "설정 정보:\n" +
             "• 화면 모드: %s\n" +
             "• 해상도: %s\n" +
-            "• 색맹 모드: %s\n" +
-            "• 난이도: %s",
+            "• 색맹 모드: %s\n",
             getDisplayModeString(),
             getResolutionString(),
             getColorBlindModeString(),

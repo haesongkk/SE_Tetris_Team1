@@ -1,6 +1,7 @@
 package tetris.scene.game;
 
 import tetris.scene.game.core.*;
+import tetris.scene.game.overlay.GameOver;
 import javax.swing.*;
 import java.awt.*;
 
@@ -106,15 +107,76 @@ public class ItemGameScene extends GameScene {
     }
     
     /**
-     * 필요시 다음 블록을 즉시 폭탄 블록으로 생성
-     * @param linesCleared 이번에 삭제된 줄 수 (사용하지 않음 - 누적으로 판단)
+     * 게임 오버 시 Item 모드 결과를 "item" 카테고리에 저장하도록 오버라이드
      */
     @Override
-    protected void forceCreateItemBlockIfNeeded(int linesCleared) {
-        BlockManager blockManager = getBlockManager();
-        if (blockManager != null) {
-            System.out.println("ItemGameScene: Checking if item block should be created (Lines this turn: " + linesCleared + ")");
-            blockManager.forceCreateItemBlock();
+    public void onGameOver() {
+        System.out.println("ItemGameScene: Game Over triggered - saving to item category");
+        
+        // 마지막 블록 정보 저장 (게임 오버 후에도 화면에 보이도록)
+        try {
+            java.lang.reflect.Field blockManagerField = GameScene.class.getDeclaredField("blockManager");
+            blockManagerField.setAccessible(true);
+            BlockManager blockManager = (BlockManager) blockManagerField.get(this);
+            
+            if (blockManager.getCurrentBlock() != null) {
+                java.lang.reflect.Field lastBlockField = GameScene.class.getDeclaredField("lastBlock");
+                java.lang.reflect.Field lastBlockXField = GameScene.class.getDeclaredField("lastBlockX");
+                java.lang.reflect.Field lastBlockYField = GameScene.class.getDeclaredField("lastBlockY");
+                
+                lastBlockField.setAccessible(true);
+                lastBlockXField.setAccessible(true);
+                lastBlockYField.setAccessible(true);
+                
+                lastBlockField.set(this, blockManager.getCurrentBlock());
+                lastBlockXField.set(this, blockManager.getX());
+                lastBlockYField.set(this, blockManager.getY());
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to access GameScene fields: " + e.getMessage());
+        }
+        
+        // Item 모드용 게임 오버 오버레이 표시
+        showItemModeGameOverOverlay();
+    }
+    
+    /**
+     * Item 모드용 게임 오버 오버레이를 표시합니다.
+     */
+    private void showItemModeGameOverOverlay() {
+        try {
+            // GameScene의 필드들에 접근
+            java.lang.reflect.Field frameField = GameScene.class.getDeclaredField("m_frame");
+            java.lang.reflect.Field scoreManagerField = GameScene.class.getDeclaredField("scoreManager");
+            java.lang.reflect.Field gameStateManagerField = GameScene.class.getDeclaredField("gameStateManager");
+            
+            frameField.setAccessible(true);
+            scoreManagerField.setAccessible(true);
+            gameStateManagerField.setAccessible(true);
+            
+            JFrame frame = (JFrame) frameField.get(this);
+            ScoreManager scoreManager = (ScoreManager) scoreManagerField.get(this);
+            GameStateManager gameStateManager = (GameStateManager) gameStateManagerField.get(this);
+            
+            int currentScore = scoreManager.getScore();
+            int currentLines = scoreManager.getLinesCleared();
+            int currentTime = gameStateManager.getElapsedTimeInSeconds();
+            
+            // Item 모드용 GameOver 생성 ("item" 카테고리에 저장됨)
+            GameOver gameOverOverlay = new GameOver(frame, currentScore, currentLines, currentTime, "item");
+            
+            // 게임 종료 화면을 현재 패널에 추가
+            setLayout(new OverlayLayout(this));
+            add(gameOverOverlay, 0); // 맨 앞에 추가
+            
+            revalidate();
+            repaint();
+            
+            System.out.println("Item Mode Game Over! Score: " + currentScore + ", Lines: " + currentLines + ", Mode: item");
+        } catch (Exception e) {
+            System.err.println("Failed to show item mode game over overlay: " + e.getMessage());
+            // fallback: 부모 클래스의 메소드 호출
+            super.onGameOver();
         }
     }
 }

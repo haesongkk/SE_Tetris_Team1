@@ -40,7 +40,7 @@ public class RankPanel extends JPanel {
         add(panel, BorderLayout.NORTH);
 
 
-        final String[] modeList = {"easy", "normal", "hard", "item"};
+        final String[] modeList = {"Easy", "Normal", "Hard", "Item"};
         for(int i = 0; i < modeList.length; i++) {
             buttonList[i] = new ModeBtn(modeList[i], this::reload);
             panel.add(buttonList[i]);

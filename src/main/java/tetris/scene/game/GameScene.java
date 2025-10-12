@@ -481,9 +481,9 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
         int currentScore = scoreManager.getScore();
         int currentLines = scoreManager.getLinesCleared();
         int currentTime = gameStateManager.getElapsedTimeInSeconds(); // GameStateManager 사용
-        String difficulty = "Normal"; // 현재 난이도 설정
+        String difficultyStr = difficulty.toString().toLowerCase(); // 실제 난이도 사용
         
-        GameOver gameOverOverlay = new GameOver(m_frame, currentScore, currentLines, currentTime, difficulty);
+        GameOver gameOverOverlay = new GameOver(m_frame, currentScore, currentLines, currentTime, difficultyStr);
         
         // 게임 종료 화면을 현재 패널에 추가
         setLayout(new OverlayLayout(this));
@@ -492,7 +492,7 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
         revalidate();
         repaint();
         
-        System.out.println("Game Over! Score: " + currentScore + ", Lines: " + currentLines);
+        System.out.println("Game Over! Score: " + currentScore + ", Lines: " + currentLines + ", Difficulty: " + difficultyStr);
     }
     
     @Override
