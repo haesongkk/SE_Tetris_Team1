@@ -2,6 +2,7 @@ package tetris;
 
 import tetris.scene.game.GameScene;
 import tetris.scene.game.core.ScoreManager;
+import tetris.GameSettings;
 import javax.swing.*;
 import java.awt.*;
 import java.lang.reflect.Field;
@@ -36,7 +37,7 @@ public class GameScreenTest {
             testFrame.setSize(800, 600);
 
             // GameScene 생성 및 초기화
-            gameScene = new GameScene(testFrame);
+            gameScene = new GameScene(testFrame, GameSettings.Difficulty.NORMAL);
             
             // onEnter() 대신 직접 초기화 메서드 호출
             try {

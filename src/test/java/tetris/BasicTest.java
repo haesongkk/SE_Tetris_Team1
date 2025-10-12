@@ -3,6 +3,7 @@ package tetris;
 import tetris.scene.menu.MainMenuScene;
 import tetris.scene.game.GameScene;
 import tetris.scene.game.blocks.*;
+import tetris.GameSettings;
 import javax.swing.*;
 import java.awt.*;
 import java.lang.reflect.Field;
@@ -95,7 +96,7 @@ public class BasicTest {
     public static void testGameSceneCreation() {
         System.out.println("=== 2. GameScene 보드 크기 테스트 ===");
 
-        GameScene gameScene = new GameScene(testFrame);
+        GameScene gameScene = new GameScene(testFrame, GameSettings.Difficulty.NORMAL);
         // GameScene이 제대로 초기화되도록 onEnter() 호출
         gameScene.onEnter();
 
@@ -147,7 +148,7 @@ public class BasicTest {
     public static void testRandomBlockGeneration() {
         System.out.println("=== 3. 테트로미노 무작위 생성 테스트 ===");
 
-        GameScene gameScene = new GameScene(testFrame);
+        GameScene gameScene = new GameScene(testFrame, GameSettings.Difficulty.NORMAL);
         gameScene.onEnter();
 
         try {
@@ -207,7 +208,7 @@ public class BasicTest {
     public static void testLineCompletionAndDeletion() {
         System.out.println("=== 4. 행 완성 및 삭제 테스트 ===");
 
-        GameScene gameScene = new GameScene(testFrame);
+        GameScene gameScene = new GameScene(testFrame, GameSettings.Difficulty.NORMAL);
         gameScene.onEnter();
 
         try {
@@ -303,7 +304,7 @@ public class BasicTest {
     public static void testBoardInitialization() {
         System.out.println("=== 5. 게임 보드 초기화 테스트 ===");
 
-        GameScene newGameScene = new GameScene(testFrame);
+        GameScene newGameScene = new GameScene(testFrame, GameSettings.Difficulty.NORMAL);
         newGameScene.onEnter();
 
         try {

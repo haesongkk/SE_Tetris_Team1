@@ -64,7 +64,7 @@ public class GameControlTest {
             Game.getInstance();
 
             // GameScene 생성
-            gameScene = new GameScene(testFrame);
+            gameScene = new GameScene(testFrame, GameSettings.Difficulty.NORMAL);
             gameScene.onEnter(); // 게임 씬 초기화
 
             System.out.println("✅ 게임 조작 테스트 환경 설정 완료");
@@ -162,7 +162,7 @@ public class GameControlTest {
                 System.out.println("속도 증가 콜백 호출됨");
             };
             
-            SpeedUp speedUp = new SpeedUp(mockTimer, mockCallback);
+            SpeedUp speedUp = new SpeedUp(mockTimer, mockCallback, GameSettings.Difficulty.NORMAL);
             assertNotNull(speedUp, "SpeedUp 인스턴스가 생성되어야 합니다.");
 
             // SpeedUp 상수 확인
@@ -423,7 +423,7 @@ public class GameControlTest {
             tetris.util.SpeedUp speedUp = new tetris.util.SpeedUp(mockTimer, () -> {
                 speedIncreased[0] = true;
                 speedIncreaseCount[0]++;
-            });
+            }, GameSettings.Difficulty.NORMAL);
 
             // ===== 테스트 케이스 1: 게임 오버 상태에서의 블록 생성 (무시되어야 함) =====
             System.out.println("테스트 1: 게임 오버 상태에서의 블록 생성");

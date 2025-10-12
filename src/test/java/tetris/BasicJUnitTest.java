@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import tetris.scene.menu.MainMenuScene;
 import tetris.scene.game.GameScene;
 import tetris.scene.game.blocks.*;
+import tetris.GameSettings;
+
 import javax.swing.*;
 import java.awt.*;
 import java.lang.reflect.Field;
@@ -165,7 +167,7 @@ public class BasicJUnitTest {
     void testGameSceneCreation() throws Exception {
         System.out.println("=== 2. GameScene 보드 크기 JUnit 테스트 ===");
 
-        GameScene gameScene = new GameScene(testFrame);
+        GameScene gameScene = new GameScene(testFrame, GameSettings.Difficulty.NORMAL);
         
         // 보드 크기 상수 확인
         Field gameHeightField = GameScene.class.getDeclaredField("GAME_HEIGHT");
@@ -191,7 +193,7 @@ public class BasicJUnitTest {
     void testRandomBlockGeneration() throws Exception {
         System.out.println("=== 3. 테트로미노 무작위 생성 JUnit 테스트 ===");
 
-        GameScene gameScene = new GameScene(testFrame);
+        GameScene gameScene = new GameScene(testFrame, GameSettings.Difficulty.NORMAL);
 
         // GameScene 초기화 - blockManager 생성을 위해 필요
         Method initGameStateMethod = GameScene.class.getDeclaredMethod("initGameState");
@@ -268,7 +270,7 @@ public class BasicJUnitTest {
     void testLineCompletionAndDeletion() throws Exception {
         System.out.println("=== 4. 행 완성 및 삭제 JUnit 테스트 ===");
 
-        GameScene gameScene = new GameScene(testFrame);
+        GameScene gameScene = new GameScene(testFrame, GameSettings.Difficulty.NORMAL);
 
         // BoardManager 접근
         Field boardManagerField = GameScene.class.getDeclaredField("boardManager");
@@ -338,7 +340,7 @@ public class BasicJUnitTest {
     void testBoardInitialization() throws Exception {
         System.out.println("=== 5. 게임 보드 초기화 JUnit 테스트 ===");
 
-        GameScene newGameScene = new GameScene(testFrame);
+        GameScene newGameScene = new GameScene(testFrame, GameSettings.Difficulty.NORMAL);
 
         // BoardManager를 통해 보드 접근
         Field boardManagerField = GameScene.class.getDeclaredField("boardManager");
@@ -368,7 +370,7 @@ public class BasicJUnitTest {
 
         // 전체적인 게임 구조가 올바른지 확인
         assertDoesNotThrow(() -> {
-            GameScene gameScene = new GameScene(testFrame);
+            GameScene gameScene = new GameScene(testFrame, GameSettings.Difficulty.NORMAL);
             
             // GameScene이 Scene을 상속받는지 확인
             assertTrue(gameScene instanceof tetris.scene.Scene, 

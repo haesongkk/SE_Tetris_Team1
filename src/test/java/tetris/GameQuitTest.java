@@ -12,6 +12,7 @@ import tetris.scene.game.overlay.GOFooter;
 import tetris.scene.scorescene.ScoreScene;
 import tetris.util.HighScore;
 import tetris.Game;
+import tetris.GameSettings;
 
 import javax.swing.*;
 import java.awt.*;
@@ -64,7 +65,7 @@ public class GameQuitTest {
             Game.getInstance();
 
             // GameScene 생성
-            gameScene = new GameScene(testFrame);
+            gameScene = new GameScene(testFrame, GameSettings.Difficulty.NORMAL);
             gameScene.onEnter(); // 게임 씬 초기화
 
             System.out.println("✅ 게임 종료 테스트 환경 설정 완료");

@@ -12,7 +12,7 @@ public class ItemGameScene extends GameScene {
     private ItemManager itemManager;
     
     public ItemGameScene(JFrame frame) {
-        super(frame);
+        super(frame, tetris.GameSettings.Difficulty.NORMAL);
         
         // 아이템 매니저 초기화
         itemManager = new ItemManager();

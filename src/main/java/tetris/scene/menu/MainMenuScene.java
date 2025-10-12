@@ -314,9 +314,8 @@ public class MainMenuScene extends Scene implements KeyListener {
         JButton regularButton = createDialogButton("Regular Mode");
         regularButton.addActionListener(e -> {
             modeDialog.dispose();
-            // 해상도 설정을 유지하며 GameScene으로 전환
-            System.out.println("Starting Regular Mode game...");
-            Game.setScene(new GameScene(frame));
+            // 난이도 선택 다이얼로그 표시
+            showDifficultyDialog();
         });
         
         // Item Mode 버튼 (활성화)
@@ -402,6 +401,111 @@ public class MainMenuScene extends Scene implements KeyListener {
         });
         
         return button;
+    }
+
+    /**
+     * 난이도 선택 다이얼로그를 표시합니다.
+     */
+    private void showDifficultyDialog() {
+        // 커스텀 다이얼로그 생성
+        JDialog difficultyDialog = new JDialog(frame, true);
+        difficultyDialog.setUndecorated(true);
+        difficultyDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        difficultyDialog.setResizable(false);
+        
+        // 해상도에 따른 다이얼로그 크기 조정
+        int[] resolution = gameSettings.getResolutionSize();
+        int screenWidth = resolution[0];
+        int screenHeight = resolution[1];
+        
+        int dialogWidth = Math.max(300, Math.min(400, screenWidth / 2));
+        int dialogHeight = Math.max(250, Math.min(350, screenHeight / 3));
+        
+        difficultyDialog.setSize(dialogWidth, dialogHeight);
+        difficultyDialog.setLocationRelativeTo(frame);
+        
+        // 다이얼로그 내용 패널 설정
+        JPanel dialogPanel = new JPanel();
+        dialogPanel.setBackground(new Color(30, 30, 50));
+        dialogPanel.setLayout(new BorderLayout());
+        dialogPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(255, 255, 100), 2),
+            BorderFactory.createEmptyBorder(15, 15, 15, 15)
+        ));
+        
+        // 제목 라벨
+        JLabel titleLabel = new JLabel("난이도 선택", SwingConstants.CENTER);
+        int titleFontSize = Math.max(16, screenWidth / 50);
+        titleLabel.setFont(new Font("Malgun Gothic", Font.BOLD, titleFontSize));
+        titleLabel.setForeground(new Color(255, 255, 100));
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0));
+        
+        // 버튼 패널
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setOpaque(false);
+        buttonPanel.setLayout(new GridLayout(4, 1, 0, 10));
+        
+        // Easy 버튼
+        JButton easyButton = createDialogButton("Easy");
+        easyButton.addActionListener(e -> {
+            gameSettings.setDifficulty(GameSettings.Difficulty.EASY);
+            difficultyDialog.dispose();
+            Game.setScene(new GameScene(frame, gameSettings.getDifficulty()));
+        });
+        
+        // Normal 버튼
+        JButton normalButton = createDialogButton("Normal");
+        normalButton.addActionListener(e -> {
+            gameSettings.setDifficulty(GameSettings.Difficulty.NORMAL);
+            difficultyDialog.dispose();
+            Game.setScene(new GameScene(frame, gameSettings.getDifficulty()));
+        });
+        
+        // Hard 버튼
+        JButton hardButton = createDialogButton("Hard");
+        hardButton.addActionListener(e -> {
+            gameSettings.setDifficulty(GameSettings.Difficulty.HARD);
+            difficultyDialog.dispose();
+            Game.setScene(new GameScene(frame, gameSettings.getDifficulty()));
+        });
+        
+        // 취소 버튼
+        JButton cancelButton = createDialogButton("취소");
+        cancelButton.setBackground(new Color(100, 50, 50));
+        cancelButton.addActionListener(e -> {
+            difficultyDialog.dispose();
+        });
+        
+        buttonPanel.add(easyButton);
+        buttonPanel.add(normalButton);
+        buttonPanel.add(hardButton);
+        buttonPanel.add(cancelButton);
+        
+        // 설명 라벨
+        JLabel descLabel = new JLabel("<html><center>Easy: 쉬운 난이도<br>Normal: 보통 난이도<br>Hard: 어려운 난이도</center></html>", SwingConstants.CENTER);
+        descLabel.setFont(new Font("Malgun Gothic", Font.PLAIN, 11));
+        descLabel.setForeground(Color.LIGHT_GRAY);
+        
+        // 컴포넌트 배치
+        dialogPanel.add(titleLabel, BorderLayout.NORTH);
+        dialogPanel.add(buttonPanel, BorderLayout.CENTER);
+        dialogPanel.add(descLabel, BorderLayout.SOUTH);
+        
+        difficultyDialog.add(dialogPanel);
+        
+        // ESC 키로 다이얼로그 닫기
+        difficultyDialog.addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override
+            public void keyPressed(java.awt.event.KeyEvent e) {
+                if (e.getKeyCode() == java.awt.event.KeyEvent.VK_ESCAPE) {
+                    difficultyDialog.dispose();
+                }
+            }
+        });
+        
+        difficultyDialog.setFocusable(true);
+        difficultyDialog.setVisible(true);
+        difficultyDialog.requestFocus();
     }
 
     // 설정 메뉴를 표시하는 메서드

@@ -13,6 +13,7 @@ import tetris.scene.game.overlay.GameOver;
 import tetris.scene.game.core.ScoreManager;
 import tetris.Game;
 import tetris.scene.menu.MainMenuScene;
+import tetris.GameSettings;
 
 import javax.swing.*;
 import java.awt.*;
@@ -25,6 +26,8 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
 
     // 다음 블록 미리보기 관련 상수
     private static final int PREVIEW_SIZE = 4; // 미리보기 영역 크기 (4x4)
+
+    private final GameSettings.Difficulty difficulty; // 난이도
 
     private final BoardManager boardManager; // 보드 관리자
     private BlockManager blockManager; // 블록 관리자
@@ -49,13 +52,14 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
     // Scene lifecycle
     // ─────────────────────────────────────────────────────────────
 
-    public GameScene(JFrame frame) {
+    public GameScene(JFrame frame, GameSettings.Difficulty difficulty) {
         super(frame);
         m_frame = frame;
+        this.difficulty = difficulty; // 난이도 설정
         scoreManager = new ScoreManager();
         boardManager = new BoardManager(); // BoardManager 초기화
         gameStateManager = new GameStateManager(this); // GameStateManager 초기화
-        timerManager = new TimerManager(gameStateManager, scoreManager); // TimerManager 초기화
+        timerManager = new TimerManager(gameStateManager, scoreManager, difficulty); // TimerManager 초기화
         uiManager = new UIManager(); // UIManager 초기화
         inputHandler = new InputHandler(frame, this); // InputHandler 초기화
         // GamePlayManager는 initGameState에서 초기화 (BlockManager가 필요하므로)
@@ -126,7 +130,7 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
         boardManager.reset(); // BoardManager를 사용하여 보드 초기화
         
         // BlockManager 생성 및 초기화
-        blockManager = new BlockManager(GAME_WIDTH, GAME_HEIGHT, boardManager, scoreManager);
+        blockManager = new BlockManager(GAME_WIDTH, GAME_HEIGHT, boardManager, scoreManager, difficulty);
         
         // 속도 조정 관리자가 있으면 BlockManager에 설정
         if (timerManager.getSpeedUp() != null) {

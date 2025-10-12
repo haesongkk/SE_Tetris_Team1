@@ -100,7 +100,7 @@ public class GameOver extends JPanel {
 
     void onRetry() {
         this.release();
-        Game.setScene(new GameScene(frame));
+        Game.setScene(new GameScene(frame, tetris.GameSettings.getInstance().getDifficulty()));
     }
 
     void onNext(String name) {
