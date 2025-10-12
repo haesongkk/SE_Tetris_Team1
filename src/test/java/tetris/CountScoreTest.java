@@ -2,18 +2,16 @@ package tetris;
 
 import tetris.scene.game.core.ScoreManager;
 
-import javax.swing.*;
-import java.awt.*;
-
 /**
  * 점수 계산 기능 요구사항 테스트 클래스
- * 
+ *
  * 테스트 항목:
  * 1. 기본 점수 계산 시스템 (블럭이 1칸 떨어질 때마다 점수 획득)
  * 2. 속도 증가 시 추가 점수 획득
  * 3. 실시간 점수 표시 기능
  * 4. 줄 삭제 시 점수 계산
  * 5. 점수 배율 시스템
+ * 6. 블록 드롭 시 점수 추가
  */
 public class CountScoreTest {
 
@@ -25,9 +23,7 @@ public class CountScoreTest {
     public void setupScoreManager() {
         scoreManager = new ScoreManager();
         scoreManager.reset();
-    }
-
-    /**
+    }    /**
      * 1. 기본 점수 계산 시스템 테스트
      */
     public void testBasicScoreCalculation() {
@@ -35,7 +31,7 @@ public class CountScoreTest {
 
         try {
             setupScoreManager();
-            
+
             // ScoreManager 기본 기능 확인
             assert scoreManager.getScore() == 0 : "초기 점수는 0이어야 합니다.";
             assert scoreManager.getLinesCleared() == 0 : "초기 삭제된 줄 수는 0이어야 합니다.";
@@ -44,7 +40,7 @@ public class CountScoreTest {
             // 기본 점수 계산 확인
             int expectedPointsPerLine = scoreManager.getPointsPerLine();
             assert expectedPointsPerLine > 0 : "줄당 점수가 설정되어야 합니다.";
-            
+
             System.out.println("줄당 기본 점수: " + expectedPointsPerLine);
             System.out.println("✅ 기본 점수 계산 시스템 확인 완료");
 
@@ -198,7 +194,45 @@ public class CountScoreTest {
     }
 
     /**
-     * 6. 종합 점수 계산 시스템 검증
+     * 6. 블록 드롭 시 점수 추가 테스트
+     */
+    public void testBlockDropScore() {
+        System.out.println("=== 6. 블록 드롭 시 점수 추가 테스트 ===");
+
+        try {
+            setupScoreManager();
+
+            // 초기 점수 확인
+            int initialScore = scoreManager.getScore();
+            assert initialScore == 0 : "초기 점수는 0이어야 합니다.";
+
+            // 블록 드롭 점수 추가
+            scoreManager.addBlockDropScore();
+            int afterDropScore = scoreManager.getScore();
+            assert afterDropScore == 100 : "블록 드롭 시 100점이 추가되어야 합니다.";
+            assert afterDropScore == (initialScore + 100) : "블록 드롭 후 점수가 올바르게 증가해야 합니다.";
+
+            // 여러 번 블록 드롭 테스트
+            int previousScore = scoreManager.getScore();
+            scoreManager.addBlockDropScore();
+            scoreManager.addBlockDropScore();
+            int finalScore = scoreManager.getScore();
+            assert finalScore == (previousScore + 200) : "연속 블록 드롭 시 점수가 누적되어야 합니다.";
+
+            System.out.println("블록 드롭 전 점수: " + initialScore);
+            System.out.println("블록 드롭 후 점수: " + afterDropScore);
+            System.out.println("최종 점수: " + finalScore);
+            System.out.println("✅ 블록 드롭 점수 추가 확인 완료");
+
+        } catch (Exception e) {
+            System.err.println("❌ 블록 드롭 점수 추가 테스트 실패: " + e.getMessage());
+        }
+
+        System.out.println("✅ 블록 드롭 시 점수 추가 테스트 통과");
+    }
+
+    /**
+     * 7. 종합 점수 계산 시스템 검증
      */
     public void testOverallScoringSystem() {
         System.out.println("=== 6. 종합 점수 계산 시스템 검증 ===");
@@ -222,6 +256,7 @@ public class CountScoreTest {
         System.out.println("✅ 속도 증가 시 추가 점수 획득");
         System.out.println("✅ 실시간 점수 표시 및 업데이트");
         System.out.println("✅ 점수 배율 시스템");
+        System.out.println("✅ 블록 드롭 시 점수 추가 (100점)");
         System.out.println("✅ 기본모드와 아이템모드 동일한 점수 계산 구조");
     }
 
@@ -241,6 +276,7 @@ public class CountScoreTest {
             test.testSpeedBonusScoring();
             test.testScoreMultiplierSystem();
             test.testRealTimeScoreUpdate();
+            test.testBlockDropScore();
             test.testOverallScoringSystem();
             
         } catch (Exception e) {

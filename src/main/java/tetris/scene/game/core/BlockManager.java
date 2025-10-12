@@ -25,6 +25,7 @@ public class BlockManager {
     private final BoardManager boardManager;
     private final BlockShake blockShake;
     private ItemManager itemManager; // 아이템 모드용 (옵션)
+    private ScoreManager scoreManager; // 점수 관리자
     
     // 속도 증가 관리자
     private SpeedUp speedUp;
@@ -38,11 +39,13 @@ public class BlockManager {
      * @param gameWidth 게임 보드 너비
      * @param gameHeight 게임 보드 높이
      * @param boardManager 보드 관리자
+     * @param scoreManager 점수 관리자
      */
-    public BlockManager(int gameWidth, int gameHeight, BoardManager boardManager) {
+    public BlockManager(int gameWidth, int gameHeight, BoardManager boardManager, ScoreManager scoreManager) {
         this.gameWidth = gameWidth;
         this.gameHeight = gameHeight;
         this.boardManager = boardManager;
+        this.scoreManager = scoreManager;
         this.blockShake = new BlockShake(new BlockShake.ShakeCallback() {
             @Override
             public void onShakeUpdate() {
@@ -239,6 +242,11 @@ public class BlockManager {
         
         // BoardManager를 사용하여 블록을 영구적으로 보드에 고정
         boardManager.placeBlock(currentBlock, x, y);
+        
+        // 블록이 떨어질 때 점수 추가
+        if (scoreManager != null) {
+            scoreManager.addBlockDropScore();
+        }
         
         // 게임 종료 조건 확인: BoardManager의 게임 오버 체크 사용
         if (boardManager.isGameOver()) {

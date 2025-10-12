@@ -117,7 +117,7 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
         boardManager.reset(); // BoardManager를 사용하여 보드 초기화
         
         // BlockManager 생성 및 초기화
-        blockManager = new BlockManager(GAME_WIDTH, GAME_HEIGHT, boardManager);
+        blockManager = new BlockManager(GAME_WIDTH, GAME_HEIGHT, boardManager, scoreManager);
         
         // 속도 조정 관리자가 있으면 BlockManager에 설정
         if (timerManager.getSpeedUp() != null) {
