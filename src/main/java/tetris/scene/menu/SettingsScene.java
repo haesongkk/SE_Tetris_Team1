@@ -15,6 +15,7 @@ public class SettingsScene extends Scene implements KeyListener {
     private JComboBox<String> displayModeCombo;
     private JComboBox<String> resolutionCombo;
     private JComboBox<String> colorBlindModeCombo;
+    private JComboBox<String> difficultyCombo;
     
     private final Color BACKGROUND_COLOR = new Color(20, 20, 40);
     private final Color TITLE_COLOR = new Color(255, 255, 100);
@@ -118,6 +119,17 @@ public class SettingsScene extends Scene implements KeyListener {
         styleComboBox(colorBlindModeCombo);
         panel.add(colorBlindModeCombo, gbc);
         
+        // 6. 난이도 설정
+        gbc.gridx = 0; gbc.gridy = 5;
+        panel.add(createLabel("난이도:"), gbc);
+        
+        gbc.gridx = 1;
+        String[] difficulties = {"Easy", "Normal", "Hard"};
+        difficultyCombo = new JComboBox<>(difficulties);
+        difficultyCombo.setSelectedIndex(1); // Normal로 기본 설정
+        styleComboBox(difficultyCombo);
+        panel.add(difficultyCombo, gbc);
+        
         return panel;
     }
 
@@ -202,12 +214,14 @@ public class SettingsScene extends Scene implements KeyListener {
         if (displayModeCombo != null) displayModeCombo.setSelectedIndex(gameSettings.getDisplayMode());
         if (resolutionCombo != null) resolutionCombo.setSelectedIndex(gameSettings.getResolution());
         if (colorBlindModeCombo != null) colorBlindModeCombo.setSelectedIndex(gameSettings.getColorBlindMode());
+        if (difficultyCombo != null) difficultyCombo.setSelectedIndex(gameSettings.getDifficulty());
     }
 
     private void saveCurrentSettings() {
         if (displayModeCombo != null) gameSettings.setDisplayMode(displayModeCombo.getSelectedIndex());
         if (resolutionCombo != null) gameSettings.setResolution(resolutionCombo.getSelectedIndex());
         if (colorBlindModeCombo != null) gameSettings.setColorBlindMode(colorBlindModeCombo.getSelectedIndex());
+        if (difficultyCombo != null) gameSettings.setDifficulty(difficultyCombo.getSelectedIndex());
     }
 
     private void goBack() {

@@ -78,6 +78,25 @@ public class GameSettings {
         }
     }
     
+    // 난이도 getter/setter
+    public int getDifficulty() {
+        return difficulty;
+    }
+    
+    public void setDifficulty(int difficulty) {
+        this.difficulty = Math.max(0, Math.min(2, difficulty));
+    }
+    
+    // 난이도를 문자열로 반환하는 메서드
+    public String getDifficultyString() {
+        switch (difficulty) {
+            case 0: return "Easy";
+            case 1: return "Normal";
+            case 2: return "Hard";
+            default: return "Normal";
+        }
+    }
+    
     // 해상도를 실제 크기로 변환하는 메서드
     public int[] getResolutionSize() {
         switch (resolution) {
@@ -257,6 +276,7 @@ public class GameSettings {
         resolution = 2;
         colorBlindMode = 0;
         difficulty = Difficulty.NORMAL; // 난이도 기본값으로 초기화
+
         // 키 설정도 기본값으로 초기화
         leftKey = 37;   // VK_LEFT
         rightKey = 39;  // VK_RIGHT
@@ -271,7 +291,7 @@ public class GameSettings {
     public void clearScoreBoard() {
         try {
             // highscore.txt 파일을 빈 파일로 만들기
-            java.io.File scoreFile = new java.io.File("./data/highscore.txt");
+            java.io.File scoreFile = new java.io.File("./data/highscore_v2.txt");
             if (scoreFile.exists()) {
                 // 파일을 빈 내용으로 덮어쓰기
                 try (java.io.FileWriter writer = new java.io.FileWriter(scoreFile, false)) {
@@ -290,11 +310,12 @@ public class GameSettings {
             "설정 정보:\n" +
             "• 화면 모드: %s\n" +
             "• 해상도: %s\n" +
-            "• 색맹 모드: %s\n",
+            "• 색맹 모드: %s\n" +
+            "• 난이도: %s",
             getDisplayModeString(),
             getResolutionString(),
             getColorBlindModeString(),
-            difficulty
+            getDifficultyString()
         );
     }
 }
