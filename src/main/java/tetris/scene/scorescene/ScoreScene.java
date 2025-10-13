@@ -61,7 +61,7 @@ public class ScoreScene extends Scene {
     }
 
     public ScoreScene(JFrame frame) {
-        this(frame, -1, "easy");
+        this(frame, -1, "Easy");
     }
 
 
