@@ -23,6 +23,9 @@ public class GameSettings {
     private int pauseKey = 80;  // VK_P
     private int holdKey = 16;   // VK_SHIFT
     private int exitKey = 81;   // VK_Q
+
+    // 음량 조절
+    private int volume = 20;
     
     // 싱글톤 패턴 - 생성자를 private으로 설정
     private GameSettings() {}
@@ -279,6 +282,10 @@ public class GameSettings {
                 return "Key(" + keyCode + ")";
         }
     }
+
+    public int getVolume() { return volume; }
+    public void setVolume(int v) { volume = v; }
+    String getVolumeString() { return Integer.toString(volume); }
     
     // 모든 설정을 기본값으로 초기화하는 메서드
     public void resetToDefaults() {
@@ -295,6 +302,8 @@ public class GameSettings {
         dropKey = 32;   // VK_SPACE
         pauseKey = 80;  // VK_P
         holdKey = 16;   // VK_SHIFT
+
+        volume = 20;
     }
     
     // 스코어 보드 데이터를 초기화하는 메서드
@@ -321,11 +330,13 @@ public class GameSettings {
             "• 화면 모드: %s\n" +
             "• 해상도: %s\n" +
             "• 색맹 모드: %s\n" +
-            "• 난이도: %s",
+            "• 난이도: %s\n" +
+            "• 음량: %s",
             getDisplayModeString(),
             getResolutionString(),
             getColorBlindModeString(),
-            getDifficultyString()
+            getDifficultyString(),
+            getVolumeString()
         );
     }
 }

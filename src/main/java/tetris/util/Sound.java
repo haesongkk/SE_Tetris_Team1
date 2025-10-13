@@ -3,6 +3,8 @@ package tetris.util;
 import javazoom.jl.decoder.JavaLayerException;
 import javazoom.jl.player.JavaSoundAudioDevice;
 import javazoom.jl.player.Player;
+import tetris.GameSettings;
+
 import java.io.InputStream;
 
 // ONLY MP3
@@ -22,6 +24,7 @@ public class Sound {
     public synchronized void play(boolean loop) {
         release();
         device = new SoundDevice();
+        device.volume = Math.max(0f, Math.min(1f, GameSettings.getInstance().getVolume()/100f));
 
         this.running = true;
         thread = new Thread(() -> {
@@ -84,13 +87,15 @@ public class Sound {
         }
 
     }
+
 }
 
 class SoundDevice extends JavaSoundAudioDevice { 
-    static private volatile float volume = 0.2f; 
-    static public void setVolume(float v){ volume = Math.max(0f, Math.min(1f, v)); } 
+    volatile float volume = 0.2f; 
+    volatile boolean soundOff = false;
     @Override 
     public void write(short[] s, int off, int len) throws JavaLayerException { 
+        if(soundOff) return;
         if (volume!=1f){ 
             for(int i=off, end=off+len;i<end;i++){ 
                 int v = Math.round(s[i]*volume); 
