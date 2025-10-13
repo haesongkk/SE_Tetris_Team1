@@ -439,5 +439,13 @@ public class RenderManager {
         int instructionY = textY + 60; // PAUSED 텍스트 아래 60px
         
         g2d.drawString(instructionText, instructionX, instructionY);
+        
+        // Q 키로 메뉴로 돌아가기 안내 텍스트
+        String exitText = "Press Q to return to menu";
+        int exitWidth = smallFm.stringWidth(exitText);
+        int exitX = gameAreaCenterX - exitWidth / 2;
+        int exitY = instructionY + 25; // 재개 안내 텍스트 아래 25px
+        
+        g2d.drawString(exitText, exitX, exitY);
     }
 }

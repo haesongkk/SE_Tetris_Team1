@@ -2,6 +2,7 @@ package tetris.scene.game.core;
 
 import tetris.util.LineBlinkEffect;
 import tetris.util.SpeedUp;
+import tetris.GameSettings;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -23,6 +24,7 @@ public class TimerManager {
     // 의존성들
     private final GameStateManager gameStateManager;
     private final ScoreManager scoreManager;
+    private final GameSettings.Difficulty difficulty;
     
     // 콜백 인터페이스들
     private TimerCallback timerCallback;
@@ -38,9 +40,11 @@ public class TimerManager {
         void onLineDeletion(); // 줄 삭제 완료
     }
     
-    public TimerManager(GameStateManager gameStateManager, ScoreManager scoreManager) {
+    public TimerManager(GameStateManager gameStateManager, ScoreManager scoreManager, GameSettings.Difficulty difficulty) {
         this.gameStateManager = gameStateManager;
         this.scoreManager = scoreManager;
+        this.difficulty = difficulty;
+        // speedUp is initialized in setupSpeedUp
     }
     
     /**
@@ -101,7 +105,7 @@ public class TimerManager {
                 // 속도가 증가할 때마다 점수 배율도 증가
                 scoreManager.onSpeedIncrease();
             }
-        });
+        }, difficulty);
     }
     
     /**

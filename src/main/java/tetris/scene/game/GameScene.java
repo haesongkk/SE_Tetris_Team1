@@ -11,6 +11,9 @@ import tetris.scene.game.core.TimerManager;
 import tetris.scene.game.core.UIManager;
 import tetris.scene.game.overlay.GameOver;
 import tetris.scene.game.core.ScoreManager;
+import tetris.Game;
+import tetris.scene.menu.MainMenuScene;
+import tetris.GameSettings;
 
 import javax.swing.*;
 import java.awt.*;
@@ -20,11 +23,11 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
     private JFrame m_frame;
     private static final int GAME_HEIGHT = 20; // 실제 블록이 놓이는 높이
     private static final int GAME_WIDTH = 10; // 실제 블록이 놓이는 너비
-    private static final int CELL_SIZE = 30; // 각 셀의 픽셀 크기
 
     // 다음 블록 미리보기 관련 상수
     private static final int PREVIEW_SIZE = 4; // 미리보기 영역 크기 (4x4)
-    private static final int PREVIEW_CELL_SIZE = 20; // 미리보기 셀 크기
+
+    private final GameSettings.Difficulty difficulty; // 난이도
 
     private final BoardManager boardManager; // 보드 관리자
     private BlockManager blockManager; // 블록 관리자
@@ -49,13 +52,14 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
     // Scene lifecycle
     // ─────────────────────────────────────────────────────────────
 
-    public GameScene(JFrame frame) {
+    public GameScene(JFrame frame, GameSettings.Difficulty difficulty) {
         super(frame);
         m_frame = frame;
+        this.difficulty = difficulty; // 난이도 설정
         scoreManager = new ScoreManager();
         boardManager = new BoardManager(); // BoardManager 초기화
         gameStateManager = new GameStateManager(this); // GameStateManager 초기화
-        timerManager = new TimerManager(gameStateManager, scoreManager); // TimerManager 초기화
+        timerManager = new TimerManager(gameStateManager, scoreManager, difficulty); // TimerManager 초기화
         uiManager = new UIManager(); // UIManager 초기화
         inputHandler = new InputHandler(frame, this); // InputHandler 초기화
         // GamePlayManager는 initGameState에서 초기화 (BlockManager가 필요하므로)
@@ -64,11 +68,15 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
 
     @Override
     public void onEnter() {
+        System.out.println("GameScene: Entering game scene");
+        
         // Scene이 활성화될 때마다 초기화
         initUI();
         initGameState();
         
         timerManager.startTimers();
+        
+        System.out.println("GameScene: Initialization complete");
     }
 
     @Override
@@ -78,6 +86,9 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
     }
 
     private void initUI() {
+        // 프레임의 ContentPane을 이 GameScene으로 설정
+        m_frame.setContentPane(this);
+        
         // UIManager를 사용하여 UI 초기화
         uiManager.initializeUI(this, m_frame, inputHandler);
         
@@ -92,6 +103,10 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
         
         // 포커스 요청
         uiManager.requestFocus(this);
+        
+        // 화면 갱신
+        m_frame.revalidate();
+        m_frame.repaint();
     }
     
     /**
@@ -115,7 +130,7 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
         boardManager.reset(); // BoardManager를 사용하여 보드 초기화
         
         // BlockManager 생성 및 초기화
-        blockManager = new BlockManager(GAME_WIDTH, GAME_HEIGHT, boardManager);
+        blockManager = new BlockManager(GAME_WIDTH, GAME_HEIGHT, boardManager, scoreManager, difficulty);
         
         // 속도 조정 관리자가 있으면 BlockManager에 설정
         if (timerManager.getSpeedUp() != null) {
@@ -126,7 +141,7 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
         
         // RenderManager 초기화
         renderManager = new RenderManager(
-            GAME_WIDTH, GAME_HEIGHT, CELL_SIZE, PREVIEW_SIZE, PREVIEW_CELL_SIZE,
+            GAME_WIDTH, GAME_HEIGHT, uiManager.getCellSize(), PREVIEW_SIZE, uiManager.getPreviewCellSize(),
             boardManager, blockManager, gameStateManager, scoreManager
         );
         
@@ -198,7 +213,7 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
                 // holdBlock(); // 예시 - 실제 구현에 따라 달라질 수 있음
                 break;
             case EXIT_TO_MENU:
-                // InputHandler에서 직접 처리됨
+                handleExitToMenu();
                 break;
         }
     }
@@ -466,9 +481,9 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
         int currentScore = scoreManager.getScore();
         int currentLines = scoreManager.getLinesCleared();
         int currentTime = gameStateManager.getElapsedTimeInSeconds(); // GameStateManager 사용
-        String difficulty = "Normal"; // 현재 난이도 설정
+        String difficultyStr = difficulty.toString().toLowerCase(); // 실제 난이도 사용
         
-        GameOver gameOverOverlay = new GameOver(m_frame, currentScore, currentLines, currentTime, difficulty);
+        GameOver gameOverOverlay = new GameOver(m_frame, currentScore, currentLines, currentTime, difficultyStr);
         
         // 게임 종료 화면을 현재 패널에 추가
         setLayout(new OverlayLayout(this));
@@ -477,7 +492,7 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
         revalidate();
         repaint();
         
-        System.out.println("Game Over! Score: " + currentScore + ", Lines: " + currentLines);
+        System.out.println("Game Over! Score: " + currentScore + ", Lines: " + currentLines + ", Difficulty: " + difficultyStr);
     }
     
     @Override
@@ -558,5 +573,12 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
     @Override
     public void onLineDeletion() {
         executeLineDeletion();
+    }
+    
+    /**
+     * 메인 메뉴로 나가기 처리
+     */
+    private void handleExitToMenu() {
+        Game.setScene(new MainMenuScene(m_frame));
     }
 }
