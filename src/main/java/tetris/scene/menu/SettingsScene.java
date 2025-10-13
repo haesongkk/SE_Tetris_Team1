@@ -214,14 +214,14 @@ public class SettingsScene extends Scene implements KeyListener {
         if (displayModeCombo != null) displayModeCombo.setSelectedIndex(gameSettings.getDisplayMode());
         if (resolutionCombo != null) resolutionCombo.setSelectedIndex(gameSettings.getResolution());
         if (colorBlindModeCombo != null) colorBlindModeCombo.setSelectedIndex(gameSettings.getColorBlindMode());
-        if (difficultyCombo != null) difficultyCombo.setSelectedIndex(gameSettings.getDifficulty());
+        if (difficultyCombo != null) difficultyCombo.setSelectedIndex(gameSettings.getDifficultyIndex());
     }
 
     private void saveCurrentSettings() {
         if (displayModeCombo != null) gameSettings.setDisplayMode(displayModeCombo.getSelectedIndex());
         if (resolutionCombo != null) gameSettings.setResolution(resolutionCombo.getSelectedIndex());
         if (colorBlindModeCombo != null) gameSettings.setColorBlindMode(colorBlindModeCombo.getSelectedIndex());
-        if (difficultyCombo != null) gameSettings.setDifficulty(difficultyCombo.getSelectedIndex());
+        if (difficultyCombo != null) gameSettings.setDifficultyIndex(difficultyCombo.getSelectedIndex());
     }
 
     private void goBack() {

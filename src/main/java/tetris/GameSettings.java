@@ -63,9 +63,27 @@ public class GameSettings {
     public Difficulty getDifficulty() {
         return difficulty;
     }
+
+    public int getDifficultyIndex() {
+        switch (difficulty) {
+            case EASY: return 0;
+            case NORMAL: return 1;
+            case HARD: return 2;
+            default: return 3;
+        }
+    }
     
     public void setDifficulty(Difficulty difficulty) {
         this.difficulty = difficulty;
+    }
+
+    public void setDifficultyIndex(int index) {
+        switch(index) {
+            case 0: difficulty = Difficulty.EASY; break;
+            case 1: difficulty = Difficulty.NORMAL; break;
+            case 2: difficulty = Difficulty.HARD; break;
+            default: difficulty = Difficulty.NORMAL; break;
+        }
     }
     
     // 색맹 모드를 문자열로 반환하는 메서드
@@ -78,21 +96,13 @@ public class GameSettings {
         }
     }
     
-    // 난이도 getter/setter
-    public int getDifficulty() {
-        return difficulty;
-    }
-    
-    public void setDifficulty(int difficulty) {
-        this.difficulty = Math.max(0, Math.min(2, difficulty));
-    }
     
     // 난이도를 문자열로 반환하는 메서드
     public String getDifficultyString() {
         switch (difficulty) {
-            case 0: return "Easy";
-            case 1: return "Normal";
-            case 2: return "Hard";
+            case EASY: return "Easy";
+            case NORMAL: return "Normal";
+            case HARD: return "Hard";
             default: return "Normal";
         }
     }
