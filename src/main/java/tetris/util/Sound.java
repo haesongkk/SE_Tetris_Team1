@@ -6,10 +6,12 @@ import javazoom.jl.player.Player;
 import tetris.GameSettings;
 
 import java.io.InputStream;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 // ONLY MP3
 public class Sound {
-    static int counter = 0;
+    static List<Sound> counter = new CopyOnWriteArrayList<>();
     
     String origin = null; 
     volatile boolean running = false;
@@ -19,10 +21,11 @@ public class Sound {
     public Sound(String filePath) {
         this.origin = filePath;
         device = new SoundDevice();
+        counter.add(this);
     }
 
     public synchronized void play(boolean loop) {
-        release();
+        this.stop();
         device = new SoundDevice();
         device.volume = Math.max(0f, Math.min(1f, GameSettings.getInstance().getVolume()/100f));
 
@@ -70,9 +73,6 @@ public class Sound {
 
     public synchronized void stop() {
         this.running = false;
-    }
-
-    public synchronized void release() {
         running = false;
         if(thread != null) {
             thread.interrupt();
@@ -85,7 +85,18 @@ public class Sound {
             device.close();
             device = null;
         }
+    }
 
+    public synchronized void release() {
+        this.stop();
+        counter.remove(this);
+    }
+
+    public static void clear() {
+        System.out.println("미해제 Sound 객체 " + counter.size() + "개 해제 완료");
+        if (counter.isEmpty()) return;
+        for(Sound s: counter) s.release();
+        counter.clear();
     }
 
 }
