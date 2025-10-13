@@ -1,6 +1,7 @@
 package tetris.util;
 
 import javax.swing.Timer;
+import tetris.GameSettings;
 
 /**
  * 게임 속도 조정을 위한 유틸리티 클래스
@@ -18,28 +19,62 @@ public class SpeedUp {
     // 상수들
     private static final int BLOCKS_THRESHOLD = 5;     // 속도 증가를 위한 블록 생성 임계값
     private static final int LINES_THRESHOLD = 2;      // 속도 증가를 위한 줄 삭제 임계값
-    private static final int INTERVAL_DECREASE = 200;   // 속도 증가 시 감소할 딜레이 시간 (ms)
+    private static final int BASE_INTERVAL_DECREASE = 200;   // 기본 속도 증가 시 감소할 딜레이 시간 (ms)
     private static final int MIN_INTERVAL = 400;        // 최소 딜레이 시간 (최대 속도)
+    
+    private final GameSettings.Difficulty difficulty; // 난이도
+    private final int intervalDecrease; // 난이도에 따른 속도 증가량
     
     // 추적 변수들
     private int blocksGenerated;     // 생성된 블록 수
     private int totalLinesCleared;   // 삭제된 총 줄 수
     private int currentInterval;     // 현재 타이머 딜레이
     
-    private final Timer timer; // 게임 타이머 참조
+    private Timer timer; // 게임 타이머 참조 (나중에 설정)
     private SpeedIncreaseCallback callback; // 속도 증가 콜백
     
     /**
      * SpeedUp 객체를 생성합니다.
      * @param timer 게임 타이머
      * @param callback 속도 증가 시 호출될 콜백
+     * @param difficulty 난이도
      */
-    public SpeedUp(Timer timer, SpeedIncreaseCallback callback) {
+    public SpeedUp(Timer timer, SpeedIncreaseCallback callback, GameSettings.Difficulty difficulty) {
         this.timer = timer;
         this.callback = callback;
+        this.difficulty = difficulty;
+        
+        // 난이도에 따른 속도 증가량 설정
+        switch (difficulty) {
+            case EASY:
+                this.intervalDecrease = (int) (BASE_INTERVAL_DECREASE * 0.8); // 20% 덜 증가
+                break;
+            case HARD:
+                this.intervalDecrease = (int) (BASE_INTERVAL_DECREASE * 1.2); // 20% 더 증가
+                break;
+            case NORMAL:
+            default:
+                this.intervalDecrease = BASE_INTERVAL_DECREASE;
+                break;
+        }
+        
         this.blocksGenerated = 0;
         this.totalLinesCleared = 0;
         this.currentInterval = 1000; // 실제 타이머 딜레이로 초기화
+    }
+    
+    /**
+     * 타이머를 설정합니다.
+     */
+    public void setTimer(Timer timer) {
+        this.timer = timer;
+    }
+    
+    /**
+     * 콜백을 설정합니다.
+     */
+    public void setCallback(SpeedIncreaseCallback callback) {
+        this.callback = callback;
     }
     
     /**
@@ -80,7 +115,7 @@ public class SpeedUp {
     private void checkSpeedIncrease() {
         if (blocksGenerated >= BLOCKS_THRESHOLD || totalLinesCleared >= LINES_THRESHOLD) {
             // 현재 딜레이를 감소시켜 속도 증가
-            currentInterval = Math.max(MIN_INTERVAL, currentInterval - INTERVAL_DECREASE);
+            currentInterval = Math.max(MIN_INTERVAL, currentInterval - intervalDecrease);
             
             // 타이머의 딜레이 업데이트
             timer.setDelay(currentInterval);

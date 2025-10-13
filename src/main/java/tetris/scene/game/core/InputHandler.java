@@ -88,6 +88,12 @@ public class InputHandler implements KeyListener {
             return;
         }
         
+        // Q 키는 일시정지 상태에서도 처리 (메뉴로 나가기)
+        if (keyCode == settings.getExitKey()) {
+            handleGameAction(GameAction.EXIT_TO_MENU);
+            return;
+        }
+        
         // 일시정지 상태일 때는 다른 키 입력 무시
         if (callback.isPaused()) {
             return;
@@ -124,6 +130,8 @@ public class InputHandler implements KeyListener {
             return GameAction.HARD_DROP;
         } else if (keyCode == settings.getHoldKey()) {
             return GameAction.HOLD;
+        } else if (keyCode == settings.getExitKey()) {
+            return GameAction.EXIT_TO_MENU;
         }
         
         return null; // 매핑되지 않은 키
@@ -162,6 +170,7 @@ public class InputHandler implements KeyListener {
         System.out.println("Hard Drop: " + GameSettings.getKeyName(settings.getDropKey()) + " (" + settings.getDropKey() + ")");
         System.out.println("Pause: " + GameSettings.getKeyName(settings.getPauseKey()) + " (" + settings.getPauseKey() + ")");
         System.out.println("Hold: " + GameSettings.getKeyName(settings.getHoldKey()) + " (" + settings.getHoldKey() + ")");
+        System.out.println("Exit to Menu: " + GameSettings.getKeyName(settings.getExitKey()) + " (" + settings.getExitKey() + ")");
         System.out.println("===============================");
     }
     

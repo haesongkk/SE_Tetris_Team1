@@ -86,8 +86,8 @@ public class ColorBlindModeTest {
         
         System.out.println("✅ 테스트 환경 정리 완료");
         
-        // 최종 강제 정리
-        forceSystemCleanup();
+        // 강화된 시스템 정리 실행
+        TestCleanupHelper.forceCompleteSystemCleanup("ColorBlindModeTest");
     }
 
     @Test
@@ -644,6 +644,23 @@ public class ColorBlindModeTest {
         try {
             System.out.println("🔧 ColorBlindModeTest 시스템 강제 정리 시작...");
             
+            // 1. 모든 Timer 완전 중지
+            try {
+                javax.swing.Timer.setLogTimers(false);
+                java.lang.reflect.Field timersField = javax.swing.Timer.class.getDeclaredField("queue");
+                timersField.setAccessible(true);
+                Object timerQueue = timersField.get(null);
+                if (timerQueue != null) {
+                    java.lang.reflect.Method stopMethod = timerQueue.getClass().getDeclaredMethod("stop");
+                    stopMethod.setAccessible(true);
+                    stopMethod.invoke(timerQueue);
+                    System.out.println("🧹 Swing Timer 큐 완전 중지됨");
+                }
+            } catch (Exception e) {
+                // Reflection 실패는 무시
+            }
+            
+            // 2. EventQueue 정리
             try {
                 java.awt.EventQueue eventQueue = java.awt.Toolkit.getDefaultToolkit().getSystemEventQueue();
                 while (eventQueue.peekEvent() != null) {
@@ -653,6 +670,7 @@ public class ColorBlindModeTest {
                 // 무시
             }
             
+            // 3. 스레드 정리
             ThreadGroup rootGroup = Thread.currentThread().getThreadGroup();
             ThreadGroup parentGroup;
             while ((parentGroup = rootGroup.getParent()) != null) {
@@ -675,6 +693,7 @@ public class ColorBlindModeTest {
                 }
             }
             
+            // 4. 메모리 정리
             System.runFinalization();
             System.gc();
             Thread.sleep(100);

@@ -17,10 +17,12 @@ public class UIManager {
     // 게임 영역 상수들
     private static final int GAME_HEIGHT = 20;
     private static final int GAME_WIDTH = 10;
-    private static final int CELL_SIZE = 30;
     private static final int PREVIEW_SIZE = 4;
-    private static final int PREVIEW_CELL_SIZE = 20;
     private static final int PREVIEW_MARGIN = 40;
+    
+    // 동적 크기 변수들
+    private int cellSize;
+    private int previewCellSize;
     
     // UI 컴포넌트들
     private JPanel gamePanel;
@@ -30,6 +32,9 @@ public class UIManager {
      * UI 시스템을 초기화합니다.
      */
     public void initializeUI(JPanel parentPanel, JFrame frame, InputHandler inputHandler) {
+        // 해상도에 따른 동적 크기 계산
+        calculateDynamicSizes();
+        
         // 기존 컴포넌트들 제거
         parentPanel.removeAll();
         
@@ -116,10 +121,10 @@ public class UIManager {
      * 게임 패널의 크기를 계산합니다.
      */
     private Dimension calculateGamePanelSize() {
-        int previewWidth = PREVIEW_SIZE * PREVIEW_CELL_SIZE + PREVIEW_MARGIN;
+        int previewWidth = PREVIEW_SIZE * previewCellSize + PREVIEW_MARGIN;
         return new Dimension(
-            (GAME_WIDTH + 2) * CELL_SIZE + previewWidth,
-            (GAME_HEIGHT + 2) * CELL_SIZE
+            (GAME_WIDTH + 2) * cellSize + previewWidth,
+            (GAME_HEIGHT + 2) * cellSize
         );
     }
     
@@ -170,5 +175,31 @@ public class UIManager {
     public void cleanup() {
         gamePanel = null;
         wrapperPanel = null;
+    }
+    
+    /**
+     * 해상도에 따른 동적 크기를 계산합니다.
+     */
+    private void calculateDynamicSizes() {
+        int[] resolution = GameSettings.getInstance().getResolutionSize();
+        int screenWidth = resolution[0];
+        
+        // 기본 해상도 1280을 기준으로 비례 계산, 최소값 유지
+        cellSize = Math.max(20, (int) (30 * (screenWidth / 1280.0)));
+        previewCellSize = Math.max(15, (int) (20 * (screenWidth / 1280.0)));
+    }
+    
+    /**
+     * 동적 셀 크기를 반환합니다.
+     */
+    public int getCellSize() {
+        return cellSize;
+    }
+    
+    /**
+     * 동적 미리보기 셀 크기를 반환합니다.
+     */
+    public int getPreviewCellSize() {
+        return previewCellSize;
     }
 }

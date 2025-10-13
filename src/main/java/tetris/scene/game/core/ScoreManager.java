@@ -47,6 +47,14 @@ public class ScoreManager {
     }
     
     /**
+     * 블록이 떨어질 때 점수를 추가합니다.
+     */
+    public void addBlockDropScore() {
+        score += 100;
+        System.out.println("Block dropped! Added 100 points. Total score: " + score);
+    }
+    
+    /**
      * 현재 점수를 반환합니다.
      * @return 현재 점수
      */

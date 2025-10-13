@@ -1,12 +1,18 @@
 package tetris;
 
 public class GameSettings {
+    // 난이도 enum
+    public enum Difficulty {
+        EASY, NORMAL, HARD
+    }
+    
     private static GameSettings instance = new GameSettings();
     
     // 필수 설정값들
     private int displayMode = 0; // 0: 창모드, 1: 전체화면
     private int resolution = 2; // 0: 800x600, 1: 1024x768, 2: 1280x720, 3: 1920x1080
     private int colorBlindMode = 0; // 0: 일반 모드, 1: 적록색맹, 2: 청황색맹
+    private Difficulty difficulty = Difficulty.NORMAL; // 기본 난이도
     
     // 게임 조작키 설정값들 (KeyEvent 상수값 사용)
     private int leftKey = 37;   // VK_LEFT (←)
@@ -16,6 +22,7 @@ public class GameSettings {
     private int dropKey = 32;   // VK_SPACE
     private int pauseKey = 80;  // VK_P
     private int holdKey = 16;   // VK_SHIFT
+    private int exitKey = 81;   // VK_Q
     
     // 싱글톤 패턴 - 생성자를 private으로 설정
     private GameSettings() {}
@@ -50,6 +57,15 @@ public class GameSettings {
     
     public void setColorBlindMode(int colorBlindMode) {
         this.colorBlindMode = Math.max(0, Math.min(2, colorBlindMode));
+    }
+    
+    // 난이도 getter/setter
+    public Difficulty getDifficulty() {
+        return difficulty;
+    }
+    
+    public void setDifficulty(Difficulty difficulty) {
+        this.difficulty = difficulty;
     }
     
     // 색맹 모드를 문자열로 반환하는 메서드
@@ -97,6 +113,7 @@ public class GameSettings {
     public int getDropKey() { return dropKey; }
     public int getPauseKey() { return pauseKey; }
     public int getHoldKey() { return holdKey; }
+    public int getExitKey() { return exitKey; }
     
     // 키 설정 setter 메서드들
     public void setLeftKey(int keyCode) { this.leftKey = keyCode; }
@@ -239,6 +256,7 @@ public class GameSettings {
         displayMode = 0;
         resolution = 2;
         colorBlindMode = 0;
+        difficulty = Difficulty.NORMAL; // 난이도 기본값으로 초기화
         // 키 설정도 기본값으로 초기화
         leftKey = 37;   // VK_LEFT
         rightKey = 39;  // VK_RIGHT
@@ -272,10 +290,11 @@ public class GameSettings {
             "설정 정보:\n" +
             "• 화면 모드: %s\n" +
             "• 해상도: %s\n" +
-            "• 색맹 모드: %s",
+            "• 색맹 모드: %s\n",
             getDisplayModeString(),
             getResolutionString(),
-            getColorBlindModeString()
+            getColorBlindModeString(),
+            difficulty
         );
     }
 }

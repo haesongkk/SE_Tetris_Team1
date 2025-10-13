@@ -2,18 +2,16 @@ package tetris;
 
 import tetris.scene.game.core.ScoreManager;
 
-import javax.swing.*;
-import java.awt.*;
-
 /**
  * 점수 계산 기능 요구사항 테스트 클래스
- * 
+ *
  * 테스트 항목:
  * 1. 기본 점수 계산 시스템 (블럭이 1칸 떨어질 때마다 점수 획득)
  * 2. 속도 증가 시 추가 점수 획득
  * 3. 실시간 점수 표시 기능
  * 4. 줄 삭제 시 점수 계산
  * 5. 점수 배율 시스템
+ * 6. 블록 드롭 시 점수 추가
  */
 public class CountScoreTest {
 
@@ -25,9 +23,7 @@ public class CountScoreTest {
     public void setupScoreManager() {
         scoreManager = new ScoreManager();
         scoreManager.reset();
-    }
-
-    /**
+    }    /**
      * 1. 기본 점수 계산 시스템 테스트
      */
     public void testBasicScoreCalculation() {
@@ -35,7 +31,7 @@ public class CountScoreTest {
 
         try {
             setupScoreManager();
-            
+
             // ScoreManager 기본 기능 확인
             assert scoreManager.getScore() == 0 : "초기 점수는 0이어야 합니다.";
             assert scoreManager.getLinesCleared() == 0 : "초기 삭제된 줄 수는 0이어야 합니다.";
@@ -44,7 +40,7 @@ public class CountScoreTest {
             // 기본 점수 계산 확인
             int expectedPointsPerLine = scoreManager.getPointsPerLine();
             assert expectedPointsPerLine > 0 : "줄당 점수가 설정되어야 합니다.";
-            
+
             System.out.println("줄당 기본 점수: " + expectedPointsPerLine);
             System.out.println("✅ 기본 점수 계산 시스템 확인 완료");
 
@@ -198,7 +194,45 @@ public class CountScoreTest {
     }
 
     /**
-     * 6. 종합 점수 계산 시스템 검증
+     * 6. 블록 드롭 시 점수 추가 테스트
+     */
+    public void testBlockDropScore() {
+        System.out.println("=== 6. 블록 드롭 시 점수 추가 테스트 ===");
+
+        try {
+            setupScoreManager();
+
+            // 초기 점수 확인
+            int initialScore = scoreManager.getScore();
+            assert initialScore == 0 : "초기 점수는 0이어야 합니다.";
+
+            // 블록 드롭 점수 추가
+            scoreManager.addBlockDropScore();
+            int afterDropScore = scoreManager.getScore();
+            assert afterDropScore == 100 : "블록 드롭 시 100점이 추가되어야 합니다.";
+            assert afterDropScore == (initialScore + 100) : "블록 드롭 후 점수가 올바르게 증가해야 합니다.";
+
+            // 여러 번 블록 드롭 테스트
+            int previousScore = scoreManager.getScore();
+            scoreManager.addBlockDropScore();
+            scoreManager.addBlockDropScore();
+            int finalScore = scoreManager.getScore();
+            assert finalScore == (previousScore + 200) : "연속 블록 드롭 시 점수가 누적되어야 합니다.";
+
+            System.out.println("블록 드롭 전 점수: " + initialScore);
+            System.out.println("블록 드롭 후 점수: " + afterDropScore);
+            System.out.println("최종 점수: " + finalScore);
+            System.out.println("✅ 블록 드롭 점수 추가 확인 완료");
+
+        } catch (Exception e) {
+            System.err.println("❌ 블록 드롭 점수 추가 테스트 실패: " + e.getMessage());
+        }
+
+        System.out.println("✅ 블록 드롭 시 점수 추가 테스트 통과");
+    }
+
+    /**
+     * 7. 종합 점수 계산 시스템 검증
      */
     public void testOverallScoringSystem() {
         System.out.println("=== 6. 종합 점수 계산 시스템 검증 ===");
@@ -222,6 +256,7 @@ public class CountScoreTest {
         System.out.println("✅ 속도 증가 시 추가 점수 획득");
         System.out.println("✅ 실시간 점수 표시 및 업데이트");
         System.out.println("✅ 점수 배율 시스템");
+        System.out.println("✅ 블록 드롭 시 점수 추가 (100점)");
         System.out.println("✅ 기본모드와 아이템모드 동일한 점수 계산 구조");
     }
 
@@ -233,17 +268,94 @@ public class CountScoreTest {
         System.out.println("📊 점수 계산 기능 요구사항 테스트 시작");
         System.out.println("==========================================");
         
-        CountScoreTest test = new CountScoreTest();
-        
-        test.testBasicScoreCalculation();
-        test.testLinesClearedScoring();
-        test.testSpeedBonusScoring();
-        test.testScoreMultiplierSystem();
-        test.testRealTimeScoreUpdate();
-        test.testOverallScoringSystem();
+        try {
+            CountScoreTest test = new CountScoreTest();
+            
+            test.testBasicScoreCalculation();
+            test.testLinesClearedScoring();
+            test.testSpeedBonusScoring();
+            test.testScoreMultiplierSystem();
+            test.testRealTimeScoreUpdate();
+            test.testBlockDropScore();
+            test.testOverallScoringSystem();
+            
+        } catch (Exception e) {
+            System.err.println("❌ CountScoreTest 실행 중 예외 발생: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            // 백그라운드 프로세스 정리
+            TestCleanupHelper.forceCompleteSystemCleanup("CountScoreTest");
+        }
         
         System.out.println("==========================================");
         System.out.println("📊 점수 계산 기능 요구사항 테스트 종료");
         System.out.println("==========================================");
+    }
+    
+    /**
+     * 시스템 리소스 완전 정리
+     */
+    private static void forceSystemCleanup() {
+        try {
+            System.out.println("🧹 CountScoreTest 백그라운드 프로세스 정리 시작...");
+            
+            // 1. 모든 Timer 완전 중지
+            try {
+                javax.swing.Timer.setLogTimers(false);
+                java.lang.reflect.Field timersField = javax.swing.Timer.class.getDeclaredField("queue");
+                timersField.setAccessible(true);
+                Object timerQueue = timersField.get(null);
+                if (timerQueue != null) {
+                    java.lang.reflect.Method stopMethod = timerQueue.getClass().getDeclaredMethod("stop");
+                    stopMethod.setAccessible(true);
+                    stopMethod.invoke(timerQueue);
+                    System.out.println("🧹 Swing Timer 큐 완전 중지됨");
+                }
+            } catch (Exception e) {
+                // Reflection 실패는 무시
+            }
+            
+            // 2. AWT/Swing EventQueue 정리
+            try {
+                java.awt.EventQueue eventQueue = java.awt.Toolkit.getDefaultToolkit().getSystemEventQueue();
+                while (eventQueue.peekEvent() != null) {
+                    eventQueue.getNextEvent();
+                }
+            } catch (Exception e) {
+                // 무시
+            }
+            
+            // 3. 활성 GUI 스레드 정리
+            ThreadGroup rootGroup = Thread.currentThread().getThreadGroup();
+            ThreadGroup parentGroup;
+            while ((parentGroup = rootGroup.getParent()) != null) {
+                rootGroup = parentGroup;
+            }
+            
+            Thread[] threads = new Thread[rootGroup.activeCount()];
+            int count = rootGroup.enumerate(threads);
+            
+            for (int i = 0; i < count; i++) {
+                Thread thread = threads[i];
+                if (thread != null && !thread.isDaemon() && thread != Thread.currentThread()) {
+                    String threadName = thread.getName();
+                    if (threadName.contains("AWT-EventQueue") || 
+                        threadName.contains("TimerQueue") ||
+                        threadName.contains("Swing-Timer")) {
+                        System.out.println("⚠️ CountScoreTest 활성 GUI 스레드 감지: " + threadName);
+                        thread.interrupt();
+                    }
+                }
+            }
+            
+            // 4. 강제 메모리 정리
+            System.runFinalization();
+            System.gc();
+            
+        } catch (Exception e) {
+            System.out.println("CountScoreTest 정리 중 오류 (무시): " + e.getMessage());
+        }
+        
+        System.out.println("✅ CountScoreTest 백그라운드 프로세스 정리 완료");
     }
 }

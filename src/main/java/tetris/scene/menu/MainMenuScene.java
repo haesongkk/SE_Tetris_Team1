@@ -69,21 +69,27 @@ public class MainMenuScene extends Scene implements KeyListener {
         titlePanel.setLayout(new BoxLayout(titlePanel, BoxLayout.Y_AXIS));
         titlePanel.setBorder(BorderFactory.createEmptyBorder(50, 0, 30, 0));
 
+        // 해상도에 따른 폰트 크기 조정
+        int[] resolution = gameSettings.getResolutionSize();
+        int screenWidth = resolution[0];
+        int titleFontSize = Math.max(48, screenWidth / 18);     // 최소 48px, 화면 너비에 비례
+        int subtitleFontSize = Math.max(14, screenWidth / 60);  // 최소 14px, 화면 너비에 비례
+
         // 메인 제목
         JLabel titleLabel = new JLabel("TETRIS");
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 72));
+        titleLabel.setFont(new Font("Arial", Font.BOLD, titleFontSize));
         titleLabel.setForeground(TITLE_COLOR);
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         
         // 그림자 효과를 위한 백그라운드 제목
         JLabel shadowLabel = new JLabel("TETRIS");
-        shadowLabel.setFont(new Font("Arial", Font.BOLD, 72));
+        shadowLabel.setFont(new Font("Arial", Font.BOLD, titleFontSize));
         shadowLabel.setForeground(new Color(40, 40, 80));
         shadowLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         
         // 서브타이틀
         JLabel subtitleLabel = new JLabel("Team 1 Edition");
-        subtitleLabel.setFont(new Font("Arial", Font.ITALIC, 16));
+        subtitleLabel.setFont(new Font("Arial", Font.ITALIC, subtitleFontSize));
         subtitleLabel.setForeground(TEXT_COLOR);
         subtitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
@@ -104,15 +110,22 @@ public class MainMenuScene extends Scene implements KeyListener {
         
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
-        gbc.insets = new Insets(10, 0, 10, 0);
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.anchor = GridBagConstraints.CENTER;
         
         // 메뉴 버튼들
         String[] buttonTexts = {"Start Game", "Settings", "Score", "Exit"};
         menuButtons = new JButton[buttonTexts.length];
         
+        // 해상도에 따른 버튼 간격 조정 (고정된 작은 간격)
+        int buttonSpacing = 20; // 고정된 간격
+        
         for (int i = 0; i < buttonTexts.length; i++) {
             menuButtons[i] = createMenuButton(buttonTexts[i], i);
+            
             gbc.gridy = i;
+            gbc.insets = new Insets(buttonSpacing / 2, 0, buttonSpacing / 2, 0);
+            
             menuPanel.add(menuButtons[i], gbc);
         }
         
@@ -124,8 +137,21 @@ public class MainMenuScene extends Scene implements KeyListener {
     // 개별 메뉴 버튼을 생성하고 스타일을 설정하는 메서드
     private JButton createMenuButton(String text, int index) {
         JButton button = new JButton(text);
-        button.setFont(new Font("Arial", Font.BOLD, 24));
-        button.setPreferredSize(new Dimension(250, 60));
+        
+        // 해상도에 따른 버튼 크기 조정 (더 합리적인 크기)
+        int[] resolution = gameSettings.getResolutionSize();
+        int screenWidth = resolution[0];
+        int screenHeight = resolution[1];
+        
+        // 해상도에 따른 동적 크기 조정 (더 합리적인 크기)
+        int buttonWidth = Math.max(200, Math.min(400, screenWidth / 3));  // 최소 200px, 최대 400px
+        int buttonHeight = Math.max(50, Math.min(80, screenHeight / 12)); // 최소 50px, 최대 80px
+        int fontSize = Math.max(18, Math.min(28, screenWidth / 30));      // 최소 18px, 최대 28px
+        
+        button.setFont(new Font("Arial", Font.BOLD, fontSize));
+        button.setPreferredSize(new Dimension(buttonWidth, buttonHeight));
+        button.setMinimumSize(new Dimension(buttonWidth, buttonHeight));
+        button.setMaximumSize(new Dimension(buttonWidth, buttonHeight));
 
         button.setFocusable(false);
         button.setFocusPainted(false);
@@ -152,8 +178,13 @@ public class MainMenuScene extends Scene implements KeyListener {
         infoPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
         infoPanel.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
         
+        // 해상도에 따른 폰트 크기 조정
+        int[] resolution = gameSettings.getResolutionSize();
+        int screenWidth = resolution[0];
+        int infoFontSize = Math.max(14, screenWidth / 50);  // 최소 14px, 화면 너비에 비례
+        
         JLabel infoLabel = new JLabel("↑↓ 키로 선택, Enter로 확인, ESC로 종료");
-        infoLabel.setFont(new Font("Malgun Gothic", Font.BOLD, 18));
+        infoLabel.setFont(new Font("Malgun Gothic", Font.BOLD, infoFontSize));
         infoLabel.setForeground(TEXT_COLOR);
         
         infoPanel.add(infoLabel);
@@ -246,8 +277,16 @@ public class MainMenuScene extends Scene implements KeyListener {
         modeDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
         modeDialog.setResizable(false);
         
-        // 다이얼로그 크기 설정 (작은 크기)
-        modeDialog.setSize(350, 250);
+        // 해상도에 따른 다이얼로그 크기 조정
+        int[] resolution = gameSettings.getResolutionSize();
+        int screenWidth = resolution[0];
+        int screenHeight = resolution[1];
+        
+        int dialogWidth = Math.max(300, Math.min(400, screenWidth / 2));
+        int dialogHeight = Math.max(200, Math.min(300, screenHeight / 3));
+        
+        // 다이얼로그 크기 설정
+        modeDialog.setSize(dialogWidth, dialogHeight);
         modeDialog.setLocationRelativeTo(frame);
         
         // 다이얼로그 내용 패널 설정
@@ -261,7 +300,8 @@ public class MainMenuScene extends Scene implements KeyListener {
         
         // 제목 라벨
         JLabel titleLabel = new JLabel("게임 모드 선택", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Malgun Gothic", Font.BOLD, 20));
+        int titleFontSize = Math.max(16, screenWidth / 50);
+        titleLabel.setFont(new Font("Malgun Gothic", Font.BOLD, titleFontSize));
         titleLabel.setForeground(new Color(255, 255, 100));
         titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0));
         
@@ -274,13 +314,16 @@ public class MainMenuScene extends Scene implements KeyListener {
         JButton regularButton = createDialogButton("Regular Mode");
         regularButton.addActionListener(e -> {
             modeDialog.dispose();
-            Game.setScene(new GameScene(frame));
+            // 난이도 선택 다이얼로그 표시
+            showDifficultyDialog();
         });
         
         // Item Mode 버튼 (활성화)
         JButton itemButton = createDialogButton("Item Mode");
         itemButton.addActionListener(e -> {
             modeDialog.dispose();
+            // 해상도 설정을 유지하며 ItemGameScene으로 전환
+            System.out.println("Starting Item Mode game...");
             Game.setScene(new ItemGameScene(frame));
         });
         itemButton.setToolTipText("폭탄 아이템과 함께하는 테트리스!");
@@ -288,7 +331,10 @@ public class MainMenuScene extends Scene implements KeyListener {
         // 취소 버튼
         JButton cancelButton = createDialogButton("취소");
         cancelButton.setBackground(new Color(100, 50, 50));
-        cancelButton.addActionListener(e -> modeDialog.dispose());
+        cancelButton.addActionListener(e -> {
+            System.out.println("Game start cancelled.");
+            modeDialog.dispose();
+        });
         
         buttonPanel.add(regularButton);
         buttonPanel.add(itemButton);
@@ -355,6 +401,111 @@ public class MainMenuScene extends Scene implements KeyListener {
         });
         
         return button;
+    }
+
+    /**
+     * 난이도 선택 다이얼로그를 표시합니다.
+     */
+    private void showDifficultyDialog() {
+        // 커스텀 다이얼로그 생성
+        JDialog difficultyDialog = new JDialog(frame, true);
+        difficultyDialog.setUndecorated(true);
+        difficultyDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        difficultyDialog.setResizable(false);
+        
+        // 해상도에 따른 다이얼로그 크기 조정
+        int[] resolution = gameSettings.getResolutionSize();
+        int screenWidth = resolution[0];
+        int screenHeight = resolution[1];
+        
+        int dialogWidth = Math.max(300, Math.min(400, screenWidth / 2));
+        int dialogHeight = Math.max(250, Math.min(350, screenHeight / 3));
+        
+        difficultyDialog.setSize(dialogWidth, dialogHeight);
+        difficultyDialog.setLocationRelativeTo(frame);
+        
+        // 다이얼로그 내용 패널 설정
+        JPanel dialogPanel = new JPanel();
+        dialogPanel.setBackground(new Color(30, 30, 50));
+        dialogPanel.setLayout(new BorderLayout());
+        dialogPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(255, 255, 100), 2),
+            BorderFactory.createEmptyBorder(15, 15, 15, 15)
+        ));
+        
+        // 제목 라벨
+        JLabel titleLabel = new JLabel("난이도 선택", SwingConstants.CENTER);
+        int titleFontSize = Math.max(16, screenWidth / 50);
+        titleLabel.setFont(new Font("Malgun Gothic", Font.BOLD, titleFontSize));
+        titleLabel.setForeground(new Color(255, 255, 100));
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0));
+        
+        // 버튼 패널
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setOpaque(false);
+        buttonPanel.setLayout(new GridLayout(4, 1, 0, 10));
+        
+        // Easy 버튼
+        JButton easyButton = createDialogButton("Easy");
+        easyButton.addActionListener(e -> {
+            gameSettings.setDifficulty(GameSettings.Difficulty.EASY);
+            difficultyDialog.dispose();
+            Game.setScene(new GameScene(frame, gameSettings.getDifficulty()));
+        });
+        
+        // Normal 버튼
+        JButton normalButton = createDialogButton("Normal");
+        normalButton.addActionListener(e -> {
+            gameSettings.setDifficulty(GameSettings.Difficulty.NORMAL);
+            difficultyDialog.dispose();
+            Game.setScene(new GameScene(frame, gameSettings.getDifficulty()));
+        });
+        
+        // Hard 버튼
+        JButton hardButton = createDialogButton("Hard");
+        hardButton.addActionListener(e -> {
+            gameSettings.setDifficulty(GameSettings.Difficulty.HARD);
+            difficultyDialog.dispose();
+            Game.setScene(new GameScene(frame, gameSettings.getDifficulty()));
+        });
+        
+        // 취소 버튼
+        JButton cancelButton = createDialogButton("취소");
+        cancelButton.setBackground(new Color(100, 50, 50));
+        cancelButton.addActionListener(e -> {
+            difficultyDialog.dispose();
+        });
+        
+        buttonPanel.add(easyButton);
+        buttonPanel.add(normalButton);
+        buttonPanel.add(hardButton);
+        buttonPanel.add(cancelButton);
+        
+        // 설명 라벨
+        JLabel descLabel = new JLabel("<html><center>Easy: 쉬운 난이도<br>Normal: 보통 난이도<br>Hard: 어려운 난이도</center></html>", SwingConstants.CENTER);
+        descLabel.setFont(new Font("Malgun Gothic", Font.PLAIN, 11));
+        descLabel.setForeground(Color.LIGHT_GRAY);
+        
+        // 컴포넌트 배치
+        dialogPanel.add(titleLabel, BorderLayout.NORTH);
+        dialogPanel.add(buttonPanel, BorderLayout.CENTER);
+        dialogPanel.add(descLabel, BorderLayout.SOUTH);
+        
+        difficultyDialog.add(dialogPanel);
+        
+        // ESC 키로 다이얼로그 닫기
+        difficultyDialog.addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override
+            public void keyPressed(java.awt.event.KeyEvent e) {
+                if (e.getKeyCode() == java.awt.event.KeyEvent.VK_ESCAPE) {
+                    difficultyDialog.dispose();
+                }
+            }
+        });
+        
+        difficultyDialog.setFocusable(true);
+        difficultyDialog.setVisible(true);
+        difficultyDialog.requestFocus();
     }
 
     // 설정 메뉴를 표시하는 메서드

@@ -2,6 +2,7 @@ package tetris.scene.game.core;
 
 import tetris.scene.game.blocks.*;
 import tetris.util.SpeedUp;
+import tetris.GameSettings;
 import java.util.Random;
 
 /**
@@ -20,11 +21,16 @@ public class BlockManager {
     // 게임 설정
     private final int gameWidth;
     private final int gameHeight;
+    private final GameSettings.Difficulty difficulty;
+    
+    // 랜덤 생성기
+    private final Random random;
     
     // 의존성
     private final BoardManager boardManager;
     private final BlockShake blockShake;
     private ItemManager itemManager; // 아이템 모드용 (옵션)
+    private ScoreManager scoreManager; // 점수 관리자
     
     // 속도 증가 관리자
     private SpeedUp speedUp;
@@ -38,11 +44,16 @@ public class BlockManager {
      * @param gameWidth 게임 보드 너비
      * @param gameHeight 게임 보드 높이
      * @param boardManager 보드 관리자
+     * @param scoreManager 점수 관리자
+     * @param difficulty 난이도
      */
-    public BlockManager(int gameWidth, int gameHeight, BoardManager boardManager) {
+    public BlockManager(int gameWidth, int gameHeight, BoardManager boardManager, ScoreManager scoreManager, GameSettings.Difficulty difficulty) {
         this.gameWidth = gameWidth;
         this.gameHeight = gameHeight;
         this.boardManager = boardManager;
+        this.scoreManager = scoreManager;
+        this.difficulty = difficulty;
+        this.random = new Random(System.currentTimeMillis());
         this.blockShake = new BlockShake(new BlockShake.ShakeCallback() {
             @Override
             public void onShakeUpdate() {
@@ -74,24 +85,39 @@ public class BlockManager {
      * @return 생성된 블록
      */
     private Block getRandomBlock() {
-        Random rnd = new Random(System.currentTimeMillis());
-        int block = rnd.nextInt(7); // 0~6 랜덤 블록
+        // 난이도에 따른 I형 블럭 확률 계산
+        double iBlockProbability;
+        switch (difficulty) {
+            case EASY:
+                iBlockProbability = 1.0 / 7 * 1.2; // 20% 증가
+                break;
+            case HARD:
+                iBlockProbability = 1.0 / 7 * 0.8; // 20% 감소
+                break;
+            default:
+                iBlockProbability = 1.0 / 7; // 기본 확률
+        }
+        
+        Block newBlock;
+        if (random.nextDouble() < iBlockProbability) {
+            newBlock = new IBlock();
+        } else {
+            // IBlock 외 다른 블록들 중 랜덤 선택
+            int block = random.nextInt(6) + 1; // 1~6 (IBlock 제외)
+            switch (block) {
+                case 1: newBlock = new JBlock(); break;
+                case 2: newBlock = new LBlock(); break;
+                case 3: newBlock = new ZBlock(); break;
+                case 4: newBlock = new SBlock(); break;
+                case 5: newBlock = new TBlock(); break;
+                case 6: newBlock = new OBlock(); break;
+                default: newBlock = new LBlock(); break;
+            }
+        }
         
         // 블록 생성 수 증가 (SpeedUp 관리자 사용)
         if (speedUp != null) {
             speedUp.onBlockGenerated(isGameOver);
-        }
-        
-        Block newBlock;
-        switch (block) {
-            case 0: newBlock = new IBlock(); break;
-            case 1: newBlock = new JBlock(); break;
-            case 2: newBlock = new LBlock(); break;
-            case 3: newBlock = new ZBlock(); break;
-            case 4: newBlock = new SBlock(); break;
-            case 5: newBlock = new TBlock(); break;
-            case 6: newBlock = new OBlock(); break;
-            default: newBlock = new LBlock(); break;
         }
         
         // 디버그 모드일 때는 무조건 폭탄 블록으로 변환
@@ -239,6 +265,11 @@ public class BlockManager {
         
         // BoardManager를 사용하여 블록을 영구적으로 보드에 고정
         boardManager.placeBlock(currentBlock, x, y);
+        
+        // 블록이 떨어질 때 점수 추가
+        if (scoreManager != null) {
+            scoreManager.addBlockDropScore();
+        }
         
         // 게임 종료 조건 확인: BoardManager의 게임 오버 체크 사용
         if (boardManager.isGameOver()) {
@@ -502,5 +533,14 @@ public class BlockManager {
         y = originalY; // 원래 위치로 복원
         
         return canMove;
+    }
+    
+    /**
+     * 테스트용 랜덤 블록 생성 메서드 (public)
+     * 
+     * @return 생성된 블록
+     */
+    public Block getRandomBlockForTest() {
+        return getRandomBlock();
     }
 }
