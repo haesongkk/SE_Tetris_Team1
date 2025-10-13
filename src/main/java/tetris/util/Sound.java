@@ -1,6 +1,7 @@
 package tetris.util;
 
 import javazoom.jl.decoder.JavaLayerException;
+import javazoom.jl.player.JavaSoundAudioDevice;
 import javazoom.jl.player.Player;
 import java.io.InputStream;
 
@@ -11,13 +12,16 @@ public class Sound {
     String origin = null; 
     volatile boolean running = false;
     volatile Thread thread = null;
-    
+    SoundDevice device = null;
+
     public Sound(String filePath) {
         this.origin = filePath;
+        device = new SoundDevice();
     }
 
     public synchronized void play(boolean loop) {
         release();
+        device = new SoundDevice();
 
         this.running = true;
         thread = new Thread(() -> {
@@ -36,7 +40,7 @@ public class Sound {
                 // 2) player 객체 생성 및 재생
                 Player player = null;
                 try { 
-                    player = new Player(in); 
+                    player = new Player(in, device); 
                     while (this.running) 
                         if(!player.play(1)) break;
                 } catch(JavaLayerException e) {
@@ -74,6 +78,27 @@ public class Sound {
             catch (InterruptedException ignored) {}
             thread = null;
         }
+        if(device != null){
+            device.close();
+            device = null;
+        }
 
     }
+}
+
+class SoundDevice extends JavaSoundAudioDevice { 
+    static private volatile float volume = 0.2f; 
+    static public void setVolume(float v){ volume = Math.max(0f, Math.min(1f, v)); } 
+    @Override 
+    public void write(short[] s, int off, int len) throws JavaLayerException { 
+        if (volume!=1f){ 
+            for(int i=off, end=off+len;i<end;i++){ 
+                int v = Math.round(s[i]*volume); 
+                if(v>Short.MAX_VALUE) v=Short.MAX_VALUE; 
+                else if(v<Short.MIN_VALUE) v=Short.MIN_VALUE; 
+                s[i]=(short)v; 
+            }
+        } 
+        super.write(s, off, len); 
+    } 
 }
