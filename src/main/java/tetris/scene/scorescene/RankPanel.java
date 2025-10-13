@@ -105,7 +105,7 @@ public class RankPanel extends JPanel {
     void load(String mode) {
         List<List<String>> rankData = highScore.get(mode);
         for(ModeBtn button: buttonList) {
-            if(button.getText().equals(mode)) {
+            if(button.getText().toLowerCase().equals(mode.toLowerCase())) {
                 button.setForeground(Theme.WHITE);
                 button.setBorderColor(Theme.WHITE);
                 //button.setBackground(new Color(255, 60, 60));
