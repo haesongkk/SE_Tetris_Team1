@@ -56,7 +56,7 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
         super(frame);
         m_frame = frame;
         this.difficulty = difficulty; // 난이도 설정
-        scoreManager = new ScoreManager();
+        scoreManager = new ScoreManager(difficulty); // 난이도를 전달하여 ScoreManager 초기화
         boardManager = new BoardManager(); // BoardManager 초기화
         gameStateManager = new GameStateManager(this); // GameStateManager 초기화
         timerManager = new TimerManager(gameStateManager, scoreManager, difficulty); // TimerManager 초기화

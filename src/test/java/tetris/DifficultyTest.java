@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * - 난이도 설정
  * - 난이도별 I형 블럭 형성 확률
  * - 난이도별 속도 증가
+ * - 난이도별 점수 가중치 (Easy: 20% 감소, Hard: 20% 증가)
  */
 @DisplayName("난이도 기능 테스트")
 public class DifficultyTest {
@@ -181,5 +182,98 @@ public class DifficultyTest {
         } catch (Exception e) {
             fail("리플렉션으로 intervalDecrease 접근 실패: " + e.getMessage());
         }
+    }
+
+    // ==================== 점수 가중치 테스트 ====================
+
+    /**
+     * Easy 난이도에서 점수가 20% 감소하는지 테스트
+     */
+    @Test
+    @DisplayName("Easy 난이도 점수 20% 감소 테스트")
+    void testEasyDifficultyScoreReduction() {
+        ScoreManager scoreManager = new ScoreManager(GameSettings.Difficulty.EASY);
+        
+        // 1줄 삭제 시 점수 (기본 1000점의 80% = 800점)
+        scoreManager.addScore(1);
+        assertEquals(800, scoreManager.getScore(), "Easy 난이도에서 1줄 삭제 시 800점이어야 함");
+        
+        // 블록 드롭 점수 (기본 100점의 80% = 80점)
+        scoreManager.reset();
+        scoreManager.addBlockDropScore();
+        assertEquals(80, scoreManager.getScore(), "Easy 난이도에서 블록 드롭 시 80점이어야 함");
+    }
+
+    /**
+     * Normal 난이도에서 기본 점수가 유지되는지 테스트
+     */
+    @Test
+    @DisplayName("Normal 난이도 기본 점수 테스트")
+    void testNormalDifficultyScore() {
+        ScoreManager scoreManager = new ScoreManager(GameSettings.Difficulty.NORMAL);
+        
+        // 1줄 삭제 시 점수 (기본 1000점)
+        scoreManager.addScore(1);
+        assertEquals(1000, scoreManager.getScore(), "Normal 난이도에서 1줄 삭제 시 1000점이어야 함");
+        
+        // 블록 드롭 점수 (기본 100점)
+        scoreManager.reset();
+        scoreManager.addBlockDropScore();
+        assertEquals(100, scoreManager.getScore(), "Normal 난이도에서 블록 드롭 시 100점이어야 함");
+    }
+
+    /**
+     * Hard 난이도에서 점수가 20% 증가하는지 테스트
+     */
+    @Test
+    @DisplayName("Hard 난이도 점수 20% 증가 테스트")
+    void testHardDifficultyScoreIncrease() {
+        ScoreManager scoreManager = new ScoreManager(GameSettings.Difficulty.HARD);
+        
+        // 1줄 삭제 시 점수 (기본 1000점의 120% = 1200점)
+        scoreManager.addScore(1);
+        assertEquals(1200, scoreManager.getScore(), "Hard 난이도에서 1줄 삭제 시 1200점이어야 함");
+        
+        // 블록 드롭 점수 (기본 100점의 120% = 120점)
+        scoreManager.reset();
+        scoreManager.addBlockDropScore();
+        assertEquals(120, scoreManager.getScore(), "Hard 난이도에서 블록 드롭 시 120점이어야 함");
+    }
+
+    /**
+     * 여러 줄 삭제 시 난이도별 점수 차이 테스트
+     */
+    @Test
+    @DisplayName("여러 줄 삭제 시 난이도별 점수 테스트")
+    void testMultiLineDifficultyScore() {
+        ScoreManager easyManager = new ScoreManager(GameSettings.Difficulty.EASY);
+        ScoreManager normalManager = new ScoreManager(GameSettings.Difficulty.NORMAL);
+        ScoreManager hardManager = new ScoreManager(GameSettings.Difficulty.HARD);
+        
+        // 3줄 삭제 시
+        easyManager.addScore(3);
+        normalManager.addScore(3);
+        hardManager.addScore(3);
+        
+        assertEquals(2400, easyManager.getScore(), "Easy: 3줄 삭제 시 2400점 (3000 * 0.8)");
+        assertEquals(3000, normalManager.getScore(), "Normal: 3줄 삭제 시 3000점");
+        assertEquals(3600, hardManager.getScore(), "Hard: 3줄 삭제 시 3600점 (3000 * 1.2)");
+    }
+
+    /**
+     * 속도 배율과 난이도 배율이 동시에 적용되는지 테스트
+     */
+    @Test
+    @DisplayName("속도 배율과 난이도 배율 동시 적용 테스트")
+    void testSpeedAndDifficultyMultiplierCombination() {
+        ScoreManager hardManager = new ScoreManager(GameSettings.Difficulty.HARD);
+        
+        // 속도 증가로 배율 1.2배 적용
+        hardManager.onSpeedIncrease();
+        
+        // 1줄 삭제 시: 기본 1000 * 속도배율 1.2 * 난이도배율 1.2 = 1440점
+        hardManager.addScore(1);
+        assertEquals(1440, hardManager.getScore(), 
+                    "Hard 난이도에서 속도 증가 후 1줄 삭제 시 1440점이어야 함 (1000 * 1.2 * 1.2)");
     }
 }

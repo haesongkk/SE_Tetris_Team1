@@ -465,7 +465,8 @@ public class BlockManager {
                             boardManager.getBoard(), 
                             boardManager.getBoardColors(), 
                             x, 
-                            y
+                            y,
+                            scoreManager
                         );
                         
                         if (clearedCount > 0) {

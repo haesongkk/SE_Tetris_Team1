@@ -1,6 +1,7 @@
 package tetris.scene.game.core;
 
 import java.awt.*;
+import tetris.GameSettings;
 
 /**
  * 테트리스 게임의 점수 계산 및 표시를 담당하는 클래스
@@ -13,9 +14,35 @@ public class ScoreManager {
     private int score; // 현재 점수
     private int linesCleared; // 삭제된 줄 수
     private double speedMultiplier; // 속도에 따른 점수 배율 (1.0 = 100%, 1.2 = 120%)
+    private double difficultyMultiplier; // 난이도에 따른 점수 배율
     
     public ScoreManager() {
+        this.difficultyMultiplier = 1.0; // 기본 난이도 배율 (Normal)
         reset();
+    }
+    
+    public ScoreManager(GameSettings.Difficulty difficulty) {
+        setDifficultyMultiplier(difficulty);
+        reset();
+    }
+    
+    /**
+     * 난이도에 따른 점수 배율을 설정합니다.
+     * Easy: 0.8 (20% 감소), Normal: 1.0 (기본), Hard: 1.2 (20% 증가)
+     */
+    private void setDifficultyMultiplier(GameSettings.Difficulty difficulty) {
+        switch (difficulty) {
+            case EASY:
+                this.difficultyMultiplier = 0.8; // 20% 감소
+                break;
+            case HARD:
+                this.difficultyMultiplier = 1.2; // 20% 증가
+                break;
+            case NORMAL:
+            default:
+                this.difficultyMultiplier = 1.0; // 기본
+                break;
+        }
     }
     
     /**
@@ -35,13 +62,16 @@ public class ScoreManager {
         if (linesClearedCount > 0) {
             linesCleared += linesClearedCount;
             
-            // 속도 배율을 적용한 점수 계산 (반올림 처리로 정확한 점수 계산)
+            // 난이도 배율과 속도 배율을 모두 적용한 점수 계산
             int baseScore = linesClearedCount * POINTS_PER_LINE;
-            int bonusScore = (int) Math.round(baseScore * speedMultiplier);
+            double totalMultiplier = speedMultiplier * difficultyMultiplier;
+            int bonusScore = (int) Math.round(baseScore * totalMultiplier);
             score += bonusScore;
             
             System.out.println("Cleared " + linesClearedCount + " lines! Base: " + baseScore + 
-                             ", Multiplier: " + String.format("%.1f", speedMultiplier) + 
+                             ", Speed Multiplier: " + String.format("%.1f", speedMultiplier) + 
+                             "x, Difficulty Multiplier: " + String.format("%.1f", difficultyMultiplier) + 
+                             "x, Total Multiplier: " + String.format("%.1f", totalMultiplier) + 
                              "x, Final: " + bonusScore + ", Total score: " + score);
         }
     }
@@ -50,8 +80,25 @@ public class ScoreManager {
      * 블록이 떨어질 때 점수를 추가합니다.
      */
     public void addBlockDropScore() {
-        score += 100;
-        System.out.println("Block dropped! Added 100 points. Total score: " + score);
+        int baseDropScore = 100;
+        int adjustedDropScore = (int) Math.round(baseDropScore * difficultyMultiplier);
+        score += adjustedDropScore;
+        System.out.println("Block dropped! Added " + adjustedDropScore + " points (base: " + baseDropScore + 
+                         ", difficulty multiplier: " + String.format("%.1f", difficultyMultiplier) + 
+                         "). Total score: " + score);
+    }
+    
+    /**
+     * 무게추 아이템이 셀을 지울 때 점수를 추가합니다.
+     * 기본 50점에 난이도 배율을 적용합니다.
+     */
+    public void addWeightItemCellScore() {
+        int baseCellScore = 50;
+        int adjustedCellScore = (int) Math.round(baseCellScore * difficultyMultiplier);
+        score += adjustedCellScore;
+        System.out.println("Weight item cleared cell! Added " + adjustedCellScore + " points (base: " + baseCellScore + 
+                         ", difficulty multiplier: " + String.format("%.1f", difficultyMultiplier) + 
+                         "). Total score: " + score);
     }
     
     /**

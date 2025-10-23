@@ -291,9 +291,10 @@ public class WeightItemBlock extends Block {
      * @param boardColors 게임 보드 색상
      * @param weightX 무게추의 X 위치
      * @param weightY 무게추의 Y 위치
+     * @param scoreManager 점수 관리자 (셀 제거 시 점수 추가용)
      * @return 제거된 블록의 개수
      */
-    public int clearBlocksBelow(int[][] board, Color[][] boardColors, int weightX, int weightY) {
+    public int clearBlocksBelow(int[][] board, Color[][] boardColors, int weightX, int weightY, tetris.scene.game.core.ScoreManager scoreManager) {
         int clearedCount = 0;
         int[] range = getDestructionRange(weightX, weightY);
         int startCol = Math.max(0, range[0]);
@@ -311,6 +312,11 @@ public class WeightItemBlock extends Block {
                         board[row][col] = 0;
                         boardColors[row][col] = null;
                         clearedCount++;
+                        
+                        // 셀을 지울 때마다 50점 추가 (난이도 배율 적용)
+                        if (scoreManager != null) {
+                            scoreManager.addWeightItemCellScore();
+                        }
                     }
                 }
                 System.out.println("WeightItemBlock cleared blocks from row " + row);
