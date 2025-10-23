@@ -139,6 +139,10 @@ public class BlockManager {
         
         if (canMoveDown()) {
             y++;
+            // 블록이 1칸 떨어질 때마다 점수 획득 (자동/수동 무관)
+            if (scoreManager != null) {
+                scoreManager.addBlockFallScore();
+            }
             return false; // 단순 이동
         } else {
             // 무게추 블록이 바닥이나 다른 블록에 닿았을 때 처리

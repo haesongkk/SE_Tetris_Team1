@@ -102,6 +102,18 @@ public class ScoreManager {
     }
     
     /**
+     * 블록이 1칸 떨어질 때마다 점수를 추가합니다.
+     * 자동/수동 조작에 무관하게 획득합니다.
+     * 난이도와 무관하게 고정으로 10점을 획득합니다.
+     */
+    public void addBlockFallScore() {
+        int fallScore = 10; // 난이도와 무관하게 고정 10점
+        score += fallScore;
+        // 너무 빈번한 로그를 방지하기 위해 주석 처리
+        // System.out.println("Block fell 1 cell! Added " + fallScore + " points. Total score: " + score);
+    }
+    
+    /**
      * 현재 점수를 반환합니다.
      * @return 현재 점수
      */

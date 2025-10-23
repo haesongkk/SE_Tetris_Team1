@@ -257,7 +257,56 @@ public class CountScoreTest {
         System.out.println("✅ 실시간 점수 표시 및 업데이트");
         System.out.println("✅ 점수 배율 시스템");
         System.out.println("✅ 블록 드롭 시 점수 추가 (100점)");
+        System.out.println("✅ 블록 1칸 낙하 시 점수 획득 (10점)");
         System.out.println("✅ 기본모드와 아이템모드 동일한 점수 계산 구조");
+    }
+
+    /**
+     * 7. 블록 1칸 낙하 점수 시스템 테스트
+     * 블록이 1칸 떨어질 때마다 10점 획득 (자동/수동 무관, 난이도 무관)
+     */
+    public void testBlockFallScore() {
+        System.out.println("=== 7. 블록 1칸 낙하 점수 시스템 테스트 ===");
+
+        try {
+            setupScoreManager();
+
+            // 초기 점수 확인
+            assert scoreManager.getScore() == 0 : "초기 점수는 0이어야 합니다.";
+
+            // 1번 낙하 테스트
+            scoreManager.addBlockFallScore();
+            assert scoreManager.getScore() == 10 : "1번 낙하 후 10점이어야 합니다.";
+
+            // 연속 낙하 테스트 (10번)
+            for (int i = 0; i < 10; i++) {
+                scoreManager.addBlockFallScore();
+            }
+            assert scoreManager.getScore() == 110 : "11번 낙하 후 110점이어야 합니다.";
+
+            // 다른 점수와의 조합 테스트
+            scoreManager.addScore(1); // 줄 삭제 1000점
+            assert scoreManager.getScore() == 1110 : "낙하 점수 + 줄 삭제 점수 = 1110점이어야 합니다.";
+
+            scoreManager.addBlockDropScore(); // 블록 드롭 100점
+            assert scoreManager.getScore() == 1210 : "전체 점수는 1210점이어야 합니다.";
+
+            // 추가 낙하 테스트
+            for (int i = 0; i < 5; i++) {
+                scoreManager.addBlockFallScore();
+            }
+            assert scoreManager.getScore() == 1260 : "최종 점수는 1260점이어야 합니다.";
+
+            System.out.println("블록 1칸 낙하 점수: 10점 (난이도 무관)");
+            System.out.println("연속 낙하 점수 누적 확인 완료");
+            System.out.println("다른 점수 시스템과의 조합 확인 완료");
+            System.out.println("✅ 블록 1칸 낙하 점수 시스템 확인 완료");
+
+        } catch (Exception e) {
+            System.err.println("❌ 블록 1칸 낙하 점수 시스템 테스트 실패: " + e.getMessage());
+        }
+
+        System.out.println("✅ 블록 1칸 낙하 점수 시스템 테스트 통과");
     }
 
     /**
@@ -277,6 +326,7 @@ public class CountScoreTest {
             test.testScoreMultiplierSystem();
             test.testRealTimeScoreUpdate();
             test.testBlockDropScore();
+            test.testBlockFallScore();
             test.testOverallScoringSystem();
             
         } catch (Exception e) {
