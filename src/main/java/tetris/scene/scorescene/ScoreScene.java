@@ -144,6 +144,7 @@ public class ScoreScene extends Scene {
         }
 
         RunLater.clear();
+        Sound.clear();
     }
 }
 

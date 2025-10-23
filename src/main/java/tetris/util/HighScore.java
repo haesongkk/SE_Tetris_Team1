@@ -49,13 +49,6 @@ public class HighScore extends HashMap<String, ArrayList<ScoreEntry>> {
 
             }
         }
-
-        for(String mode : super.keySet()){
-            System.out.println(mode);
-            for(ScoreEntry entry : super.get(mode)){
-                System.out.println(entry.userName + " " + entry.score + " " + entry.removedLines + " " + entry.timeSeconds);
-            }
-        }
     }
 
     public int add(String mode, int score, int removedLines, int timeSeconds){

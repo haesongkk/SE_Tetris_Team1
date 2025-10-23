@@ -154,6 +154,7 @@ public class GameOver extends JPanel {
         }
 
         RunLater.clear();
+        Sound.clear();
     }
 
 

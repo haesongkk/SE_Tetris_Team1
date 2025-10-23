@@ -16,6 +16,7 @@ public class SettingsScene extends Scene implements KeyListener {
     private JComboBox<String> resolutionCombo;
     private JComboBox<String> colorBlindModeCombo;
     private JComboBox<String> difficultyCombo;
+    private JSlider volumeSlider;
     
     private final Color BACKGROUND_COLOR = new Color(20, 20, 40);
     private final Color TITLE_COLOR = new Color(255, 255, 100);
@@ -129,6 +130,16 @@ public class SettingsScene extends Scene implements KeyListener {
         difficultyCombo.setSelectedIndex(1); // Normal로 기본 설정
         styleComboBox(difficultyCombo);
         panel.add(difficultyCombo, gbc);
+
+        // 7. 음량 설정
+        gbc.gridx = 0; gbc.gridy = 6;
+        panel.add(createLabel("음량:"), gbc);
+        
+        gbc.gridx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        volumeSlider = new JSlider(0, 100, 20); // 초기 20%
+        volumeSlider.setBackground(BACKGROUND_COLOR);
+        panel.add(volumeSlider, gbc);
         
         return panel;
     }
@@ -215,6 +226,7 @@ public class SettingsScene extends Scene implements KeyListener {
         if (resolutionCombo != null) resolutionCombo.setSelectedIndex(gameSettings.getResolution());
         if (colorBlindModeCombo != null) colorBlindModeCombo.setSelectedIndex(gameSettings.getColorBlindMode());
         if (difficultyCombo != null) difficultyCombo.setSelectedIndex(gameSettings.getDifficultyIndex());
+        if (volumeSlider != null) volumeSlider.setValue(gameSettings.getVolume());
     }
 
     private void saveCurrentSettings() {
@@ -222,6 +234,7 @@ public class SettingsScene extends Scene implements KeyListener {
         if (resolutionCombo != null) gameSettings.setResolution(resolutionCombo.getSelectedIndex());
         if (colorBlindModeCombo != null) gameSettings.setColorBlindMode(colorBlindModeCombo.getSelectedIndex());
         if (difficultyCombo != null) gameSettings.setDifficultyIndex(difficultyCombo.getSelectedIndex());
+        if (volumeSlider != null) gameSettings.setVolume(volumeSlider.getValue());
     }
 
     private void goBack() {
