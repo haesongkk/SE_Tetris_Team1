@@ -309,12 +309,16 @@ public class GameSettings {
     // 스코어 보드 데이터를 초기화하는 메서드
     public void clearScoreBoard() {
         try {
-            // highscore.txt 파일을 빈 파일로 만들기
-            java.io.File scoreFile = new java.io.File("./data/highscore_v2.txt");
-            if (scoreFile.exists()) {
-                // 파일을 빈 내용으로 덮어쓰기
-                try (java.io.FileWriter writer = new java.io.FileWriter(scoreFile, false)) {
-                    writer.write(""); // 빈 내용으로 덮어쓰기
+            // 두 개의 스코어 파일 모두 초기화
+            String[] scoreFiles = {"./data/highscore.txt", "./data/highscore_v2.txt"};
+            
+            for (String filePath : scoreFiles) {
+                java.io.File scoreFile = new java.io.File(filePath);
+                if (scoreFile.exists()) {
+                    // 파일을 빈 내용으로 덮어쓰기
+                    try (java.io.FileWriter writer = new java.io.FileWriter(scoreFile, false)) {
+                        writer.write(""); // 빈 내용으로 덮어쓰기
+                    }
                 }
             }
         } catch (java.io.IOException e) {

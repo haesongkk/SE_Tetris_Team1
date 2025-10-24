@@ -99,7 +99,6 @@ public class Animation extends JButton {
         animTimers.remove(animTimer);
     }
 
-
     public void hueBackground(float duration, boolean bLoop) {
         alpha = 1f;
         bVisible = true;

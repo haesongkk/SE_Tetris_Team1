@@ -47,6 +47,16 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
     
     // 블록 흔들림 효과 관리자
     private BlockShake blockShake;
+    
+    // 시야 제한 아이템 효과
+    private boolean visionBlockActive = false;
+    
+    // 청소 블링킹 효과
+    private java.util.Set<java.awt.Point> cleanupBlinkingCells = new java.util.HashSet<>();
+    private boolean cleanupBlinkingActive = false;
+    
+    // 속도 아이템 효과 상태
+    private boolean speedItemActive = false;
 
     // ─────────────────────────────────────────────────────────────
     // Scene lifecycle
@@ -56,7 +66,7 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
         super(frame);
         m_frame = frame;
         this.difficulty = difficulty; // 난이도 설정
-        scoreManager = new ScoreManager();
+        scoreManager = new ScoreManager(difficulty); // 난이도를 전달하여 ScoreManager 초기화
         boardManager = new BoardManager(); // BoardManager 초기화
         gameStateManager = new GameStateManager(this); // GameStateManager 초기화
         timerManager = new TimerManager(gameStateManager, scoreManager, difficulty); // TimerManager 초기화
@@ -98,6 +108,7 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
         
         // TimerManager 초기화
         timerManager.initialize(this);
+        timerManager.setGameScene(this); // GameScene 참조 설정
         timerManager.setupSpeedUp();
         timerManager.setupLineBlinkEffect();
         
@@ -136,6 +147,11 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
         if (timerManager.getSpeedUp() != null) {
             blockManager.setSpeedUp(timerManager.getSpeedUp());
         }
+        
+        // GameScene 참조 설정 (아이템 효과용)
+        blockManager.setGameScene(this);
+        boardManager.setGameScene(this);
+        boardManager.setBlockManager(blockManager);
         
         blockManager.initializeBlocks();
         
@@ -523,7 +539,8 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
             // RenderManager를 사용하여 모든 렌더링 처리
             if (renderManager != null) {
                 renderManager.render(g2d, getWidth(), getHeight(), timerManager.getLineBlinkEffect(), 
-                                   lastBlock, lastBlockX, lastBlockY);
+                                   lastBlock, lastBlockX, lastBlockY, visionBlockActive,
+                                   cleanupBlinkingActive, cleanupBlinkingCells);
             }
         }
     }
@@ -580,5 +597,121 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
      */
     private void handleExitToMenu() {
         Game.setScene(new MainMenuScene(m_frame));
+    }
+    
+    // ═══════════════════════════════════════════════════════════════
+    // 아이템 효과 메서드들
+    // ═══════════════════════════════════════════════════════════════
+    
+    /**
+     * 시야 제한 효과를 활성화/비활성화합니다.
+     * @param active true면 시야 제한 활성화, false면 비활성화
+     */
+    public void setVisionBlockActive(boolean active) {
+        this.visionBlockActive = active;
+        System.out.println("Vision block effect " + (active ? "activated" : "deactivated"));
+        repaintGamePanel();
+    }
+    
+    /**
+     * 시야 제한 효과가 활성화되어 있는지 확인합니다.
+     * @return 시야 제한 효과 활성화 상태
+     */
+    public boolean isVisionBlockActive() {
+        return visionBlockActive;
+    }
+    
+    /**
+     * 청소 블링킹 효과를 시작합니다.
+     * @param cells 블링킹할 셀 좌표들
+     */
+    public void startCleanupBlinking(java.util.Set<java.awt.Point> cells) {
+        cleanupBlinkingCells.clear();
+        cleanupBlinkingCells.addAll(cells);
+        cleanupBlinkingActive = true;
+    }
+    
+    /**
+     * LINE_CLEAR 아이템을 위한 줄 블링킹 효과를 시작합니다.
+     * @param linesToClear 삭제할 줄 번호들의 리스트
+     */
+    public void startLineBlinkEffect(java.util.List<Integer> linesToClear) {
+        System.out.println("LINE_CLEAR item: Starting blink effect for lines: " + linesToClear);
+        
+        // 기존 블링킹 시스템 사용
+        timerManager.getLineBlinkEffect().startBlinkEffect(linesToClear);
+        System.out.println("LINE_CLEAR item: Blink effect started successfully");
+    }
+    
+    /**
+     * 청소 블링킹 효과를 중지합니다.
+     */
+    public void stopCleanupBlinking() {
+        cleanupBlinkingActive = false;
+        cleanupBlinkingCells.clear();
+    }
+    
+    /**
+     * 청소 블링킹이 활성화되어 있는지 확인합니다.
+     * @return 청소 블링킹 활성화 상태
+     */
+    public boolean isCleanupBlinkingActive() {
+        return cleanupBlinkingActive;
+    }
+    
+    /**
+     * 청소 블링킹 중인 셀들을 반환합니다.
+     * @return 블링킹 중인 셀 좌표 집합
+     */
+    public java.util.Set<java.awt.Point> getCleanupBlinkingCells() {
+        return new java.util.HashSet<>(cleanupBlinkingCells);
+    }
+    
+    /**
+     * 현재 낙하 속도를 반환합니다 (아이템 효과용).
+     * @return 현재 낙하 속도 (밀리초 단위 딜레이)
+     */
+    public double getFallSpeed() {
+        if (timerManager != null) {
+            return timerManager.getCurrentDropDelay();
+        }
+        return 1000.0; // 기본값
+    }
+    
+    /**
+     * 낙하 속도를 설정합니다 (아이템 효과용).
+     * @param speed 새로운 낙하 속도 (밀리초 단위 딜레이)
+     */
+    public void setFallSpeed(double speed) {
+        if (timerManager != null) {
+            int delay = Math.max(10, (int) Math.round(speed)); // 최소 10ms로 제한 완화 (매우 빠른 속도 허용)
+            timerManager.setDropDelay(delay);
+            System.out.println("Fall speed changed to " + delay + "ms delay");
+        }
+    }
+    
+    /**
+     * 속도 아이템 효과 활성화 상태를 설정합니다.
+     * @param active 활성화 여부
+     */
+    public void setSpeedItemActive(boolean active) {
+        this.speedItemActive = active;
+        System.out.println("Speed item active: " + active);
+    }
+    
+    /**
+     * 속도 아이템 효과가 활성화되어 있는지 확인합니다.
+     * @return 속도 아이템 활성화 여부
+     */
+    public boolean isSpeedItemActive() {
+        return speedItemActive;
+    }
+    
+    /**
+     * TimerManager를 반환합니다 (아이템 효과용).
+     * @return TimerManager 인스턴스
+     */
+    public TimerManager getTimerManager() {
+        return timerManager;
     }
 }

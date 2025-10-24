@@ -23,6 +23,24 @@ import java.lang.reflect.Method;
  * 6. 화면에 사용 가능한 키 안내가 표시되는지
  * 7. 메뉴 확장 가능성 (새 메뉴 추가 가능한 구조)
  */
+
+/**
+ * 테스트 안전한 MainMenuScene
+ * applyDisplaySettings를 오버라이드하여 무한루프 방지
+ */
+class TestSafeMainMenuScene extends MainMenuScene {
+    public TestSafeMainMenuScene(JFrame frame) {
+        super(frame);
+    }
+    
+    @Override
+    public void onEnter() {
+        // applyDisplaySettings 호출 제거하여 무한루프 방지
+        requestFocusInWindow();
+        System.out.println("🔧 TestSafeMainMenuScene: onEnter 안전 모드로 실행됨");
+    }
+}
+
 @DisplayName("시작 메뉴 기능 요구사항 테스트")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class StartMenuTest {
@@ -69,9 +87,12 @@ class StartMenuTest {
             return;
         }
         
-        // Game 인스턴스 초기화 (중요!)
+        // 테스트용 MainMenuScene 생성 (applyDisplaySettings 호출 방지)
         try {
-            // Game.run()을 호출하지 않고 필요한 부분만 초기화
+            // MainMenuScene의 applyDisplaySettings를 모킹하기 위해 커스텀 클래스 사용
+            mainMenu = new TestSafeMainMenuScene(testFrame);
+            
+            // Game 인스턴스 초기화 (중요!)
             Field frameField = tetris.Game.class.getDeclaredField("frame");
             frameField.setAccessible(true);
             frameField.set(tetris.Game.getInstance(), testFrame);

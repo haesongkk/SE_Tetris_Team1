@@ -152,23 +152,61 @@ public class BombItemBlock extends Block {
      */
     public void drawBombCell(Graphics2D g2d, int x, int y, int cellSize) {
         try {
+            // 블링킹 효과 (300ms 주기로 더 빠르게 깜빡임)
+            long currentTime = System.currentTimeMillis();
+            boolean isBlinking = (currentTime / 300) % 2 == 0; // 300ms마다 토글
+            
             if (bombImage != null) {
                 // 폭탄 이미지가 있으면 이미지를 그립니다
-                g2d.drawImage(bombImage, x, y, cellSize, cellSize, null);
+                if (isBlinking) {
+                    // 블링킹 시 노란색 배경 + 이미지
+                    g2d.setColor(Color.YELLOW);
+                    g2d.fillRect(x, y, cellSize, cellSize);
+                    g2d.drawImage(bombImage, x, y, cellSize, cellSize, null);
+                    
+                    // 밝은 테두리 효과
+                    g2d.setColor(Color.RED);
+                    g2d.setStroke(new BasicStroke(3));
+                    g2d.drawRect(x, y, cellSize, cellSize);
+                } else {
+                    // 평상시 표시 (일반 배경 + 이미지)
+                    g2d.drawImage(bombImage, x, y, cellSize, cellSize, null);
+                }
             } else {
-                // 폭탄 이미지가 없으면 빨간색 원으로 그립니다
-                g2d.setColor(Color.RED);
-                g2d.fillOval(x + cellSize/4, y + cellSize/4, cellSize/2, cellSize/2);
-                
-                // 폭탄 테두리
-                g2d.setColor(Color.DARK_GRAY);
-                g2d.setStroke(new BasicStroke(2));
-                g2d.drawOval(x + cellSize/4, y + cellSize/4, cellSize/2, cellSize/2);
-                
-                // 폭탄 심지 (작은 선)
-                g2d.setColor(Color.ORANGE);
-                g2d.setStroke(new BasicStroke(1));
-                g2d.drawLine(x + cellSize/2, y + cellSize/4, x + cellSize/2 + cellSize/8, y + cellSize/8);
+                // 폭탄 이미지가 없으면 도형으로 그립니다
+                if (isBlinking) {
+                    // 블링킹 시 노란색 배경
+                    g2d.setColor(Color.YELLOW);
+                    g2d.fillRect(x, y, cellSize, cellSize);
+                    
+                    // 빨간색 원
+                    g2d.setColor(Color.RED);
+                    g2d.fillOval(x + cellSize/6, y + cellSize/6, cellSize*2/3, cellSize*2/3);
+                    
+                    // 검은색 테두리
+                    g2d.setColor(Color.BLACK);
+                    g2d.setStroke(new BasicStroke(2));
+                    g2d.drawOval(x + cellSize/6, y + cellSize/6, cellSize*2/3, cellSize*2/3);
+                    
+                    // 심지
+                    g2d.setColor(Color.ORANGE);
+                    g2d.setStroke(new BasicStroke(2));
+                    g2d.drawLine(x + cellSize/2, y + cellSize/6, x + cellSize/2 + cellSize/6, y);
+                } else {
+                    // 평상시 빨간색 원
+                    g2d.setColor(Color.RED);
+                    g2d.fillOval(x + cellSize/4, y + cellSize/4, cellSize/2, cellSize/2);
+                    
+                    // 폭탄 테두리
+                    g2d.setColor(Color.DARK_GRAY);
+                    g2d.setStroke(new BasicStroke(2));
+                    g2d.drawOval(x + cellSize/4, y + cellSize/4, cellSize/2, cellSize/2);
+                    
+                    // 폭탄 심지
+                    g2d.setColor(Color.ORANGE);
+                    g2d.setStroke(new BasicStroke(1));
+                    g2d.drawLine(x + cellSize/2, y + cellSize/4, x + cellSize/2 + cellSize/8, y + cellSize/8);
+                }
             }
         } catch (Exception e) {
             // 에러가 발생하면 기본 빨간색 사각형으로 그립니다
@@ -176,9 +214,8 @@ public class BombItemBlock extends Block {
             g2d.fillRect(x, y, cellSize, cellSize);
             g2d.setColor(Color.WHITE);
             g2d.drawString("💣", x + cellSize/4, y + cellSize*3/4);
-        } finally {
-            g2d.dispose();
         }
+        // finally에서 dispose() 제거 - 이게 문제였을 수 있음
     }
     
     @Override

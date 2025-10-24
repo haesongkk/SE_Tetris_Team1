@@ -32,17 +32,20 @@ public class SpeedUp {
     
     private Timer timer; // 게임 타이머 참조 (나중에 설정)
     private SpeedIncreaseCallback callback; // 속도 증가 콜백
+    private Object gameScene; // GameScene 참조 (속도 아이템 상태 확인용)
     
     /**
      * SpeedUp 객체를 생성합니다.
      * @param timer 게임 타이머
      * @param callback 속도 증가 시 호출될 콜백
      * @param difficulty 난이도
+     * @param gameScene GameScene 인스턴스 (속도 아이템 상태 확인용)
      */
-    public SpeedUp(Timer timer, SpeedIncreaseCallback callback, GameSettings.Difficulty difficulty) {
+    public SpeedUp(Timer timer, SpeedIncreaseCallback callback, GameSettings.Difficulty difficulty, Object gameScene) {
         this.timer = timer;
         this.callback = callback;
         this.difficulty = difficulty;
+        this.gameScene = gameScene;
         
         // 난이도에 따른 속도 증가량 설정
         switch (difficulty) {
@@ -113,6 +116,12 @@ public class SpeedUp {
      * 속도 증가 조건을 확인하고 필요시 속도를 증가시킵니다.
      */
     private void checkSpeedIncrease() {
+        // 속도 아이템이 활성화된 경우 자동 속도 증가 방지
+        if (isSpeedItemActive()) {
+            System.out.println("Speed item is active, skipping automatic speed increase");
+            return;
+        }
+        
         if (blocksGenerated >= BLOCKS_THRESHOLD || totalLinesCleared >= LINES_THRESHOLD) {
             // 현재 딜레이를 감소시켜 속도 증가
             currentInterval = Math.max(MIN_INTERVAL, currentInterval - intervalDecrease);
@@ -132,6 +141,21 @@ public class SpeedUp {
             blocksGenerated = 0;
             totalLinesCleared = 0;
         }
+    }
+    
+    /**
+     * 속도 아이템이 활성화되어 있는지 확인합니다.
+     */
+    private boolean isSpeedItemActive() {
+        if (gameScene != null) {
+            try {
+                return (Boolean) gameScene.getClass().getMethod("isSpeedItemActive").invoke(gameScene);
+            } catch (Exception e) {
+                System.out.println("Failed to check speed item status: " + e.getMessage());
+                return false;
+            }
+        }
+        return false;
     }
     
     /**

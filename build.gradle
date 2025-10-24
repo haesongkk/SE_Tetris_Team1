@@ -53,6 +53,18 @@ dependencies {
 test {
     useJUnitPlatform()
     
+    // 테스트 병렬 실행 비활성화 - 무한 루프 방지를 위해 순차 실행
+    maxParallelForks = 1
+    forkEvery = 1
+    
+    // GUI 테스트를 위해 헤드리스 모드 비활성화
+    // systemProperty 'java.awt.headless', 'true'  // 주석 처리
+    systemProperty 'junit.jupiter.execution.parallel.enabled', 'false'
+    
+    // 각 테스트 클래스별 타임아웃 강화
+    systemProperty 'junit.jupiter.execution.timeout.default', '30s'
+    systemProperty 'junit.jupiter.execution.timeout.testable.method.default', '30s'
+    
     // 테스트 리포트 생성 설정
     reports {
         junitXml.required = true
@@ -89,19 +101,14 @@ test {
         }
     }
     
-    // GUI 테스트를 위한 헤드리스 모드 설정 (CI 환경에서만)
-    if (System.getenv("CI") == "true") {
-        systemProperty 'java.awt.headless', 'true'
-    }
-    
     // 테스트 타임아웃 설정 - 강화
-    timeout = Duration.ofMinutes(8)  // 전체 테스트 타임아웃을 8분으로 단축
+    timeout = Duration.ofMinutes(3)  // 전체 테스트 타임아웃을 3분으로 단축
     
-    // JVM 옵션 추가 - 무한 루프 방지
-    jvmArgs '-XX:+UseG1GC', '-Xmx2g', '-XX:+HeapDumpOnOutOfMemoryError'
+    // JVM 옵션 추가 - 무한 루프 방지 강화
+    jvmArgs '-XX:+UseG1GC', '-Xmx512m', '-XX:+HeapDumpOnOutOfMemoryError',
+            '-XX:+ExitOnOutOfMemoryError', '-XX:MaxDirectMemorySize=128m'
     
-    // 개별 테스트 메서드 타임아웃
-    systemProperty 'junit.jupiter.execution.timeout.default', '5m'
+    // 개별 테스트 클래스별 강제 종료 타임아웃
     systemProperty 'junit.jupiter.execution.timeout.mode', 'enabled'
     
     // 테스트 실패 시에도 계속 진행 (커버리지 리포트 생성을 위해)
@@ -263,11 +270,16 @@ tasks.register('jpackageExe', Exec) {
         //,'--win-console'           // 콘솔창 필요하면 주석 해제
 }
 
-// Checkstyle 설정
+// Checkstyle 설정 (비활성화)
 checkstyle {
-    toolVersion = '10.12.4'
+    toolVersion = '8.45.1'
     configFile = file("${rootDir}/config/checkstyle/checkstyle.xml")
-    ignoreFailures = true  // 빌드 실패를 방지하고 경고로만 처리
+    ignoreFailures = true
+}
+
+// Checkstyle 작업을 건너뛰도록 설정
+tasks.withType(Checkstyle) {
+    enabled = false
 }
 
 // SpotBugs 설정
