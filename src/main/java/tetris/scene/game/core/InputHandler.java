@@ -64,7 +64,7 @@ public class InputHandler implements KeyListener {
     public void keyTyped(KeyEvent e) {
         // 사용하지 않음
     }
-    
+
     @Override
     public void keyPressed(KeyEvent e) {
         int keyCode = e.getKeyCode();
@@ -157,10 +157,9 @@ public class InputHandler implements KeyListener {
     private void handleExitToMenu() {
         Game.setScene(new MainMenuScene(frame));
     }
-    
-    /**
-     * 디버그용: 현재 키 매핑 정보 출력 (사용자 친화적 키 이름 포함)
-     */
+
+    // ===== 중복 및 미사용 코드 주석처리, 25.10.24 =====
+    /*
     public void printKeyMappings() {
         System.out.println("=== Current Key Mappings ===");
         System.out.println("Left: " + GameSettings.getKeyName(settings.getLeftKey()) + " (" + settings.getLeftKey() + ")");
@@ -173,13 +172,12 @@ public class InputHandler implements KeyListener {
         System.out.println("Exit to Menu: " + GameSettings.getKeyName(settings.getExitKey()) + " (" + settings.getExitKey() + ")");
         System.out.println("===============================");
     }
-    
-    /**
-     * 키 설정이 변경되었을 때 호출하여 설정을 새로 로드
-     */
+
     public void refreshSettings() {
         // GameSettings는 싱글톤이므로 자동으로 최신 설정을 반영
         // 필요시 추가 로직 구현
         System.out.println("InputHandler: Key settings refreshed");
     }
+    */
+    // ===== 중복 및 미사용 코드 주석처리 끝 =====
 }

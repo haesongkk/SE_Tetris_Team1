@@ -239,6 +239,8 @@ public class BoardManager {
      * 완성된 모든 줄을 찾아서 제거하고 삭제된 줄 수를 반환합니다.
      * 여러 줄이 동시에 완성된 경우를 위한 개선된 버전
      */
+    // ===== 중복 및 미사용 코드 주석처리, 25.10.24 =====
+    /*
     public int clearCompletedLines() {
         int linesClearedCount = 0;
         boolean[] linesToClear = new boolean[GAME_HEIGHT];
@@ -260,10 +262,14 @@ public class BoardManager {
         
         return linesClearedCount;
     }
+    */
+    // ===== 중복 및 미사용 코드 주석처리 끝 =====
     
     /**
      * 완성된 줄과 폭탄이 있는 줄을 모두 삭제하고 총 삭제된 줄 수를 반환합니다.
      */
+    // ===== 중복 및 미사용 코드 주석처리, 25.10.24 =====
+    /*
     public int clearCompletedAndBombLines() {
         boolean[] linesToClear = new boolean[GAME_HEIGHT];
         int totalLinesCleared = 0;
@@ -297,6 +303,8 @@ public class BoardManager {
         
         return totalLinesCleared;
     }
+    */
+    // ===== 중복 및 미사용 코드 주석처리 끝 =====
     
     /**
      * 완성된 줄과 폭탄이 있는 줄을 구분해서 삭제하고 각각의 개수를 반환합니다.
