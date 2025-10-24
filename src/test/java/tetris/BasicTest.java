@@ -59,6 +59,9 @@ public class BasicTest {
             testFrame.dispose();
             testFrame = null;
         }
+        
+        // TestCleanupHelper를 통한 추가 정리
+        TestCleanupHelper.forceCompleteSystemCleanup("BasicTest");
         System.out.println("✅ 테스트 환경 정리 완료");
     }
 
@@ -115,10 +118,16 @@ public class BasicTest {
         assertEquals(10, gameWidth, "보드 너비가 10칸이어야 합니다.");
 
         // 실제 보드 배열 크기 확인
-        Field boardField = GameScene.class.getDeclaredField("board");
-        boardField.setAccessible(true);
-        int[][] board = (int[][]) boardField.get(gameScene);
+        Field boardManagerField = GameScene.class.getDeclaredField("boardManager");
+        boardManagerField.setAccessible(true);
+        Object boardManager = boardManagerField.get(gameScene);
 
+        assertNotNull(boardManager, "BoardManager가 생성되어야 합니다.");
+        
+        // BoardManager의 getBoard 메서드를 통해 보드 배열 확인
+        Method getBoardMethod = boardManager.getClass().getDeclaredMethod("getBoard");
+        int[][] board = (int[][]) getBoardMethod.invoke(boardManager);
+        
         assertNotNull(board, "게임 보드가 생성되어야 합니다.");
         assertEquals(20, board.length, "보드 배열의 행 수가 20이어야 합니다.");
         assertEquals(10, board[0].length, "보드 배열의 열 수가 10이어야 합니다.");
@@ -180,10 +189,11 @@ public class BasicTest {
         Class<?> iBlockClass = Class.forName("tetris.scene.game.blocks.IBlock");
         assertNotNull(iBlockClass, "IBlock 클래스가 존재해야 합니다.");
 
-        // 블럭의 기본 메서드들이 존재하는지 확인
+        // 블럭의 기본 메서드들이 존재하는지 확인 (부모 클래스에서)
         assertDoesNotThrow(() -> {
-            iBlockClass.getDeclaredMethod("getMatrix");
-        }, "getMatrix 메서드가 존재해야 합니다.");
+            Class<?> blockClass = Class.forName("tetris.scene.game.blocks.Block");
+            blockClass.getDeclaredMethod("getShape", int.class, int.class);
+        }, "getShape 메서드가 존재해야 합니다.");
 
         System.out.println("✅ 블럭 기본 구조 확인 완료");
     }

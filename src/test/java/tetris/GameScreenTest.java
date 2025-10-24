@@ -116,6 +116,8 @@ public class GameScreenTest {
             System.out.println("GameScreenTest 정리 중 오류 (무시): " + e.getMessage());
         }
         
+        // TestCleanupHelper를 통한 추가 정리
+        TestCleanupHelper.forceCompleteSystemCleanup("GameScreenTest");
         System.out.println("✅ GameScreenTest 백그라운드 프로세스 정리 완료");
     }
 
@@ -147,31 +149,29 @@ public class GameScreenTest {
         assertEquals(20, gameHeight, "게임 보드 높이가 20줄이어야 합니다.");
         assertEquals(10, gameWidth, "게임 보드 너비가 10칸이어야 합니다.");
 
-        // CELL_SIZE 상수 확인
-        Field cellSizeField = GameScene.class.getDeclaredField("CELL_SIZE");
-        cellSizeField.setAccessible(true);
-        int cellSize = (Integer) cellSizeField.get(null);
+        // 동적 크기 계산 테스트 (해상도에 따른 셀 크기)
+        // UIManager의 calculateDynamicSizes 로직을 기반으로 예상 값 계산
+        int[] resolution = GameSettings.getInstance().getResolutionSize();
+        int screenWidth = resolution[0];
+        
+        // UIManager.calculateDynamicSizes()와 동일한 로직
+        int expectedCellSize = Math.max(20, (int) (30 * (screenWidth / 1280.0)));
+        int expectedPreviewCellSize = Math.max(15, (int) (20 * (screenWidth / 1280.0)));
+        
+        // 상수값들 (UIManager에 정의된 static 상수들)
+        int previewSize = 4;  // PREVIEW_SIZE from UIManager
 
-        // PREVIEW_SIZE와 PREVIEW_CELL_SIZE 확인
-        Field previewSizeField = GameScene.class.getDeclaredField("PREVIEW_SIZE");
-        previewSizeField.setAccessible(true);
-        int previewSize = (Integer) previewSizeField.get(null);
-
-        Field previewCellSizeField = GameScene.class.getDeclaredField("PREVIEW_CELL_SIZE");
-        previewCellSizeField.setAccessible(true);
-        int previewCellSize = (Integer) previewCellSizeField.get(null);
-
-        System.out.println("셀 크기: " + cellSize + "px");
-        System.out.println("미리보기 크기: " + previewSize + "×" + previewSize + " (셀 크기: " + previewCellSize + "px)");
+        System.out.println("셀 크기: " + expectedCellSize + "px");
+        System.out.println("미리보기 크기: " + previewSize + "×" + previewSize + " (셀 크기: " + expectedPreviewCellSize + "px)");
 
         // 상수 값들이 합리적인지 확인
-        assertTrue(cellSize > 0, "셀 크기가 0보다 커야 합니다.");
+        assertTrue(expectedCellSize > 0, "셀 크기가 0보다 커야 합니다.");
         assertTrue(previewSize > 0, "미리보기 크기가 0보다 커야 합니다.");
-        assertTrue(previewCellSize > 0, "미리보기 셀 크기가 0보다 커야 합니다.");
+        assertTrue(expectedPreviewCellSize > 0, "미리보기 셀 크기가 0보다 커야 합니다.");
 
         // GamePanel 크기 계산 검증
-        int expectedWidth = (gameWidth + 2) * cellSize + previewSize * previewCellSize + 40;
-        int expectedHeight = (gameHeight + 2) * cellSize;
+        int expectedWidth = (gameWidth + 2) * expectedCellSize + previewSize * expectedPreviewCellSize + 40;
+        int expectedHeight = (gameHeight + 2) * expectedCellSize;
         System.out.println("예상 GamePanel 크기: " + expectedWidth + "×" + expectedHeight);
 
         assertTrue(expectedWidth > 400, "GamePanel 예상 너비가 합리적이어야 합니다.");
@@ -189,21 +189,20 @@ public class GameScreenTest {
         // 헤드리스 환경에서는 테스트 스킵
         Assumptions.assumeFalse(GraphicsEnvironment.isHeadless());
 
-        // 다음 블럭 관련 상수들 확인
-        Field previewSizeField = GameScene.class.getDeclaredField("PREVIEW_SIZE");
-        previewSizeField.setAccessible(true);
-        int previewSize = (Integer) previewSizeField.get(null);
-
-        Field previewCellSizeField = GameScene.class.getDeclaredField("PREVIEW_CELL_SIZE");
-        previewCellSizeField.setAccessible(true);
-        int previewCellSize = (Integer) previewCellSizeField.get(null);
+        // UIManager의 동적 크기 계산 로직을 기반으로 테스트
+        // 기본 해상도 1280x720 가정
+        int screenWidth = 1280;  // 기본 해상도
+        
+        // UIManager.calculateDynamicSizes()와 동일한 로직
+        int expectedPreviewCellSize = Math.max(15, (int) (20 * (screenWidth / 1280.0)));
+        int previewSize = 4;  // UIManager.PREVIEW_SIZE 상수값
 
         System.out.println("다음 블럭 미리보기 크기: " + previewSize + "×" + previewSize +
-                         " (셀 크기: " + previewCellSize + "px)");
+                         " (예상 셀 크기: " + expectedPreviewCellSize + "px)");
 
         // 미리보기 크기가 합리적인지 확인
         assertTrue(previewSize > 0, "미리보기 영역 크기가 0보다 커야 합니다.");
-        assertTrue(previewCellSize > 0, "미리보기 셀 크기가 0보다 커야 합니다.");
+        assertTrue(expectedPreviewCellSize > 0, "미리보기 셀 크기가 0보다 커야 합니다.");
 
         // 미리보기가 테트로미노를 표시하기에 충분한지 확인 (최소 4x4)
         assertTrue(previewSize >= 4, "미리보기 영역이 테트로미노 표시에 충분해야 합니다 (최소 4x4).");

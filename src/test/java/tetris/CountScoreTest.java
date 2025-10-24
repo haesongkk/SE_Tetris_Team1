@@ -6,6 +6,7 @@ import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
 import tetris.scene.game.core.ScoreManager;
+import tetris.GameSettings;
 
 /**
  * 점수 계산 기능 요구사항 테스트 클래스
@@ -246,5 +247,57 @@ public class CountScoreTest {
         System.out.println("✅ 블록 드롭 시 점수 추가 (100점)");
         System.out.println("✅ 블록 1칸 낙하 시 점수 획득 (10점)");
         System.out.println("✅ 기본모드와 아이템모드 동일한 점수 계산 구조");
+    }
+
+    /**
+     * 9. 난이도별 점수 배율 테스트 (DifficultyTest에서 통합)
+     */
+    @Test
+    @DisplayName("난이도별 점수 배율 시스템 테스트")
+    public void testDifficultyScoreMultiplier() {
+        // Easy 난이도 테스트 (20% 감소)
+        ScoreManager easyManager = new ScoreManager(GameSettings.Difficulty.EASY);
+        easyManager.addBlockDropScore();
+        assertEquals(80, easyManager.getScore(), "Easy 난이도에서 블록 드롭 시 80점 (100 * 0.8)");
+        
+        // Normal 난이도 테스트 (기본값)
+        ScoreManager normalManager = new ScoreManager(GameSettings.Difficulty.NORMAL);
+        normalManager.addBlockDropScore();
+        assertEquals(100, normalManager.getScore(), "Normal 난이도에서 블록 드롭 시 100점");
+        
+        // Hard 난이도 테스트 (20% 증가)
+        ScoreManager hardManager = new ScoreManager(GameSettings.Difficulty.HARD);
+        hardManager.addBlockDropScore();
+        assertEquals(120, hardManager.getScore(), "Hard 난이도에서 블록 드롭 시 120점 (100 * 1.2)");
+        
+        System.out.println("✅ 난이도별 점수 배율 시스템 확인 완료");
+        System.out.println("- Easy: 20% 감소 (80점)");
+        System.out.println("- Normal: 기본값 (100점)");
+        System.out.println("- Hard: 20% 증가 (120점)");
+    }
+
+    /**
+     * 10. 블록 낙하 점수 테스트 (BlockFallScoreChangeTest에서 통합)
+     */
+    @Test
+    @DisplayName("블록 낙하 점수 난이도 무관 테스트")
+    public void testBlockFallScoreIndependentOfDifficulty() {
+        // 블록 낙하 점수는 난이도와 무관하게 고정 10점
+        ScoreManager easyManager = new ScoreManager(GameSettings.Difficulty.EASY);
+        ScoreManager normalManager = new ScoreManager(GameSettings.Difficulty.NORMAL);
+        ScoreManager hardManager = new ScoreManager(GameSettings.Difficulty.HARD);
+        
+        // 각 난이도에서 블록 낙하 테스트
+        easyManager.addBlockFallScore();
+        normalManager.addBlockFallScore();
+        hardManager.addBlockFallScore();
+        
+        // 모든 난이도에서 동일한 10점이어야 함
+        assertEquals(10, easyManager.getScore(), "Easy 난이도에서 블록 낙하 시 10점");
+        assertEquals(10, normalManager.getScore(), "Normal 난이도에서 블록 낙하 시 10점");
+        assertEquals(10, hardManager.getScore(), "Hard 난이도에서 블록 낙하 시 10점");
+        
+        System.out.println("✅ 블록 낙하 점수 난이도 무관 확인 완료");
+        System.out.println("- 모든 난이도에서 블록 낙하 시 고정 10점");
     }
 }

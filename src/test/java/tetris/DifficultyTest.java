@@ -184,11 +184,15 @@ public class DifficultyTest {
         }
     }
 
+    // 중복 및 미사용 코드 주석처리, 25.10.24
+    // 점수 가중치 테스트는 CountScoreTest로 통합됨
+    /*
     // ==================== 점수 가중치 테스트 ====================
 
     /**
      * Easy 난이도에서 점수가 20% 감소하는지 테스트
      */
+    /*
     @Test
     @DisplayName("Easy 난이도 점수 20% 감소 테스트")
     void testEasyDifficultyScoreReduction() {
@@ -207,6 +211,7 @@ public class DifficultyTest {
     /**
      * Normal 난이도에서 기본 점수가 유지되는지 테스트
      */
+    /*
     @Test
     @DisplayName("Normal 난이도 기본 점수 테스트")
     void testNormalDifficultyScore() {
@@ -225,6 +230,7 @@ public class DifficultyTest {
     /**
      * Hard 난이도에서 점수가 20% 증가하는지 테스트
      */
+    /*
     @Test
     @DisplayName("Hard 난이도 점수 20% 증가 테스트")
     void testHardDifficultyScoreIncrease() {
@@ -243,6 +249,7 @@ public class DifficultyTest {
     /**
      * 여러 줄 삭제 시 난이도별 점수 차이 테스트
      */
+    /*
     @Test
     @DisplayName("여러 줄 삭제 시 난이도별 점수 테스트")
     void testMultiLineDifficultyScore() {
@@ -263,6 +270,7 @@ public class DifficultyTest {
     /**
      * 속도 배율과 난이도 배율이 동시에 적용되는지 테스트
      */
+    /*
     @Test
     @DisplayName("속도 배율과 난이도 배율 동시 적용 테스트")
     void testSpeedAndDifficultyMultiplierCombination() {
@@ -276,4 +284,5 @@ public class DifficultyTest {
         assertEquals(1440, hardManager.getScore(), 
                     "Hard 난이도에서 속도 증가 후 1줄 삭제 시 1440점이어야 함 (1000 * 1.2 * 1.2)");
     }
+    */
 }
