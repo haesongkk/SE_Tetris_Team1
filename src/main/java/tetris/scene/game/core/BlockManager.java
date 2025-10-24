@@ -1,6 +1,8 @@
 package tetris.scene.game.core;
 
 import tetris.scene.game.blocks.*;
+import tetris.scene.game.items.*;
+import tetris.scene.game.items.ItemEffectType;
 import tetris.util.SpeedUp;
 import tetris.GameSettings;
 import java.util.Random;
@@ -31,6 +33,7 @@ public class BlockManager {
     private final BlockShake blockShake;
     private ItemManager itemManager; // 아이템 모드용 (옵션)
     private ScoreManager scoreManager; // 점수 관리자
+    private Object gameScene; // GameScene 참조 (아이템 효과용)
     
     // 속도 증가 관리자
     private SpeedUp speedUp;
@@ -267,8 +270,20 @@ public class BlockManager {
     private void placeBlockPermanently() {
         System.out.println("Placing block permanently at x=" + x + ", y=" + y);
         
+        // 아이템 블록인 경우 시각적 효과는 배치 전에 활성화 (속도, 시야 차단 등)
+        if (currentBlock instanceof ItemBlock) {
+            ItemBlock itemBlock = (ItemBlock) currentBlock;
+            activateVisualItemEffects(itemBlock);
+        }
+        
         // BoardManager를 사용하여 블록을 영구적으로 보드에 고정
         boardManager.placeBlock(currentBlock, x, y);
+        
+        // 아이템 블록인 경우 보드 조작 효과는 배치 후에 활성화 (줄 삭제, 청소 등)
+        if (currentBlock instanceof ItemBlock) {
+            ItemBlock itemBlock = (ItemBlock) currentBlock;
+            activateBoardManipulationEffects(itemBlock);
+        }
         
         // 블록이 떨어질 때 점수 추가
         if (scoreManager != null) {
@@ -315,6 +330,13 @@ public class BlockManager {
      */
     public void setItemManager(ItemManager itemManager) {
         this.itemManager = itemManager;
+    }
+    
+    /**
+     * GameScene 참조를 설정합니다 (아이템 효과용).
+     */
+    public void setGameScene(Object gameScene) {
+        this.gameScene = gameScene;
     }
     
     /**
@@ -538,6 +560,99 @@ public class BlockManager {
         y = originalY; // 원래 위치로 복원
         
         return canMove;
+    }
+    
+    /**
+     * 시각적 아이템 효과를 활성화합니다 (블록 배치 전 실행).
+     * SPEED_UP, SPEED_DOWN, VISION_BLOCK 등의 효과
+     */
+    private void activateVisualItemEffects(ItemBlock itemBlock) {
+        if (itemBlock == null || itemManager == null) {
+            return;
+        }
+        
+        // 바닥 착지 시에만 처리하는 아이템 타입들 (시야 차단만)
+        ItemEffectType itemType = itemBlock.getItemType();
+        if (itemType == ItemEffectType.VISION_BLOCK) {
+            
+            System.out.println("🎯 Activating Visual ItemBlock with " + itemBlock.getItemType().getDisplayName() + " (before placement)");
+            
+            // 아이템 효과 생성
+            ItemEffect effect = ItemEffectFactory.createEffect(itemBlock.getItemType());
+            
+            if (effect != null) {
+                // ItemEffectContext 생성
+                int[] itemPos = itemBlock.getItemPosition();
+                int absoluteItemX = x + itemPos[0];
+                int absoluteItemY = y + itemPos[1];
+                
+                ItemEffectContext context = new ItemEffectContext(
+                    boardManager.getBoard(), 
+                    absoluteItemX, 
+                    absoluteItemY
+                );
+                
+                // 필요한 컨텍스트 정보 설정
+                context.setBlockManager(this);
+                context.setBoardManager(boardManager);
+                context.setScoreManager(scoreManager);
+                context.setGameScene(gameScene);
+                
+                // 아이템 효과 활성화
+                itemManager.activateItemEffect(effect, context);
+                
+                System.out.println("✅ Visual ItemBlock effect activated successfully!");
+            } else {
+                System.out.println("❌ Failed to create visual item effect for " + itemBlock.getItemType());
+            }
+        }
+    }
+    
+    /**
+     * 보드 조작 아이템 효과를 활성화합니다 (블록 배치 후 실행).
+     * LINE_CLEAR, CLEANUP 등의 효과 (속도 아이템 제외)
+     */
+    private void activateBoardManipulationEffects(ItemBlock itemBlock) {
+        if (itemBlock == null || itemManager == null) {
+            return;
+        }
+        
+        // 보드 조작 효과를 처리하는 아이템 타입들 (속도 아이템은 줄 삭제 시에만 활성화)
+        ItemEffectType itemType = itemBlock.getItemType();
+        if (itemType == ItemEffectType.LINE_CLEAR || 
+            itemType == ItemEffectType.CLEANUP) {
+            
+            System.out.println("🎯 Activating Board Manipulation ItemBlock with " + itemBlock.getItemType().getDisplayName() + " (after placement)");
+            
+            // 아이템 효과 생성
+            ItemEffect effect = ItemEffectFactory.createEffect(itemBlock.getItemType());
+            
+            if (effect != null) {
+                // ItemEffectContext 생성 (배치 후 최신 보드 상태 반영)
+                int[] itemPos = itemBlock.getItemPosition();
+                int absoluteItemX = x + itemPos[0];
+                int absoluteItemY = y + itemPos[1];
+                
+                ItemEffectContext context = new ItemEffectContext(
+                    boardManager.getBoard(), 
+                    absoluteItemX, 
+                    absoluteItemY
+                );
+                
+                // 필요한 컨텍스트 정보 설정
+                context.setBlockManager(this);
+                context.setBoardManager(boardManager);
+                context.setScoreManager(scoreManager);
+                context.setGameScene(gameScene);
+                
+                // 아이템 효과 활성화
+                itemManager.activateItemEffect(effect, context);
+                
+                System.out.println("✅ Board Manipulation ItemBlock effect activated successfully!");
+            } else {
+                System.out.println("❌ Failed to create board manipulation item effect for " + itemBlock.getItemType());
+            }
+        }
     }
     
     /**

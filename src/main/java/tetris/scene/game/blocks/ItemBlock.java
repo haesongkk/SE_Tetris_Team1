@@ -31,7 +31,7 @@ public class ItemBlock extends Block {
     private final Block originalBlock; // 원본 블록
     private final ItemEffectType itemType; // 아이템 타입
     private final int[][] itemShape; // 아이템 정보 (0: 일반, 1: 아이템)
-    private final int itemX, itemY; // 아이템 위치
+    private int itemX, itemY; // 아이템 위치 (회전 시 업데이트 가능하도록 final 제거)
     
     /**
      * ItemBlock 생성자
@@ -263,16 +263,20 @@ public class ItemBlock extends Block {
         BufferedImage itemImage = getItemImage();
         
         if (itemImage != null) {
-            // 이미지가 있으면 이미지로 그리기
+            // 이미지가 있으면 흰색 배경 + 이미지로 그리기
+            g2d.setColor(Color.WHITE);
+            g2d.fillRect(x, y, cellSize, cellSize);
             g2d.drawImage(itemImage, x, y, cellSize, cellSize, null);
         } else {
             // 이미지가 없으면 색상으로 그리기 (LINE_CLEAR의 경우)
-            g2d.setColor(getItemColor());
+            // 검은색 바탕
+            g2d.setColor(Color.BLACK);
             g2d.fillRect(x, y, cellSize, cellSize);
             
-            // 아이템 심볼 텍스트 추가 (선택사항)
+            // 아이템 심볼 텍스트 추가 (흰색 글자, 5pt 큰 폰트)
             g2d.setColor(Color.WHITE);
-            g2d.setFont(new Font("Arial", Font.BOLD, cellSize / 3));
+            int fontSize = cellSize / 3 + 5; // 기본 크기보다 5pt 키움
+            g2d.setFont(new Font("Arial", Font.BOLD, fontSize));
             FontMetrics fm = g2d.getFontMetrics();
             String symbol = getItemSymbol();
             int textX = x + (cellSize - fm.stringWidth(symbol)) / 2;
@@ -313,51 +317,58 @@ public class ItemBlock extends Block {
      * 아이템 위치를 회전에 맞게 조정합니다.
      */
     private void rotateItemPosition() {
-        // 회전 후에도 아이템이 올바른 위치에 있도록 itemShape 배열을 재구성
+        // 회전 후 새로운 shape 크기 확인
         int height = shape.length;
         int width = shape[0].length;
         
-        // 새로운 itemShape 배열 생성
-        int[][] newItemShape = new int[height][width];
+        System.out.println("Rotating item position - new shape size: " + height + "x" + width);
+        System.out.println("Current itemShape size: " + itemShape.length + "x" + 
+                          (itemShape.length > 0 ? itemShape[0].length : 0));
         
-        // 회전된 shape에서 아이템 위치를 다시 찾아 설정
-        // 간단한 방법: 기존 아이템 위치 기준으로 회전 변환 적용
-        int originalHeight = itemShape.length;
-        int originalWidth = itemShape[0].length;
+        // 기존 itemShape 배열을 모두 0으로 초기화
+        for (int i = 0; i < itemShape.length; i++) {
+            for (int j = 0; j < itemShape[i].length; j++) {
+                itemShape[i][j] = 0;
+            }
+        }
         
-        // 90도 시계방향 회전 공식: newY = originalX, newX = originalHeight - 1 - originalY
-        for (int i = 0; i < originalHeight; i++) {
-            for (int j = 0; j < originalWidth; j++) {
-                if (itemShape[i][j] == 1) {
-                    int newY = j;
-                    int newX = originalHeight - 1 - i;
-                    
-                    // 새로운 위치가 유효한 범위 내에 있고 블록이 있는 경우에만 설정
-                    if (newY >= 0 && newY < height && newX >= 0 && newX < width && shape[newY][newX] == 1) {
-                        newItemShape[newY][newX] = 1;
+        // 회전 후 블록이 있는 셀 중에서 새로운 아이템 위치를 찾음
+        boolean positionFound = false;
+        
+        // 먼저 기존 아이템 위치가 여전히 유효한지 확인
+        if (itemY >= 0 && itemY < height && itemX >= 0 && itemX < width && 
+            itemY < itemShape.length && itemX < itemShape[0].length && shape[itemY][itemX] == 1) {
+            // 기존 위치가 여전히 유효하면 그 위치 사용
+            itemShape[itemY][itemX] = 1;
+            positionFound = true;
+            System.out.println("Item position remained valid after rotation: (" + itemX + ", " + itemY + ")");
+        } else {
+            // 기존 위치가 유효하지 않으면 새로운 위치 찾기
+            System.out.println("Original item position (" + itemX + ", " + itemY + ") is invalid after rotation, finding new position");
+            
+            // 블록이 있는 첫 번째 셀을 아이템 위치로 설정
+            for (int i = 0; i < Math.min(height, itemShape.length) && !positionFound; i++) {
+                for (int j = 0; j < Math.min(width, itemShape[0].length) && !positionFound; j++) {
+                    if (shape[i][j] == 1) {
+                        itemX = j;
+                        itemY = i;
+                        itemShape[i][j] = 1;
+                        positionFound = true;
+                        System.out.println("Found new item position after rotation: (" + itemX + ", " + itemY + ")");
                     }
                 }
             }
         }
         
-        // 만약 회전 후 아이템 위치가 유효하지 않다면, 새로운 위치를 다시 설정
-        boolean hasValidItem = false;
-        for (int i = 0; i < height && !hasValidItem; i++) {
-            for (int j = 0; j < width && !hasValidItem; j++) {
-                if (newItemShape[i][j] == 1) {
-                    hasValidItem = true;
-                }
+        // 만약 블록이 없는 경우 (이론적으로 불가능하지만 안전을 위해)
+        if (!positionFound) {
+            System.out.println("Warning: No valid position found after rotation, using first available position");
+            if (itemShape.length > 0 && itemShape[0].length > 0) {
+                itemX = 0;
+                itemY = 0;
+                itemShape[0][0] = 1;
             }
         }
-        
-        if (!hasValidItem) {
-            // 유효한 아이템 위치가 없으면 새로운 랜덤 위치 설정
-            int[] newPosition = setRandomItemPosition();
-            newItemShape[newPosition[1]][newPosition[0]] = 1;
-        }
-        
-        // itemShape 업데이트
-        System.arraycopy(newItemShape, 0, itemShape, 0, height);
     }
     
     /**

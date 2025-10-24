@@ -2,6 +2,11 @@ package tetris.scene.game.core;
 
 import tetris.scene.game.blocks.Block;
 import tetris.scene.game.blocks.BombItemBlock;
+import tetris.scene.game.blocks.ItemBlock;
+import tetris.scene.game.items.ItemEffect;
+import tetris.scene.game.items.ItemEffectContext;
+import tetris.scene.game.items.ItemEffectFactory;
+import tetris.scene.game.items.ItemEffectType;
 import java.awt.Color;
 
 /**
@@ -15,7 +20,11 @@ public class BoardManager {
     private int[][] board; // 게임 보드 상태 (0: 빈칸, 1: 블록 있음)
     private Color[][] boardColors; // 각 셀의 색상 정보
     private boolean[][] bombCells; // 폭탄 셀 정보 (아이템 모드용)
+    private boolean[][] itemCells; // 아이템 셀 정보 (ItemBlock용)
+    private ItemBlock[][] itemBlockInfo; // 아이템 블록 정보 저장 (이미지 렌더링용)
     private ItemManager itemManager; // 아이템 모드 관리자 (null이면 일반 모드)
+    private Object gameScene; // GameScene 참조 (아이템 효과용)
+    private Object blockManager; // BlockManager 참조 (아이템 효과용)
     
     public BoardManager() {
         initializeBoard();
@@ -28,6 +37,8 @@ public class BoardManager {
         board = new int[GAME_HEIGHT][GAME_WIDTH];
         boardColors = new Color[GAME_HEIGHT][GAME_WIDTH];
         bombCells = new boolean[GAME_HEIGHT][GAME_WIDTH];
+        itemCells = new boolean[GAME_HEIGHT][GAME_WIDTH];
+        itemBlockInfo = new ItemBlock[GAME_HEIGHT][GAME_WIDTH];
         
         // 보드를 빈 상태로 초기화
         for (int i = 0; i < GAME_HEIGHT; i++) {
@@ -35,6 +46,8 @@ public class BoardManager {
                 board[i][j] = 0;
                 boardColors[i][j] = null;
                 bombCells[i][j] = false;
+                itemCells[i][j] = false;
+                itemBlockInfo[i][j] = null;
             }
         }
     }
@@ -98,6 +111,15 @@ public class BoardManager {
                                 System.out.println("Bomb placed at board position: (" + boardX + ", " + boardY + ")");
                             } else {
                                 boardColors[boardY][boardX] = bombBlock.getCellColor(i, j);
+                            }
+                        } else if (block instanceof ItemBlock) {
+                            ItemBlock itemBlock = (ItemBlock) block;
+                            boardColors[boardY][boardX] = itemBlock.getCellColor(i, j);
+                            // 아이템 셀인 경우 아이템 정보 저장 (렌더링용)
+                            if (itemBlock.isItemCell(i, j)) {
+                                itemCells[boardY][boardX] = true;
+                                itemBlockInfo[boardY][boardX] = itemBlock;
+                                System.out.println("ItemBlock cell placed at board position: (" + boardX + ", " + boardY + ") with " + itemBlock.getItemType().getDisplayName());
                             }
                         } else {
                             boardColors[boardY][boardX] = block.getColor();
@@ -278,6 +300,7 @@ public class BoardManager {
     
     /**
      * 완성된 줄과 폭탄이 있는 줄을 구분해서 삭제하고 각각의 개수를 반환합니다.
+     * LINE_CLEAR 아이템으로 인한 줄 삭제도 포함하여 처리합니다.
      * @return int[2] - [0]: 완성된 줄 수, [1]: 폭탄으로 삭제된 줄 수
      */
     public int[] clearCompletedAndBombLinesSeparately() {
@@ -285,12 +308,29 @@ public class BoardManager {
         int completedLines = 0;
         int bombLines = 0;
         
-        // 1단계: 완성된 줄 찾기
+        // 1단계: 완성된 줄 찾기 (LINE_CLEAR 아이템이 있는 줄도 포함)
         for (int row = 0; row < GAME_HEIGHT; row++) {
             if (isLineFull(row)) {
+                // LINE_CLEAR 아이템이 있는 줄인지 확인
+                boolean hasLineClearItem = false;
+                for (int col = 0; col < GAME_WIDTH; col++) {
+                    if (itemCells[row][col] && itemBlockInfo[row][col] != null) {
+                        Object itemType = itemBlockInfo[row][col].getItemType();
+                        if (itemType != null && "LINE_CLEAR".equals(itemType.toString())) {
+                            hasLineClearItem = true;
+                            break;
+                        }
+                    }
+                }
+                
+                // 완성된 줄이면 LINE_CLEAR 아이템 여부와 관계없이 삭제 대상에 추가
                 linesToClear[row] = true;
                 completedLines++;
-                System.out.println("Line " + row + " is complete and will be cleared.");
+                if (hasLineClearItem) {
+                    System.out.println("Line " + row + " is complete with LINE_CLEAR item and will be cleared.");
+                } else {
+                    System.out.println("Line " + row + " is complete and will be cleared.");
+                }
             }
         }
         
@@ -320,6 +360,9 @@ public class BoardManager {
      * 지정된 줄들을 삭제하고 블록들을 재배치합니다.
      */
     private void clearLines(boolean[] linesToClear) {
+        // 1단계: 삭제될 줄의 아이템 효과들을 먼저 활성화
+        activateItemEffectsInClearedLines(linesToClear);
+        
         int writeRow = GAME_HEIGHT - 1; // 새로 배치할 위치
         
         // 아래에서 위로 올라가면서 삭제되지 않은 줄들만 복사
@@ -333,6 +376,8 @@ public class BoardManager {
                     board[writeRow][col] = board[readRow][col];
                     boardColors[writeRow][col] = boardColors[readRow][col];
                     bombCells[writeRow][col] = bombCells[readRow][col];
+                    itemCells[writeRow][col] = itemCells[readRow][col];
+                    itemBlockInfo[writeRow][col] = itemBlockInfo[readRow][col];
                 }
                 writeRow--;
             } else {
@@ -346,6 +391,8 @@ public class BoardManager {
                 board[writeRow][col] = 0;
                 boardColors[writeRow][col] = null;
                 bombCells[writeRow][col] = false;
+                itemCells[writeRow][col] = false;
+                itemBlockInfo[writeRow][col] = null;
             }
             writeRow--;
         }
@@ -462,4 +509,247 @@ public class BoardManager {
         this.itemManager = itemManager;
         System.out.println("ItemManager set in BoardManager: " + (itemManager != null));
     }
+    
+    /**
+     * GameScene 참조를 설정합니다 (아이템 효과용)
+     */
+    public void setGameScene(Object gameScene) {
+        this.gameScene = gameScene;
+        System.out.println("GameScene set in BoardManager: " + (gameScene != null));
+    }
+    
+    /**
+     * BlockManager 참조를 설정합니다 (아이템 효과용)
+     */
+    public void setBlockManager(Object blockManager) {
+        this.blockManager = blockManager;
+        System.out.println("BlockManager set in BoardManager: " + (blockManager != null));
+    }
+    
+    /**
+     * 지정된 위치가 아이템 셀인지 확인합니다.
+     */
+    public boolean isItemCell(int x, int y) {
+        if (y >= 0 && y < GAME_HEIGHT && x >= 0 && x < GAME_WIDTH) {
+            return itemCells[y][x];
+        }
+        return false;
+    }
+    
+    /**
+     * 지정된 위치의 아이템 블록 정보를 반환합니다.
+     */
+    public ItemBlock getItemBlockInfo(int x, int y) {
+        if (y >= 0 && y < GAME_HEIGHT && x >= 0 && x < GAME_WIDTH) {
+            return itemBlockInfo[y][x];
+        }
+        return null;
+    }
+    
+    /**
+     * 아이템 셀 배열을 반환합니다.
+     */
+    public boolean[][] getItemCells() {
+        return itemCells;
+    }
+    
+    /**
+     * 삭제될 줄들의 아이템 효과들을 먼저 활성화합니다.
+     */
+    private void activateItemEffectsInClearedLines(boolean[] linesToClear) {
+        if (itemManager == null) return;
+        
+        for (int row = 0; row < GAME_HEIGHT; row++) {
+            if (linesToClear[row]) {
+                // 해당 줄의 모든 아이템 셀 확인
+                for (int col = 0; col < GAME_WIDTH; col++) {
+                    if (itemCells[row][col] && itemBlockInfo[row][col] != null) {
+                        ItemBlock itemBlock = itemBlockInfo[row][col];
+                        // 줄 삭제 시에는 LINE_CLEAR와 SPEED 아이템들 활성화
+                        // (VISION_BLOCK, CLEANUP 아이템들은 바닥 착지 시에만 활성화)
+                        if (itemBlock.getItemType() == ItemEffectType.LINE_CLEAR ||
+                            itemBlock.getItemType() == ItemEffectType.SPEED_UP ||
+                            itemBlock.getItemType() == ItemEffectType.SPEED_DOWN) {
+                            System.out.println("🎯 Activating " + itemBlock.getItemType().getDisplayName() + " item effect in cleared line at (" + col + "," + row + ")");
+                            
+                            // 아이템 효과 생성 및 활성화
+                            ItemEffect effect = ItemEffectFactory.createEffect(itemBlock.getItemType());
+                            if (effect != null) {
+                                ItemEffectContext context = new ItemEffectContext(
+                                    getBoard(), col, row
+                                );
+                                // 필요한 컨텍스트 정보 설정
+                                context.setBoardManager(this);
+                                context.setBlockManager(blockManager);
+                                context.setGameScene(gameScene);
+                                
+                                itemManager.activateItemEffect(effect, context);
+                            }
+                        } else {
+                            System.out.println("⏭️ Skipping " + itemBlock.getItemType().getDisplayName() + 
+                                             " item in cleared line (only activates on landing)");
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * 특정 줄을 강제로 삭제합니다 (LINE_CLEAR 아이템용)
+     * @param lineIndex 삭제할 줄의 인덱스
+     */
+    public void forceClearLine(int lineIndex) {
+        if (lineIndex < 0 || lineIndex >= GAME_HEIGHT) {
+            System.out.println("Invalid line index for force clear: " + lineIndex);
+            return;
+        }
+        
+        System.out.println("Force clearing line " + lineIndex + " with blink effect");
+        
+        // 해당 줄을 완성된 줄로 표시하여 블링킹 효과 적용
+        java.util.List<Integer> linesToBlink = new java.util.ArrayList<>();
+        linesToBlink.add(lineIndex);
+        
+        // GameScene에 블링킹 시작을 알림
+        notifyLineBlinkStart(linesToBlink);
+    }
+    
+    /**
+     * 줄 완성 체크를 강제로 실행합니다 (LINE_CLEAR 아이템용)
+     * 해당 줄을 완성된 것으로 만들어서 블링킹 효과와 함께 처리되도록 합니다.
+     */
+    public void triggerLineCheck() {
+        // GameScene이나 다른 컴포넌트에서 줄 체크 로직을 실행하도록 알림
+        // 실제로는 GameScene의 checkLines() 메서드를 호출해야 함
+        System.out.println("Triggering line check for blink effect integration");
+        
+        // 현재는 직접 줄 체크를 수행 (추후 GameScene 연동으로 개선)
+        checkAndHandleCompletedLines();
+    }
+    
+    /**
+     * 완성된 줄을 체크하고 처리합니다 (내부용)
+     */
+    private void checkAndHandleCompletedLines() {
+        java.util.List<Integer> completedLines = new java.util.ArrayList<>();
+        
+        // 완성된 줄 찾기
+        for (int row = 0; row < GAME_HEIGHT; row++) {
+            if (isLineFull(row)) {
+                completedLines.add(row);
+                System.out.println("Found completed line: " + row);
+            }
+        }
+        
+        // 완성된 줄이 있으면 블링킹 효과 시작
+        if (!completedLines.isEmpty()) {
+            notifyLineBlinkStart(completedLines);
+        }
+    }
+    
+    /**
+     * GameScene에 줄 블링킹 시작을 알립니다.
+     */
+    private void notifyLineBlinkStart(java.util.List<Integer> lines) {
+        // GameScene 참조가 필요하지만, 지금은 간단히 즉시 삭제로 처리
+        // 실제로는 GameScene의 블링킹 시스템을 사용해야 함
+        System.out.println("Starting blink effect for lines: " + lines);
+        
+        // 임시: 블링킹 없이 즉시 삭제 (추후 개선 필요)
+        for (int lineIndex : lines) {
+            forceClearLineImmediate(lineIndex);
+        }
+    }
+    
+    /**
+     * 즉시 줄을 삭제합니다 (내부 사용)
+     */
+    private void forceClearLineImmediate(int lineIndex) {
+        System.out.println("Force clearing line " + lineIndex);
+        
+        // 해당 줄 위의 모든 줄들을 한 칸씩 아래로 이동
+        for (int row = lineIndex; row > 0; row--) {
+            for (int col = 0; col < GAME_WIDTH; col++) {
+                board[row][col] = board[row - 1][col];
+                boardColors[row][col] = boardColors[row - 1][col];
+                bombCells[row][col] = bombCells[row - 1][col];
+                itemCells[row][col] = itemCells[row - 1][col];
+                itemBlockInfo[row][col] = itemBlockInfo[row - 1][col];
+            }
+        }
+        
+        // 맨 위 줄은 비워둠
+        for (int col = 0; col < GAME_WIDTH; col++) {
+            board[0][col] = 0;
+            boardColors[0][col] = null;
+            bombCells[0][col] = false;
+            itemCells[0][col] = false;
+            itemBlockInfo[0][col] = null;
+        }
+        
+        System.out.println("Force clear completed for line " + lineIndex);
+    }
+    
+    /**
+     * 특정 위치의 아이템 셀 상태를 설정합니다.
+     * @param x x 좌표
+     * @param y y 좌표
+     * @param isItem 아이템 셀 여부
+     */
+    public void setItemCell(int x, int y, boolean isItem) {
+        if (y >= 0 && y < GAME_HEIGHT && x >= 0 && x < GAME_WIDTH) {
+            itemCells[y][x] = isItem;
+            if (!isItem) {
+                itemBlockInfo[y][x] = null; // 아이템 정보도 제거
+            }
+            System.out.println("Set item cell at (" + x + ", " + y + ") to " + isItem);
+        } else {
+            System.out.println("Invalid coordinates for setItemCell: (" + x + ", " + y + ")");
+        }
+    }
+    
+    /**
+     * 특정 위치의 블록 색상을 설정합니다.
+     * @param x x 좌표
+     * @param y y 좌표
+     * @param color 설정할 색상
+     */
+    public void setBoardColor(int x, int y, Color color) {
+        if (y >= 0 && y < GAME_HEIGHT && x >= 0 && x < GAME_WIDTH) {
+            boardColors[y][x] = color;
+            System.out.println("Set board color at (" + x + ", " + y + ") to " + color);
+        } else {
+            System.out.println("Invalid coordinates for setBoardColor: (" + x + ", " + y + ")");
+        }
+    }
+    
+    /**
+     * 특정 위치의 아이템 블록 정보를 강제로 제거합니다.
+     * @param x x 좌표
+     * @param y y 좌표
+     */
+    public void clearItemBlockInfo(int x, int y) {
+        if (y >= 0 && y < GAME_HEIGHT && x >= 0 && x < GAME_WIDTH) {
+            itemBlockInfo[y][x] = null;
+            itemCells[y][x] = false;
+            System.out.println("Cleared item block info at (" + x + ", " + y + ")");
+        } else {
+            System.out.println("Invalid coordinates for clearItemBlockInfo: (" + x + ", " + y + ")");
+        }
+    }
+    
+    /**
+     * 특정 위치의 블록 색상을 반환합니다.
+     * @param x x 좌표
+     * @param y y 좌표
+     * @return 해당 위치의 색상, 유효하지 않은 좌표면 null
+     */
+    public Color getBoardColor(int x, int y) {
+        if (y >= 0 && y < GAME_HEIGHT && x >= 0 && x < GAME_WIDTH) {
+            return boardColors[y][x];
+        }
+        return null;
+    }
+
 }

@@ -14,44 +14,48 @@ public class LineClearEffect extends AbstractItemEffect {
     
     @Override
     protected void doActivate(ItemEffectContext context) {
-        int[][] board = context.getBoard();
         int itemY = context.getItemY();
-        
-        if (itemY < 0 || itemY >= board.length) {
-            System.out.println("Line clear effect: Invalid Y position " + itemY);
-            return;
-        }
-        
-        // 해당 줄을 완전히 삭제 (모든 셀을 0으로 설정)
-        for (int x = 0; x < board[itemY].length; x++) {
-            board[itemY][x] = 0;
-        }
-        
-        // 삭제된 줄 위의 모든 줄들을 한 칸씩 아래로 이동
-        for (int y = itemY; y > 0; y--) {
-            for (int x = 0; x < board[y].length; x++) {
-                board[y][x] = board[y - 1][x];
-            }
-        }
-        
-        // 맨 위 줄은 비워둠
-        for (int x = 0; x < board[0].length; x++) {
-            board[0][x] = 0;
-        }
         
         System.out.println("Line clear effect activated at row " + itemY);
         
-        // 점수 추가 (줄 삭제 1줄로 계산)
-        if (context.getScoreManager() != null) {
-            try {
-                // 리플렉션을 사용하여 addScore 메서드 호출
-                context.getScoreManager().getClass()
-                    .getMethod("addScore", int.class)
-                    .invoke(context.getScoreManager(), 1);
-                System.out.println("Added score for line clear item");
-            } catch (Exception e) {
-                System.out.println("Failed to add score for line clear: " + e.getMessage());
+        // 즉시 줄 삭제 수행 (블링킹은 기존 시스템이 처리)
+        performLineClear(context, itemY);
+    }
+    
+    /**
+     * 실제 줄 삭제를 수행합니다.
+     */
+    private void performLineClear(ItemEffectContext context, int itemY) {
+        System.out.println("LINE_CLEAR item: Starting line clear for row " + itemY);
+        
+        // 1단계: 해당 줄을 완전히 채워서 완성된 줄로 만들기
+        fillLineForDeletion(context, itemY);
+        
+        // 2단계: 일반 줄 삭제 시스템이 처리하도록 함 (별도 블링킹 시작하지 않음)
+        System.out.println("LINE_CLEAR item: Line " + itemY + " filled and ready for normal line clearing system");
+        
+        // 점수 추가는 일반 줄 삭제 시스템에서 처리됨
+        // addScoreForLineClear(context); // 제거: 이중 점수 방지
+    }
+    
+    /**
+     * LINE_CLEAR 아이템을 위해 해당 줄을 완전히 채웁니다.
+     */
+    private void fillLineForDeletion(ItemEffectContext context, int itemY) {
+        int[][] board = context.getBoard();
+        if (itemY >= 0 && itemY < board.length) {
+            // 해당 줄의 모든 빈 셀을 1로 채움 (이미 채워진 셀은 그대로 유지)
+            for (int x = 0; x < board[itemY].length; x++) {
+                if (board[itemY][x] == 0) {
+                    board[itemY][x] = 1;
+                }
             }
+            System.out.println("LINE_CLEAR item: Filled empty cells in line " + itemY + " to make it complete");
         }
+    }
+    
+    @Override
+    protected void doDeactivate() {
+        // 즉시 효과이므로 비활성화할 것이 없음
     }
 }

@@ -4,7 +4,7 @@ import tetris.scene.game.items.*;
 
 /**
  * 낙하 속도 감소 아이템 효과
- * 5초간 블록 낙하 속도가 100% 느려집니다.
+ * 5초간 블록 낙하 속도가 매우 느려집니다 (5000ms).
  */
 public class SpeedDownEffect extends AbstractItemEffect {
     private static final long EFFECT_DURATION = 5000; // 5초
@@ -25,6 +25,11 @@ public class SpeedDownEffect extends AbstractItemEffect {
         }
         
         try {
+            // 속도 아이템 활성화 상태 설정
+            gameScene.getClass()
+                .getMethod("setSpeedItemActive", boolean.class)
+                .invoke(gameScene, true);
+            
             // 현재 속도 저장
             Object fallSpeed = gameScene.getClass()
                 .getMethod("getFallSpeed")
@@ -34,13 +39,13 @@ public class SpeedDownEffect extends AbstractItemEffect {
                 originalSpeed = ((Number) fallSpeed).doubleValue();
             }
             
-            // 속도를 50%로 감소 (100% 느려지는 효과)
-            double newSpeed = originalSpeed * 0.5;
+            // 속도를 느리게 설정 (1500ms)
+            double newSpeed = 1500.0;
             gameScene.getClass()
                 .getMethod("setFallSpeed", double.class)
                 .invoke(gameScene, newSpeed);
             
-            System.out.println("Speed down effect: " + originalSpeed + " -> " + newSpeed + 
+            System.out.println("Speed down effect: " + originalSpeed + "ms -> " + newSpeed + "ms delay (매우 느림)" + 
                              " for " + (EFFECT_DURATION / 1000) + " seconds");
                              
         } catch (Exception e) {
@@ -57,6 +62,11 @@ public class SpeedDownEffect extends AbstractItemEffect {
         }
         
         try {
+            // 속도 아이템 활성화 상태 해제
+            gameScene.getClass()
+                .getMethod("setSpeedItemActive", boolean.class)
+                .invoke(gameScene, false);
+            
             // 원래 속도로 복원
             gameScene.getClass()
                 .getMethod("setFallSpeed", double.class)

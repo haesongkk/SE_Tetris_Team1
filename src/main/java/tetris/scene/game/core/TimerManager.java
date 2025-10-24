@@ -25,6 +25,7 @@ public class TimerManager {
     private final GameStateManager gameStateManager;
     private final ScoreManager scoreManager;
     private final GameSettings.Difficulty difficulty;
+    private Object gameScene; // GameScene 참조 (속도 아이템 상태 확인용)
     
     // 콜백 인터페이스들
     private TimerCallback timerCallback;
@@ -96,6 +97,14 @@ public class TimerManager {
     }
     
     /**
+     * GameScene 참조를 설정합니다.
+     * @param gameScene GameScene 인스턴스
+     */
+    public void setGameScene(Object gameScene) {
+        this.gameScene = gameScene;
+    }
+    
+    /**
      * SpeedUp 관리자를 설정합니다.
      */
     public void setupSpeedUp() {
@@ -105,7 +114,7 @@ public class TimerManager {
                 // 속도가 증가할 때마다 점수 배율도 증가
                 scoreManager.onSpeedIncrease();
             }
-        }, difficulty);
+        }, difficulty, gameScene);
     }
     
     /**
@@ -193,6 +202,29 @@ public class TimerManager {
      */
     public LineBlinkEffect getLineBlinkEffect() {
         return lineBlinkEffect;
+    }
+    
+    /**
+     * 드롭 타이머를 반환합니다 (아이템 효과용).
+     */
+    public Timer getDropTimer() {
+        return dropTimer;
+    }
+    
+    /**
+     * 현재 드롭 타이머의 딜레이를 반환합니다.
+     */
+    public int getCurrentDropDelay() {
+        return dropTimer != null ? dropTimer.getDelay() : INIT_INTERVAL_MS;
+    }
+    
+    /**
+     * 드롭 타이머의 딜레이를 설정합니다 (아이템 효과용).
+     */
+    public void setDropDelay(int delay) {
+        if (dropTimer != null) {
+            dropTimer.setDelay(Math.max(10, delay)); // 최소 10ms로 제한 완화 (매우 빠른 속도 허용)
+        }
     }
     
     /**

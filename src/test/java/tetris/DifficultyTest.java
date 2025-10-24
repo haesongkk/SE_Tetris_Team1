@@ -131,7 +131,7 @@ public class DifficultyTest {
      */
     @Test
     void testSpeedIncreaseEasy() {
-        SpeedUp speedUp = new SpeedUp(null, null, GameSettings.Difficulty.EASY);
+        SpeedUp speedUp = new SpeedUp(null, null, GameSettings.Difficulty.EASY, null);
 
         // SpeedUp의 intervalDecrease 필드에 접근하기 위해 리플렉션 사용
         try {
@@ -151,7 +151,7 @@ public class DifficultyTest {
      */
     @Test
     void testSpeedIncreaseHard() {
-        SpeedUp speedUp = new SpeedUp(null, null, GameSettings.Difficulty.HARD);
+        SpeedUp speedUp = new SpeedUp(null, null, GameSettings.Difficulty.HARD, null);
 
         try {
             java.lang.reflect.Field field = SpeedUp.class.getDeclaredField("intervalDecrease");
@@ -170,7 +170,7 @@ public class DifficultyTest {
      */
     @Test
     void testSpeedIncreaseNormal() {
-        SpeedUp speedUp = new SpeedUp(null, null, GameSettings.Difficulty.NORMAL);
+        SpeedUp speedUp = new SpeedUp(null, null, GameSettings.Difficulty.NORMAL, null);
 
         try {
             java.lang.reflect.Field field = SpeedUp.class.getDeclaredField("intervalDecrease");

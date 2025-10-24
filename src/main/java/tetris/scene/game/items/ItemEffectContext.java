@@ -9,6 +9,7 @@ public class ItemEffectContext {
     private int itemY;
     private Object gameScene;
     private Object blockManager;
+    private Object boardManager;
     private Object scoreManager;
     
     public ItemEffectContext(int[][] board, int itemX, int itemY) {
@@ -55,6 +56,14 @@ public class ItemEffectContext {
     
     public void setBlockManager(Object blockManager) {
         this.blockManager = blockManager;
+    }
+    
+    public Object getBoardManager() {
+        return boardManager;
+    }
+    
+    public void setBoardManager(Object boardManager) {
+        this.boardManager = boardManager;
     }
     
     public Object getScoreManager() {
