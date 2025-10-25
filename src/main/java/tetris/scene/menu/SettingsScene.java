@@ -18,6 +18,7 @@ public class SettingsScene extends Scene implements KeyListener {
     private JComboBox<String> colorBlindModeCombo;
     private JComboBox<String> difficultyCombo;
     private JSlider volumeSlider;
+    private JCheckBox muteCheckBox;
     
     // Theme 기반 색상 메서드들 (색맹 모드에 따라 변경, 일반 모드는 원래 색상)
     private Color getBackgroundColor() { return Theme.MenuBG(); }
@@ -150,9 +151,24 @@ public class SettingsScene extends Scene implements KeyListener {
         
         gbc.gridx = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        volumeSlider = new JSlider(0, 100, 20); // 초기 20%
+        
+        // 음량 슬라이더와 음소거 체크박스를 담을 패널
+        JPanel volumePanel = new JPanel();
+        volumePanel.setOpaque(false);
+        volumePanel.setLayout(new BorderLayout(10, 0));
+        
+        volumeSlider = new JSlider(0, 100, 20);
         volumeSlider.setBackground(getBackgroundColor());
-        panel.add(volumeSlider, gbc);
+        volumePanel.add(volumeSlider, BorderLayout.CENTER);
+        
+        // 음소거 체크박스 (슬라이더는 항상 활성화)
+        muteCheckBox = new JCheckBox("음소거");
+        muteCheckBox.setBackground(getBackgroundColor());
+        muteCheckBox.setForeground(getTextColor());
+        muteCheckBox.setFocusPainted(false);
+        volumePanel.add(muteCheckBox, BorderLayout.EAST);
+        
+        panel.add(volumePanel, gbc);
         
         return panel;
     }
@@ -255,6 +271,9 @@ public class SettingsScene extends Scene implements KeyListener {
         if (colorBlindModeCombo != null) colorBlindModeCombo.setSelectedIndex(gameSettings.getColorBlindMode());
         if (difficultyCombo != null) difficultyCombo.setSelectedIndex(gameSettings.getDifficultyIndex());
         if (volumeSlider != null) volumeSlider.setValue(gameSettings.getVolume());
+        if (muteCheckBox != null) {
+            muteCheckBox.setSelected(gameSettings.isMuted());
+        }
     }
 
     private void saveCurrentSettings() {
@@ -263,6 +282,7 @@ public class SettingsScene extends Scene implements KeyListener {
         if (colorBlindModeCombo != null) gameSettings.setColorBlindMode(colorBlindModeCombo.getSelectedIndex());
         if (difficultyCombo != null) gameSettings.setDifficultyIndex(difficultyCombo.getSelectedIndex());
         if (volumeSlider != null) gameSettings.setVolume(volumeSlider.getValue());
+        if (muteCheckBox != null) gameSettings.setMuted(muteCheckBox.isSelected());
     }
 
     private void goBack() {

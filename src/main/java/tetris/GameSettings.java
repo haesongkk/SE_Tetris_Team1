@@ -26,6 +26,7 @@ public class GameSettings {
 
     // 음량 조절
     private int volume = 20;
+    private boolean isMuted = false;
     
     // 싱글톤 패턴 - 생성자를 private으로 설정
     private GameSettings() {}
@@ -287,6 +288,10 @@ public class GameSettings {
     public void setVolume(int v) { volume = v; }
     String getVolumeString() { return Integer.toString(volume); }
     
+    public boolean isMuted() { return isMuted; }
+    public void setMuted(boolean muted) { isMuted = muted; }
+    String getMutedString() { return Boolean.toString(isMuted); }
+    
     // 모든 설정을 기본값으로 초기화하는 메서드
     public void resetToDefaults() {
         displayMode = 0;
@@ -304,6 +309,7 @@ public class GameSettings {
         holdKey = 16;   // VK_SHIFT
 
         volume = 20;
+        isMuted = false;
     }
     
     // 스코어 보드 데이터를 초기화하는 메서드
