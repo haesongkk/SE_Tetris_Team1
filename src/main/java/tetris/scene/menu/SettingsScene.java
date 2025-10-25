@@ -3,6 +3,7 @@ package tetris.scene.menu;
 import tetris.Game;
 import tetris.GameSettings;
 import tetris.scene.Scene;
+import tetris.util.Theme;
 
 import javax.swing.*;
 import java.awt.*;
@@ -18,11 +19,18 @@ public class SettingsScene extends Scene implements KeyListener {
     private JComboBox<String> difficultyCombo;
     private JSlider volumeSlider;
     
-    private final Color BACKGROUND_COLOR = new Color(20, 20, 40);
-    private final Color TITLE_COLOR = new Color(255, 255, 100);
-    private final Color PANEL_COLOR = new Color(40, 40, 70);
-    private final Color TEXT_COLOR = Color.WHITE;
-    private final Color BUTTON_COLOR = new Color(70, 70, 120);
+    // Theme 기반 색상 메서드들 (색맹 모드에 따라 변경, 일반 모드는 원래 색상)
+    private Color getBackgroundColor() { return Theme.MenuBG(); }
+    private Color getTitleColor() { return Theme.MenuTitle(); }
+    private Color getPanelColor() { return Theme.MenuPanel(); }
+    private Color getTextColor() { return Theme.WHITE; }
+    private Color getButtonColor() {
+        return Theme.MenuButton();
+    }
+    
+    private Color getSelectedButtonColor() {
+        return new Color(120, 120, 200); // 선택된 버튼 색상 (고정)
+    }
 
     public SettingsScene(JFrame frame) {
         super(frame);
@@ -36,11 +44,16 @@ public class SettingsScene extends Scene implements KeyListener {
 
     private void setupUI() {
         setLayout(new BorderLayout());
-        setBackground(BACKGROUND_COLOR);
+        setBackground(getBackgroundColor());
         setFocusable(true);
         
         add(createTitlePanel(), BorderLayout.NORTH);
-        add(createSettingsPanel(), BorderLayout.CENTER);
+        
+        // 설정 패널을 커스텀 스크롤 패널로 감싸기
+        JPanel settingsPanel = createSettingsPanel();
+        JScrollPane scrollPane = createCustomScrollPane(settingsPanel);
+        
+        add(scrollPane, BorderLayout.CENTER);
         add(createButtonPanel(), BorderLayout.SOUTH);
         
         frame.setContentPane(this);
@@ -55,7 +68,7 @@ public class SettingsScene extends Scene implements KeyListener {
         
         JLabel label = new JLabel("SETTINGS");
         label.setFont(new Font("Arial", Font.BOLD, 48));
-        label.setForeground(TITLE_COLOR);
+        label.setForeground(getTitleColor());
         label.setHorizontalAlignment(JLabel.CENTER);
         
         panel.add(label);
@@ -104,7 +117,7 @@ public class SettingsScene extends Scene implements KeyListener {
         gbc.gridy = 3;
         JButton scoreResetButton = createStyledButton("스코어 보드 기록 초기화");
         scoreResetButton.addActionListener(e -> clearScoreBoard());
-        scoreResetButton.setBackground(new Color(120, 50, 50));
+        scoreResetButton.setBackground(new Color(120, 50, 50)); // 삭제 버튼은 빨간색 유지
         panel.add(scoreResetButton, gbc);
         
         // 5. 색맹 모드 설정
@@ -138,7 +151,7 @@ public class SettingsScene extends Scene implements KeyListener {
         gbc.gridx = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         volumeSlider = new JSlider(0, 100, 20); // 초기 20%
-        volumeSlider.setBackground(BACKGROUND_COLOR);
+        volumeSlider.setBackground(getBackgroundColor());
         panel.add(volumeSlider, gbc);
         
         return panel;
@@ -156,12 +169,12 @@ public class SettingsScene extends Scene implements KeyListener {
         
         JButton resetButton = createStyledButton("설정 초기화");
         resetButton.addActionListener(e -> resetSettings());
-        resetButton.setBackground(new Color(100, 60, 60));
+        resetButton.setBackground(new Color(100, 60, 60)); // 리셋 버튼은 빨간색 유지
         panel.add(resetButton);
         
         JButton applyButton = createStyledButton("적용");
         applyButton.addActionListener(e -> applySettings());
-        applyButton.setBackground(new Color(60, 120, 60));
+        applyButton.setBackground(new Color(60, 120, 60)); // 적용 버튼은 녹색 유지
         panel.add(applyButton);
         
         return panel;
@@ -169,7 +182,7 @@ public class SettingsScene extends Scene implements KeyListener {
 
     private JLabel createLabel(String text) {
         JLabel label = new JLabel(text);
-        label.setForeground(TEXT_COLOR);
+        label.setForeground(getTextColor());
         label.setFont(new Font("Malgun Gothic", Font.BOLD, 18));
         return label;
     }
@@ -178,8 +191,8 @@ public class SettingsScene extends Scene implements KeyListener {
         JButton button = new JButton(text);
         button.setFont(new Font("Malgun Gothic", Font.BOLD, 16));
         button.setPreferredSize(new Dimension(160, 40));
-        button.setBackground(BUTTON_COLOR);
-        button.setForeground(TEXT_COLOR);
+        button.setBackground(getButtonColor());
+        button.setForeground(getTextColor());
         button.setFocusable(false);
         button.setBorderPainted(true);
         button.setBorder(BorderFactory.createRaisedBevelBorder());
@@ -187,8 +200,8 @@ public class SettingsScene extends Scene implements KeyListener {
     }
 
     private void styleComboBox(JComboBox<String> comboBox) {
-        comboBox.setBackground(PANEL_COLOR);
-        comboBox.setForeground(TEXT_COLOR);
+        comboBox.setBackground(getPanelColor());
+        comboBox.setForeground(getTextColor());
         comboBox.setFont(new Font("Malgun Gothic", Font.PLAIN, 16));
         comboBox.setFocusable(false);
     }
@@ -197,8 +210,8 @@ public class SettingsScene extends Scene implements KeyListener {
         JButton button = new JButton(text);
         button.setFont(new Font("Malgun Gothic", Font.BOLD, 14));
         button.setPreferredSize(new Dimension(120, 35));
-        button.setBackground(new Color(90, 90, 140));
-        button.setForeground(TEXT_COLOR);
+        button.setBackground(getButtonColor());
+        button.setForeground(getTextColor());
         button.setFocusable(false);
         button.setBorderPainted(true);
         button.setBorder(BorderFactory.createRaisedBevelBorder());
@@ -206,10 +219,10 @@ public class SettingsScene extends Scene implements KeyListener {
         // 호버 효과
         button.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
-                button.setBackground(new Color(110, 110, 160));
+                button.setBackground(getSelectedButtonColor());
             }
             public void mouseExited(java.awt.event.MouseEvent evt) {
-                button.setBackground(new Color(90, 90, 140));
+                button.setBackground(getButtonColor());
             }
         });
         
@@ -219,6 +232,21 @@ public class SettingsScene extends Scene implements KeyListener {
     private void setupKeyListener() {
         addKeyListener(this);
         setFocusable(true);
+    }
+    
+    /**
+     * 적용 버튼을 눌렀을 때 색맹 모드 변경사항을 UI에 적용합니다.
+     */
+    private void updateThemeColors() {
+        // 메인 패널 색상 업데이트
+        setBackground(getBackgroundColor());
+        
+        // 전체 UI 다시 구축
+        removeAll();
+        setupUI();
+        
+        // 현재 설정 값들 다시 로드
+        loadCurrentSettings();
     }
 
     private void loadCurrentSettings() {
@@ -257,6 +285,7 @@ public class SettingsScene extends Scene implements KeyListener {
     private void applySettings() {
         saveCurrentSettings();
         applyDisplaySettings();
+        updateThemeColors(); // 색맹 모드 적용 후 색상 업데이트
         JOptionPane.showMessageDialog(this,
             gameSettings.getSettingsInfo(),
             "설정 적용",
@@ -291,20 +320,20 @@ public class SettingsScene extends Scene implements KeyListener {
         keyDialog.setSize(600, 800);
         keyDialog.setLocationRelativeTo(frame);
         keyDialog.setLayout(new BorderLayout());
-        keyDialog.getContentPane().setBackground(BACKGROUND_COLOR);
+        keyDialog.getContentPane().setBackground(getBackgroundColor());
         
         // 타이틀 패널
         JPanel titlePanel = new JPanel();
-        titlePanel.setBackground(BACKGROUND_COLOR);
+        titlePanel.setBackground(getBackgroundColor());
         titlePanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         JLabel titleLabel = new JLabel("조작키 설정", SwingConstants.CENTER);
         titleLabel.setFont(new Font("Malgun Gothic", Font.BOLD, 28));
-        titleLabel.setForeground(TITLE_COLOR);
+        titleLabel.setForeground(getTitleColor());
         titlePanel.add(titleLabel);
         
         // 메인 패널 (스타일링 적용)
         JPanel mainPanel = new JPanel(new GridBagLayout());
-        mainPanel.setBackground(PANEL_COLOR);
+        mainPanel.setBackground(getPanelColor());
         mainPanel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createEmptyBorder(20, 30, 20, 30),
             BorderFactory.createRaisedBevelBorder()
@@ -345,21 +374,21 @@ public class SettingsScene extends Scene implements KeyListener {
         
         // 설명 패널
         JPanel descPanel = new JPanel();
-        descPanel.setBackground(PANEL_COLOR);
+        descPanel.setBackground(getPanelColor());
         descPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
         JLabel descLabel = new JLabel("<html><center>키를 변경하려면 해당 버튼을 클릭하세요<br>ESC 키로 취소할 수 있습니다</center></html>");
         descLabel.setFont(new Font("Malgun Gothic", Font.PLAIN, 12));
-        descLabel.setForeground(new Color(200, 200, 200));
+        descLabel.setForeground(getTextColor());
         descLabel.setHorizontalAlignment(SwingConstants.CENTER);
         descPanel.add(descLabel);
         
         // 버튼 패널 (스타일링 적용)
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 20));
-        buttonPanel.setBackground(BACKGROUND_COLOR);
+        buttonPanel.setBackground(getBackgroundColor());
         buttonPanel.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
         
         JButton resetButton = createStyledButton("기본값으로 초기화");
-        resetButton.setBackground(new Color(100, 60, 60));
+        resetButton.setBackground(new Color(100, 60, 60)); // 리셋 버튼은 빨간색 유지
         resetButton.addActionListener(e -> {
             settings.resetToDefaults();
             // 버튼 텍스트 업데이트
@@ -373,7 +402,7 @@ public class SettingsScene extends Scene implements KeyListener {
         });
         
         JButton closeButton = createStyledButton("닫기");
-        closeButton.setBackground(new Color(60, 120, 60));
+        closeButton.setBackground(new Color(60, 120, 60)); // 확인 버튼은 녹색 유지
         closeButton.addActionListener(e -> keyDialog.dispose());
         
         buttonPanel.add(resetButton);
@@ -381,7 +410,7 @@ public class SettingsScene extends Scene implements KeyListener {
         
         // 메인 컨테이너 패널
         JPanel contentPanel = new JPanel(new BorderLayout());
-        contentPanel.setBackground(PANEL_COLOR);
+        contentPanel.setBackground(getPanelColor());
         contentPanel.add(mainPanel, BorderLayout.CENTER);
         contentPanel.add(descPanel, BorderLayout.SOUTH);
         
@@ -399,20 +428,20 @@ public class SettingsScene extends Scene implements KeyListener {
         keyInputDialog.setSize(400, 200);
         keyInputDialog.setLocationRelativeTo(frame);
         keyInputDialog.setLayout(new BorderLayout());
-        keyInputDialog.getContentPane().setBackground(BACKGROUND_COLOR);
+        keyInputDialog.getContentPane().setBackground(getBackgroundColor());
         
         // 타이틀 패널
         JPanel titlePanel = new JPanel();
-        titlePanel.setBackground(BACKGROUND_COLOR);
+        titlePanel.setBackground(getBackgroundColor());
         titlePanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 10, 20));
         JLabel titleLabel = new JLabel("키 입력", SwingConstants.CENTER);
         titleLabel.setFont(new Font("Malgun Gothic", Font.BOLD, 20));
-        titleLabel.setForeground(TITLE_COLOR);
+        titleLabel.setForeground(getTitleColor());
         titlePanel.add(titleLabel);
         
         // 메인 패널
         JPanel mainPanel = new JPanel();
-        mainPanel.setBackground(PANEL_COLOR);
+        mainPanel.setBackground(getPanelColor());
         mainPanel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createEmptyBorder(20, 30, 20, 30),
             BorderFactory.createRaisedBevelBorder()
@@ -421,7 +450,7 @@ public class SettingsScene extends Scene implements KeyListener {
         JLabel instructionLabel = new JLabel("<html><center>사용할 키를 눌러주세요<br><br><font color='#CCCCCC'>ESC를 누르면 취소됩니다</font></center></html>");
         instructionLabel.setHorizontalAlignment(SwingConstants.CENTER);
         instructionLabel.setFont(new Font("Malgun Gothic", Font.PLAIN, 16));
-        instructionLabel.setForeground(TEXT_COLOR);
+        instructionLabel.setForeground(getTextColor());
         mainPanel.add(instructionLabel);
         
         keyInputDialog.add(titlePanel, BorderLayout.NORTH);
@@ -500,6 +529,89 @@ public class SettingsScene extends Scene implements KeyListener {
 
     @Override
     public void keyTyped(KeyEvent e) {}
+
+    // 커스텀 스크롤바가 적용된 스크롤 패널 생성
+    private JScrollPane createCustomScrollPane(JPanel contentPanel) {
+        JScrollPane scrollPane = new JScrollPane(contentPanel);
+        
+        // 기본 설정
+        scrollPane.setBackground(getBackgroundColor());
+        scrollPane.setBorder(null);
+        scrollPane.setOpaque(false);
+        scrollPane.getViewport().setOpaque(false);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        
+        // 커스텀 스크롤바 UI 적용
+        JScrollBar verticalScrollBar = scrollPane.getVerticalScrollBar();
+        verticalScrollBar.setUI(new CustomScrollBarUI());
+        verticalScrollBar.setPreferredSize(new Dimension(12, 0)); // 더 얇은 스크롤바
+        
+        return scrollPane;
+    }
+    
+    // 커스텀 스크롤바 UI 클래스
+    private static class CustomScrollBarUI extends javax.swing.plaf.basic.BasicScrollBarUI {
+        
+        @Override
+        protected void configureScrollBarColors() {
+            // 트랙은 설정창 배경과 같은 색
+            this.trackColor = Theme.MenuBG();  // Theme에서 배경색 가져오기
+            // 평상시 썸은 검은색
+            this.thumbColor = new Color(0, 0, 0, 150);  // 반투명 검은색
+            // 호버시 썸은 어두운 회색
+            this.thumbHighlightColor = new Color(80, 80, 80, 200);  // 어두운 회색
+            this.thumbLightShadowColor = new Color(0, 0, 0, 0);  // 투명
+            this.thumbDarkShadowColor = new Color(0, 0, 0, 0);   // 투명
+        }
+        
+        @Override
+        protected JButton createDecreaseButton(int orientation) {
+            JButton button = new JButton();
+            button.setPreferredSize(new Dimension(0, 0));
+            return button;
+        }
+        
+        @Override
+        protected JButton createIncreaseButton(int orientation) {
+            JButton button = new JButton();
+            button.setPreferredSize(new Dimension(0, 0));
+            return button;
+        }
+        
+        @Override
+        protected void paintTrack(Graphics g, JComponent c, Rectangle trackBounds) {
+            Graphics2D g2 = (Graphics2D) g;
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            
+            // 트랙을 설정창 배경색으로 칠함
+            g2.setColor(trackColor);
+            g2.fillRect(trackBounds.x, trackBounds.y, trackBounds.width, trackBounds.height);
+        }
+        
+        @Override
+        protected void paintThumb(Graphics g, JComponent c, Rectangle thumbBounds) {
+            Graphics2D g2 = (Graphics2D) g;
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            
+            if (thumbBounds.isEmpty() || !scrollbar.isEnabled()) {
+                return;
+            }
+            
+            // 호버/드래그 효과에 따른 색상 변경
+            if (isDragging || isThumbRollover()) {
+                // 마우스 호버시: 어두운 회색
+                g2.setColor(thumbHighlightColor);
+            } else {
+                // 평상시: 검은색 (반투명)
+                g2.setColor(thumbColor);
+            }
+            
+            // 더 얇고 둥근 썸 (여백을 더 주어서 얇게)
+            g2.fillRoundRect(thumbBounds.x + 4, thumbBounds.y + 1, 
+                           thumbBounds.width - 8, thumbBounds.height - 2, 4, 4);
+        }
+    }
 
     @Override
     public void onEnter() {
