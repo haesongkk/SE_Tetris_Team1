@@ -355,8 +355,29 @@ public class MainMenuScene extends Scene implements KeyListener {
         itemButton.setToolTipText("폭탄 아이템과 함께하는 테트리스!");
         
         // 취소 버튼
-        JButton cancelButton = createDialogButton("취소");
-        cancelButton.setBackground(new Color(100, 50, 50)); // 취소 버튼은 빨간색 유지
+        JButton cancelButton = new JButton("취소");
+        cancelButton.setFont(new Font("Malgun Gothic", Font.BOLD, 14));
+        cancelButton.setPreferredSize(new Dimension(250, 35));
+        Color cancelColor = new Color(100, 50, 50);
+        cancelButton.setBackground(cancelColor);
+        cancelButton.setForeground(getTextColor());
+        cancelButton.setFocusPainted(false);
+        cancelButton.setBorderPainted(true);
+        cancelButton.setBorder(BorderFactory.createRaisedBevelBorder());
+        
+        // 취소 버튼 전용 호버 효과 (빨간색 유지)
+        cancelButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                cancelButton.setBackground(getSelectedButtonColor());
+            }
+            
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                cancelButton.setBackground(cancelColor);
+            }
+        });
+        
         cancelButton.addActionListener(e -> {
             System.out.println("Game start cancelled.");
             modeDialog.dispose();
@@ -365,6 +386,13 @@ public class MainMenuScene extends Scene implements KeyListener {
         buttonPanel.add(regularButton);
         buttonPanel.add(itemButton);
         buttonPanel.add(cancelButton);
+        
+        // 버튼 배열 (키보드 네비게이션용)
+        JButton[] buttons = {regularButton, itemButton, cancelButton};
+        final int[] currentIndex = {0}; // 현재 선택된 버튼 인덱스
+        
+        // 초기 포커스 설정
+        buttons[0].setBackground(getSelectedButtonColor());
         
         // 설명 라벨
         JLabel descLabel = new JLabel("<html><center>Regular Mode: 클래식 테트리스<br>Item Mode: 준비중</center></html>", SwingConstants.CENTER);
@@ -378,12 +406,43 @@ public class MainMenuScene extends Scene implements KeyListener {
         
         modeDialog.add(dialogPanel);
         
-        // ESC 키로 다이얼로그 닫기 기능 추가
+        // 키보드 네비게이션 추가
         modeDialog.addKeyListener(new java.awt.event.KeyAdapter() {
             @Override
             public void keyPressed(java.awt.event.KeyEvent e) {
-                if (e.getKeyCode() == java.awt.event.KeyEvent.VK_ESCAPE) {
+                int keyCode = e.getKeyCode();
+                
+                if (keyCode == java.awt.event.KeyEvent.VK_ESCAPE) {
                     modeDialog.dispose();
+                } else if (keyCode == java.awt.event.KeyEvent.VK_UP || keyCode == java.awt.event.KeyEvent.VK_LEFT) {
+                    // 이전 버튼으로 이동
+                    if (buttons[currentIndex[0]] == cancelButton) {
+                        buttons[currentIndex[0]].setBackground(cancelColor);
+                    } else {
+                        buttons[currentIndex[0]].setBackground(getButtonColor());
+                    }
+                    currentIndex[0] = (currentIndex[0] - 1 + buttons.length) % buttons.length;
+                    if (buttons[currentIndex[0]] == cancelButton) {
+                        buttons[currentIndex[0]].setBackground(getSelectedButtonColor());
+                    } else {
+                        buttons[currentIndex[0]].setBackground(getSelectedButtonColor());
+                    }
+                } else if (keyCode == java.awt.event.KeyEvent.VK_DOWN || keyCode == java.awt.event.KeyEvent.VK_RIGHT) {
+                    // 다음 버튼으로 이동
+                    if (buttons[currentIndex[0]] == cancelButton) {
+                        buttons[currentIndex[0]].setBackground(cancelColor);
+                    } else {
+                        buttons[currentIndex[0]].setBackground(getButtonColor());
+                    }
+                    currentIndex[0] = (currentIndex[0] + 1) % buttons.length;
+                    if (buttons[currentIndex[0]] == cancelButton) {
+                        buttons[currentIndex[0]].setBackground(getSelectedButtonColor());
+                    } else {
+                        buttons[currentIndex[0]].setBackground(getSelectedButtonColor());
+                    }
+                } else if (keyCode == java.awt.event.KeyEvent.VK_ENTER) {
+                    // 현재 선택된 버튼 클릭
+                    buttons[currentIndex[0]].doClick();
                 }
             }
         });
