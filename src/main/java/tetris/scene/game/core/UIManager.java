@@ -27,11 +27,15 @@ public class UIManager {
     // UI 컴포넌트들
     private JPanel gamePanel;
     private JPanel wrapperPanel;
+    private JFrame frame; // 실제 창 크기 참조용
     
     /**
      * UI 시스템을 초기화합니다.
      */
     public void initializeUI(JPanel parentPanel, JFrame frame, InputHandler inputHandler) {
+        // 프레임 참조 저장
+        this.frame = frame;
+        
         // 해상도에 따른 동적 크기 계산
         calculateDynamicSizes();
         
@@ -179,14 +183,90 @@ public class UIManager {
     
     /**
      * 해상도에 따른 동적 크기를 계산합니다.
+     * 실제 창 크기를 기준으로 보드가 창에 맞도록 셀 크기를 계산합니다.
      */
     private void calculateDynamicSizes() {
-        int[] resolution = GameSettings.getInstance().getResolutionSize();
-        int screenWidth = resolution[0];
+        int screenWidth, screenHeight;
         
-        // 기본 해상도 1280을 기준으로 비례 계산, 최소값 유지
-        cellSize = Math.max(20, (int) (30 * (screenWidth / 1280.0)));
-        previewCellSize = Math.max(15, (int) (20 * (screenWidth / 1280.0)));
+        // wrapperPanel의 실제 크기를 사용 (최대화 시 실제 사용 가능한 공간)
+        if (wrapperPanel != null && wrapperPanel.getWidth() > 0 && wrapperPanel.getHeight() > 0) {
+            // wrapperPanel이 이미 렌더링되었으면 실제 크기 사용
+            screenWidth = wrapperPanel.getWidth();
+            screenHeight = wrapperPanel.getHeight();
+            System.out.println("Using wrapperPanel size: " + screenWidth + "x" + screenHeight);
+        } else if (frame != null) {
+            // wrapperPanel이 아직 렌더링 안 됐으면 프레임 크기에서 추정
+            Dimension frameSize = frame.getSize();
+            Insets insets = frame.getInsets();
+            screenWidth = frameSize.width - insets.left - insets.right;
+            screenHeight = frameSize.height - insets.top - insets.bottom;
+            System.out.println("Using frame size: " + screenWidth + "x" + screenHeight);
+        } else {
+            // 프레임 참조가 없으면 설정된 해상도 사용 (폴백)
+            int[] resolution = GameSettings.getInstance().getResolutionSize();
+            screenWidth = resolution[0];
+            screenHeight = resolution[1];
+            System.out.println("Using resolution setting: " + screenWidth + "x" + screenHeight);
+        }
+        
+        // 세로 기준으로 셀 크기 계산 (보드 높이 + 경계 = 22셀)
+        // 약간의 여유 공간을 남겨둠 (95% 사용)
+        int availableHeight = (int) (screenHeight * 0.95);
+        int calculatedCellSize = availableHeight / (GAME_HEIGHT + 2); // 20 + 2(경계) = 22
+        
+        // 최대 셀 크기 제한 (1920x1080 최대화 시에도 안전하게)
+        int maxCellSize = 35;
+        cellSize = Math.min(maxCellSize, Math.max(15, calculatedCellSize));
+        
+        // 가로 크기도 체크해서 화면을 벗어나지 않도록 조정 (95% 사용)
+        int availableWidth = (int) (screenWidth * 0.95);
+        int previewWidth = PREVIEW_SIZE * (cellSize * 2 / 3) + PREVIEW_MARGIN;
+        int requiredWidth = (GAME_WIDTH + 2) * cellSize + previewWidth;
+        if (requiredWidth > availableWidth) {
+            // 가로가 넘치면 cellSize를 줄임
+            cellSize = (availableWidth - PREVIEW_MARGIN) / (GAME_WIDTH + 2 + PREVIEW_SIZE * 2 / 3);
+            cellSize = Math.min(maxCellSize, Math.max(15, cellSize));
+        }
+        
+        // 미리보기 셀 크기는 메인 셀의 2/3 정도
+        previewCellSize = Math.max(10, cellSize * 2 / 3);
+        
+        System.out.println("Final cell size: " + cellSize + ", Preview cell size: " + previewCellSize);
+    }
+    
+    /**
+     * 창 크기 변경 시 게임 보드 크기를 다시 계산합니다.
+     * 창모드에서 창을 확장했을 때 호출됩니다.
+     */
+    public void recalculateSizes() {
+        // wrapperPanel이 리사이즈된 후에 크기를 계산하도록 지연
+        if (wrapperPanel != null) {
+            wrapperPanel.revalidate();
+            SwingUtilities.invokeLater(() -> {
+                calculateDynamicSizes();
+                
+                // 게임 패널 크기 업데이트
+                if (gamePanel != null) {
+                    Dimension newSize = calculateGamePanelSize();
+                    gamePanel.setPreferredSize(newSize);
+                    gamePanel.setSize(newSize);
+                    gamePanel.revalidate();
+                    gamePanel.repaint();
+                }
+                
+                if (wrapperPanel != null) {
+                    wrapperPanel.repaint();
+                }
+            });
+        } else {
+            // wrapperPanel이 없으면 바로 계산
+            calculateDynamicSizes();
+            if (gamePanel != null) {
+                Dimension newSize = calculateGamePanelSize();
+                gamePanel.setPreferredSize(newSize);
+                gamePanel.setSize(newSize);
+            }
+        }
     }
     
     /**
