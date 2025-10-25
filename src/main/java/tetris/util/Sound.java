@@ -93,7 +93,7 @@ public class Sound {
     }
 
     public static void clear() {
-        System.out.println("미해제 Sound 객체 " + counter.size() + "개 해제 완료");
+        System.out.println("미해제 Sound 객체 " + counter.size() + "개 해제");
         if (counter.isEmpty()) return;
         for(Sound s: counter) s.release();
         counter.clear();

@@ -125,6 +125,17 @@ public class HighScore extends HashMap<String, ArrayList<ScoreEntry>> {
         return output;   
     }
 
+    public void clear(){
+        for(ArrayList<ScoreEntry> list : super.values()){
+            for(ScoreEntry entry : list){
+                entry = null;
+            }
+            list = null;
+        }
+        super.clear();
+        this.save();
+    }
+
     public void release() {
         for(ArrayList<ScoreEntry> list : super.values()){
             for(ScoreEntry entry : list){

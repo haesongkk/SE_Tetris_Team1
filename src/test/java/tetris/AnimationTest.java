@@ -30,17 +30,8 @@ public class AnimationTest {
         
         try {
             // 기본 Animation 객체 생성
-            animation = new Animation(
-                "테스트", 
-                new Font("Arial", Font.BOLD, 16),
-                Color.BLACK,
-                Color.WHITE,
-                Color.GRAY,
-                2,
-                5,
-                SwingConstants.CENTER,
-                SwingConstants.CENTER
-            );
+            // 10/25 Animation 생성자 변경
+            animation = new Animation();
             System.out.println("✅ Animation 객체 생성 성공");
         } catch (Exception e) {
             System.out.println("⚠️ Animation 객체 생성 실패: " + e.getMessage());
@@ -113,8 +104,9 @@ public class AnimationTest {
         }
         
         // popIn 애니메이션 시작
+        // 10/25: popIn 함수 수정
         assertDoesNotThrow(() -> {
-            animation.popIn(0.5f, 0.5f, 0.5f, 0.2f);
+            animation.popIn(0.5f);
         }, "popIn 애니메이션이 예외를 발생시키지 않아야 합니다.");
         
         // 애니메이션 시작 후 상태 확인
@@ -137,8 +129,9 @@ public class AnimationTest {
         }
         
         // popOut 애니메이션 시작
+        // 10/25: popout 함수 수정
         assertDoesNotThrow(() -> {
-            animation.popOut(0.3f, 0.3f, 0.5f, 0.15f);
+            animation.popOut(0.5f);
         }, "popOut 애니메이션이 예외를 발생시키지 않아야 합니다.");
         
         // 애니메이션 시작 후 상태 확인
@@ -187,8 +180,9 @@ public class AnimationTest {
         }
         
         // move 애니메이션 시작
+        // 10/25: move 함수 수정
         assertDoesNotThrow(() -> {
-            animation.move(10, 20, 100, 200, 0.1f, 0.5f, false);
+            animation.move(0.5f,10, 20);
         }, "move 애니메이션이 예외를 발생시키지 않아야 합니다.");
         
         // 애니메이션 상태 확인

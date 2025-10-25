@@ -81,6 +81,25 @@ public final class Theme {
     public static final Font GIANTS_BOLD = loadFont("Giants-Bold.ttf");
     public static final Font GIANTS_REGULAR = loadFont("Giants-Regular.ttf");
 
+    public static Font GIANTS_INLINE(float sizeRatio) {
+        float sizeRatioF = (float)sizeRatio / 100.0f;
+        int[] screenSize = GameSettings.getInstance().getResolutionSize();
+        return GIANTS_INLINE.deriveFont(sizeRatioF * screenSize[0]);
+    }
+
+    public static Font GIANTS_BOLD(float sizeRatio) {
+        float sizeRatioF = (float)sizeRatio / 100.0f;
+        int[] screenSize = GameSettings.getInstance().getResolutionSize();
+        return GIANTS_BOLD.deriveFont(sizeRatioF * screenSize[0]);
+    }
+
+    public static Font GIANTS_REGULAR(float sizeRatio) {
+        float sizeRatioF = (float)sizeRatio / 100.0f;
+        int[] screenSize = GameSettings.getInstance().getResolutionSize();
+        return GIANTS_REGULAR.deriveFont(sizeRatioF * screenSize[0]);
+    }
+
+
     public static Font getFont(Font font, float sizeRatio) {
         int[] screenSize = GameSettings.getInstance().getResolutionSize();
         return font.deriveFont(sizeRatio * screenSize[0]);

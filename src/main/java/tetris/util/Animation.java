@@ -4,42 +4,29 @@ import java.awt.*;
 import javax.swing.*;
 
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.ArrayList;
 
-import javax.swing.border.EmptyBorder;
 
-public class Animation extends JButton {
+public class Animation extends JPanel {
     final int delay = 16;
 
-    public Animation(String text, Font font, Color foreground, Color background, Color border, int thickness, int radius, int hAlign, int vAlign) {
-        setOpaque(false);  
-        setContentAreaFilled(false);
-        setFocusPainted(false);
-        //setRolloverEnabled(false);
-        //setBorderPainted(false);
-
-        setText(text);
-        setFont(font);
-        
-        setHorizontalAlignment(hAlign);
-        setVerticalAlignment(vAlign);
-        
-        setForeground(foreground);
-        setBackground(background);
-        setBorderColor(border);
-        
-        setBorder(new EmptyBorder(thickness, thickness, thickness, thickness));
-
-
-        borderRadius = radius;
-        borderThickness = thickness;
-        counter.add(this);
+    public Animation() { 
+        setOpaque(false);
     }
 
     @Override
     public void setBackground(Color background) {
         super.setBackground(background);
         backgroundHSB = Color.RGBtoHSB(background.getRed(), background.getGreen(), background.getBlue(), null);
+    }
+
+    public void setBorderThickness(int thickness) {
+        borderThickness = thickness;
+    }
+
+    public void setBorderRadius(int radius) {
+        borderRadius = radius;
     }
 
     public void setBorderColor(Color border) {
@@ -59,7 +46,15 @@ public class Animation extends JButton {
         counter.remove(this);
     }
 
-    static List<Animation> counter = new ArrayList<>();
+    static public void clear() {
+        System.out.println("미해제 Animation 객체 " + counter.size() + "개 해제");
+        if (counter.isEmpty()) return;
+        for(Animation anim : counter) {
+            anim.release();
+        }
+        counter.clear();
+    }
+    static List<Animation> counter = new CopyOnWriteArrayList<>();
 
 
     public float alpha = 0.f;
@@ -98,6 +93,18 @@ public class Animation extends JButton {
         animTimer.timer.stop();
         animTimers.remove(animTimer);
     }
+
+    public void stop() {
+        if(animTimers != null) {
+            for(AnimTimer animTimer: animTimers) {
+                animTimer.timer.stop();
+                animTimer.timer = null;
+            }
+            animTimers.clear();
+            //animTimers = null;
+        }
+    }
+
 
     public void hueBackground(float duration, boolean bLoop) {
         alpha = 1f;
@@ -187,6 +194,7 @@ public class Animation extends JButton {
     
 
     public void blink(float vis, float nonVis) {
+        setVisible(true);
         final long visNanos = (long)(vis * 1_000_000_000L);
         final long nonVisNanos = (long)(nonVis * 1000000000L);
         final long durationNanos = visNanos + nonVisNanos;
@@ -204,12 +212,14 @@ public class Animation extends JButton {
         animTimer.timer.start();
     }
 
-    public void popIn(float startScaleX, float startScaleY, float duration, float overshoot) {
+    public void popIn(float duration) {
+        setVisible(true);
         alpha = 0f;
         bVisible = true;
-        scaleX = startScaleX;
-        scaleY = startScaleY;
+        scaleX = 0.8f;
+        scaleY = 0.8f;
         final long durationNanos = secToNanos(duration);
+        final float overshoot = 2.0f;
 
         AnimTimer animTimer = addAnimTimer();
         animTimer.startTime = System.nanoTime();
@@ -231,11 +241,22 @@ public class Animation extends JButton {
         animTimer.timer.start();
     }
 
-    public void popOut(float startScaleX, float startScaleY, float duration, float overshoot) {
+    @Override 
+    public void setVisible(boolean _bVisible) {
+        //super.setVisible(aFlag);
+        this.bVisible = _bVisible;
+    }
+    public void popOut(float duration) {
+        setVisible(true);
+        final float overshoot = 1.4f;
+        final float startScaleX = 0.6f;
+        final float startScaleY = 0.6f;
+
         alpha = 0f;
         bVisible = true;
         scaleX = startScaleX;
         scaleY = startScaleY;
+
         final long durationNanos = secToNanos(duration);
 
         AnimTimer animTimer = addAnimTimer();
@@ -264,7 +285,10 @@ public class Animation extends JButton {
         animTimer.timer.start();
     }
 
-    public void move(int startX, int startY, int endX, int endY, float overshoot, float duration, boolean bLoop) {
+    public void move(float duration, int startX, int startY) {
+        final float overshoot = 1.5f;
+        final float endX = 0;
+        final float endY = 0;
         alpha   = 1f;
         scaleX  = 1f;
         scaleY  = 1f;
@@ -284,7 +308,7 @@ public class Animation extends JButton {
 
             repaint();
 
-            if(!bLoop && t >= 1f) {
+            if(t >= 1f) {
                 ((Timer)e.getSource()).stop();
                 offsetX = endX;
                 offsetY = endY;
@@ -405,7 +429,6 @@ public class Animation extends JButton {
         g2.scale(scaleX, scaleY);
         g2.translate(-w * 0.5, -h * 0.5);
 
-
         super.paint(g2);
         g2.dispose();
     }
@@ -414,6 +437,7 @@ public class Animation extends JButton {
 
     @Override
     protected void paintComponent(Graphics g) {
+        if(!bVisible) return;
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setColor(HSBtoColor(backgroundHSB));
         float o = borderThickness / 2f;
@@ -443,4 +467,5 @@ public class Animation extends JButton {
                         borderRadius, borderRadius);
         g2.dispose();
     }
+
 }

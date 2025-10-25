@@ -4,7 +4,8 @@ import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import tetris.scene.scorescene.ScoreScene;
-import tetris.scene.scorescene.RankPanel;
+// 10/25: RankPanel 클래스 삭제로 해당 import 문 주석 처리
+//import tetris.scene.scorescene.RankPanel;
 import tetris.util.HighScore;
 
 import javax.swing.*;
@@ -124,8 +125,9 @@ public class ScoreBoardTest {
             // ScoreScene 클래스 존재 확인
             assertNotNull(ScoreScene.class, "ScoreScene 클래스가 존재해야 합니다.");
 
+            // 10/25: RankPanel 클래스 삭제로 해당 테스트 코드 주석 처리
             // RankPanel 클래스 존재 확인
-            assertNotNull(RankPanel.class, "RankPanel 클래스가 존재해야 합니다.");
+            //assertNotNull(RankPanel.class, "RankPanel 클래스가 존재해야 합니다.");
 
             // HighScore 클래스 존재 확인
             assertNotNull(HighScore.class, "HighScore 클래스가 존재해야 합니다.");
@@ -169,6 +171,9 @@ public class ScoreBoardTest {
         try {
             // 테스트용 HighScore 객체 생성
             HighScore highScore = new HighScore(TEST_SCORE_FILE);
+
+            // 10/25: 테스트 데이터 비우기
+            highScore.clear();
 
             // 테스트 데이터 추가 (점수가 다른 순서로 입력)
             int rank1 = highScore.add("normal", 5000, 50, 300); // 가장 높은 점수
@@ -376,10 +381,15 @@ public class ScoreBoardTest {
 
             // 테스트 데이터 준비
             HighScore highScore = new HighScore(TEST_SCORE_FILE);
-            highScore.add("normal", 9000, 90, 540);
-            highScore.add("normal", 7000, 70, 420);
-            highScore.updateUserName("normal", 0, "UITest1");
-            highScore.updateUserName("normal", 1, "UITest2");
+            // 10/25: HighScore 테스트 코드 수정
+            // highScore.add("normal", 9000, 90, 540);
+            // highScore.add("normal", 7000, 70, 420);
+            // highScore.updateUserName("normal", 0, "UITest1");
+            // highScore.updateUserName("normal", 1, "UITest2");
+            int index1= highScore.add("normal", 9000, 90, 540);
+            highScore.updateUserName("normal", index1, "UITest1");
+            int index2= highScore.add("normal", 7000, 70, 420);
+            highScore.updateUserName("normal", index2, "UITest2");
             highScore.save();
             highScore.release();
 
@@ -388,20 +398,21 @@ public class ScoreBoardTest {
             assertNotNull(scoreScene, "ScoreScene이 생성되어야 합니다.");
 
             // ScoreScene의 컴포넌트들 확인
-            Field titleLabelField = ScoreScene.class.getDeclaredField("titleLabel");
-            titleLabelField.setAccessible(true);
-            Object titleLabel = titleLabelField.get(scoreScene);
-            assertNotNull(titleLabel, "제목 라벨이 존재해야 합니다.");
+            // 10/25: ScoreScene 코드 정리로 컴포넌트 확인 모두 주석 처리
+            // Field titleLabelField = ScoreScene.class.getDeclaredField("titleLabel");
+            // titleLabelField.setAccessible(true);
+            // Object titleLabel = titleLabelField.get(scoreScene);
+            // assertNotNull(titleLabel, "제목 라벨이 존재해야 합니다.");
 
-            Field rankPanelField = ScoreScene.class.getDeclaredField("rankPanel");
-            rankPanelField.setAccessible(true);
-            RankPanel rankPanel = (RankPanel) rankPanelField.get(scoreScene);
-            assertNotNull(rankPanel, "순위 패널이 존재해야 합니다.");
+            // Field rankPanelField = ScoreScene.class.getDeclaredField("rankPanel");
+            // rankPanelField.setAccessible(true);
+            // RankPanel rankPanel = (RankPanel) rankPanelField.get(scoreScene);
+            // assertNotNull(rankPanel, "순위 패널이 존재해야 합니다.");
 
-            Field exitLabelField = ScoreScene.class.getDeclaredField("exitLabel");
-            exitLabelField.setAccessible(true);
-            Object exitLabel = exitLabelField.get(scoreScene);
-            assertNotNull(exitLabel, "종료 라벨이 존재해야 합니다.");
+            // Field exitLabelField = ScoreScene.class.getDeclaredField("exitLabel");
+            // exitLabelField.setAccessible(true);
+            // Object exitLabel = exitLabelField.get(scoreScene);
+            // assertNotNull(exitLabel, "종료 라벨이 존재해야 합니다.");
 
             // BorderLayout 구조 확인
             assertEquals(BorderLayout.class, scoreScene.getLayout().getClass(), "ScoreScene은 BorderLayout을 사용해야 합니다.");
@@ -427,6 +438,9 @@ public class ScoreBoardTest {
         try {
             // 테스트용 HighScore 객체 생성
             HighScore highScore = new HighScore(TEST_SCORE_FILE);
+            
+            // 10/25: 테스트 데이터 비우기
+            highScore.clear();
 
             // 여러 모드에 점수 추가
             String[] modes = {"normal", "hard", "easy", "item"};
@@ -532,9 +546,10 @@ public class ScoreBoardTest {
         System.out.println("=== 8. 종합 스코어 보드 시스템 검증 테스트 ===");
 
         try {
+            // 10/25: RankPanel 클래스 삭제로 해당 테스트 코드 주석 처리
             // 모든 핵심 클래스들이 존재하는지 확인
             assertNotNull(ScoreScene.class, "ScoreScene 클래스가 존재해야 합니다.");
-            assertNotNull(RankPanel.class, "RankPanel 클래스가 존재해야 합니다.");
+            //assertNotNull(RankPanel.class, "RankPanel 클래스가 존재해야 합니다.");
             assertNotNull(HighScore.class, "HighScore 클래스가 존재해야 합니다.");
 
             // 필수 메서드들 존재 확인

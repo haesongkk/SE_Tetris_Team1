@@ -7,8 +7,9 @@ import tetris.scene.game.GameScene;
 import tetris.scene.game.core.GameStateManager;
 import tetris.scene.game.core.BlockManager;
 import tetris.scene.game.overlay.GameOver;
-import tetris.scene.game.overlay.GOPanel;
-import tetris.scene.game.overlay.GOFooter;
+// 10/25: 코드 정리로 없어진 클래스 주석 처리
+// import tetris.scene.game.overlay.GOPanel;
+// import tetris.scene.game.overlay.GOFooter;
 import tetris.scene.scorescene.ScoreScene;
 import tetris.util.HighScore;
 import tetris.Game;
@@ -201,7 +202,8 @@ public class GameQuitTest {
             }
 
             // GOPanel 클래스 확인 (게임 오버 UI 패널)
-            assert GOPanel.class != null : "GOPanel 클래스가 존재해야 합니다.";
+            // 10/25: 코드 정리로 없어진 클래스 주석 처리
+            // assert GOPanel.class != null : "GOPanel 클래스가 존재해야 합니다.";
 
             System.out.println("✅ 게임 종료시 스코어 보드 표시 구조 확인 완료");
 
@@ -221,38 +223,39 @@ public class GameQuitTest {
     void testHighScoreNameInput() {
         System.out.println("=== 3. 하이스코어 이름 입력 화면 테스트 ===");
 
-        try {
-            // GOFooter 클래스 확인 (이름 입력 UI)
-            assert GOFooter.class != null : "GOFooter 클래스가 존재해야 합니다.";
+        // 10/25: 코드 정리로 없어진 클래스 주석 처리
+        // try {
+        //     // GOFooter 클래스 확인 (이름 입력 UI)
+        //     assert GOFooter.class != null : "GOFooter 클래스가 존재해야 합니다.";
 
-            // GOFooter 생성자 확인 (하이스코어 여부)
-            try {
-                GOFooter.class.getDeclaredConstructor(boolean.class);
-                System.out.println("GOFooter 생성자 확인: boolean (isHighScore)");
-            } catch (NoSuchMethodException e) {
-                System.err.println("GOFooter 생성자가 예상된 형태가 아닙니다: " + e.getMessage());
-            }
+        //     // GOFooter 생성자 확인 (하이스코어 여부)
+        //     try {
+        //         GOFooter.class.getDeclaredConstructor(boolean.class);
+        //         System.out.println("GOFooter 생성자 확인: boolean (isHighScore)");
+        //     } catch (NoSuchMethodException e) {
+        //         System.err.println("GOFooter 생성자가 예상된 형태가 아닙니다: " + e.getMessage());
+        //     }
 
-            // 이름 입력 필드 확인
-            Field nameFieldField = GOFooter.class.getDeclaredField("nameField");
-            nameFieldField.setAccessible(true);
-            assert nameFieldField.getType() == JTextField.class : "nameField가 JTextField 타입이어야 합니다.";
+        //     // 이름 입력 필드 확인
+        //     Field nameFieldField = GOFooter.class.getDeclaredField("nameField");
+        //     nameFieldField.setAccessible(true);
+        //     assert nameFieldField.getType() == JTextField.class : "nameField가 JTextField 타입이어야 합니다.";
 
-            // 라벨 필드 확인
-            Field labelField = GOFooter.class.getDeclaredField("label");
-            labelField.setAccessible(true);
-            assert labelField.getType() == JLabel.class : "label이 JLabel 타입이어야 합니다.";
+        //     // 라벨 필드 확인
+        //     Field labelField = GOFooter.class.getDeclaredField("label");
+        //     labelField.setAccessible(true);
+        //     assert labelField.getType() == JLabel.class : "label이 JLabel 타입이어야 합니다.";
 
-            // 하이스코어 플래그 확인
-            Field isHighScoreField = GOFooter.class.getDeclaredField("isHighScore");
-            isHighScoreField.setAccessible(true);
-            assert isHighScoreField.getType() == boolean.class : "isHighScore가 boolean 타입이어야 합니다.";
+        //     // 하이스코어 플래그 확인
+        //     Field isHighScoreField = GOFooter.class.getDeclaredField("isHighScore");
+        //     isHighScoreField.setAccessible(true);
+        //     assert isHighScoreField.getType() == boolean.class : "isHighScore가 boolean 타입이어야 합니다.";
 
-            System.out.println("✅ 하이스코어 이름 입력 UI 구조 확인 완료");
+        //     System.out.println("✅ 하이스코어 이름 입력 UI 구조 확인 완료");
 
-        } catch (Exception e) {
-            System.err.println("❌ 하이스코어 이름 입력 화면 테스트 실패: " + e.getMessage());
-        }
+        // } catch (Exception e) {
+        //     System.err.println("❌ 하이스코어 이름 입력 화면 테스트 실패: " + e.getMessage());
+        // }
 
         System.out.println("✅ 하이스코어 이름 입력 화면 테스트 통과");
     }
@@ -335,14 +338,16 @@ public class GameQuitTest {
             assert onRetryMethod != null : "GameOver에 onRetry 메서드가 존재해야 합니다.";
 
             // GOFooter의 onEnter 메서드 확인
-            Method onEnterMethod = GOFooter.class.getDeclaredMethod("onEnter", String.class);
-            onEnterMethod.setAccessible(true);
-            assert onEnterMethod != null : "GOFooter에 onEnter 메서드가 존재해야 합니다.";
+            // 10/25: 코드 정리로 없어진 클래스 주석 처리
+            // Method onEnterMethod = GOFooter.class.getDeclaredMethod("onEnter", String.class);
+            // onEnterMethod.setAccessible(true);
+            // assert onEnterMethod != null : "GOFooter에 onEnter 메서드가 존재해야 합니다.";
 
             // GOFooter의 onRetry 메서드 확인
-            Method footerOnRetryMethod = GOFooter.class.getDeclaredMethod("onRetry");
-            footerOnRetryMethod.setAccessible(true);
-            assert footerOnRetryMethod != null : "GOFooter에 onRetry 메서드가 존재해야 합니다.";
+            // 10/25: 코드 정리로 없어진 클래스 주석 처리
+            // Method footerOnRetryMethod = GOFooter.class.getDeclaredMethod("onRetry");
+            // footerOnRetryMethod.setAccessible(true);
+            // assert footerOnRetryMethod != null : "GOFooter에 onRetry 메서드가 존재해야 합니다.";
 
             // 리소스 정리 메서드 확인
             Method releaseMethod = GameOver.class.getDeclaredMethod("release");
@@ -442,8 +447,9 @@ public class GameQuitTest {
             // 모든 핵심 클래스들이 존재하는지 확인
             assert GameScene.class != null : "GameScene 클래스가 존재해야 합니다.";
             assert GameOver.class != null : "GameOver 클래스가 존재해야 합니다.";
-            assert GOPanel.class != null : "GOPanel 클래스가 존재해야 합니다.";
-            assert GOFooter.class != null : "GOFooter 클래스가 존재해야 합니다.";
+            // 10/25: 코드 정리로 없어진 클래스 주석 처리
+            // assert GOPanel.class != null : "GOPanel 클래스가 존재해야 합니다.";
+            // assert GOFooter.class != null : "GOFooter 클래스가 존재해야 합니다.";
             assert HighScore.class != null : "HighScore 클래스가 존재해야 합니다.";
             assert ScoreScene.class != null : "ScoreScene 클래스가 존재해야 합니다.";
             // ScoreEntry는 HighScore 내부의 package-private 클래스이므로 직접 테스트하지 않음
