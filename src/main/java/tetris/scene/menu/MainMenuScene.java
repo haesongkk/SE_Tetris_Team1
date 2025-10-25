@@ -1,7 +1,9 @@
 package tetris.scene.menu;
 
+import tetris.ColorBlindHelper;
 import tetris.Game;
 import tetris.GameSettings;
+import tetris.util.Theme;
 import tetris.scene.Scene;
 import tetris.scene.game.GameScene;
 import tetris.scene.game.ItemGameScene;
@@ -20,12 +22,35 @@ public class MainMenuScene extends Scene implements KeyListener {
     private JButton[] menuButtons;
     private int selectedButton = 0;
     
-    // 색상 정의
-    private final Color BACKGROUND_COLOR = new Color(20, 20, 40);
-    private final Color TITLE_COLOR = new Color(255, 255, 100);
-    private final Color BUTTON_COLOR = new Color(70, 70, 120);
-    private final Color SELECTED_BUTTON_COLOR = new Color(120, 120, 200);
-    private final Color TEXT_COLOR = Color.WHITE;
+    // 색상 getter 메서드들
+    private Color getBackgroundColor() {
+        return Theme.MenuBG();
+    }
+    
+    private Color getTitleColor() {
+        return Theme.MenuTitle();
+    }
+    
+    private Color getButtonColor() {
+        return Theme.MenuButton();
+    }
+    
+    private Color getSelectedButtonColor() {
+        int colorBlindMode = GameSettings.getInstance().getColorBlindMode();
+        if(colorBlindMode == 0) {
+            return new Color(120, 120, 200); // 일반 모드 - 원래 색상 유지
+        } else if(colorBlindMode == 1) {
+            // 적록색맹 - 밝은 보라색 (더 진하게)
+            return new Color(150, 100, 255);
+        } else {
+            // 청황색맹 - 밝은 주황색
+            return new Color(255, 150, 80);
+        }
+    }
+    
+    private Color getTextColor() {
+        return Color.WHITE;
+    }
 
     // 메인 메뉴 씬 생성자
     public MainMenuScene(JFrame frame) {
@@ -40,7 +65,7 @@ public class MainMenuScene extends Scene implements KeyListener {
     // UI 컴포넌트들을 초기화하고 배치하는 메서드
     private void setupUI() {
         setLayout(new BorderLayout());
-        setBackground(BACKGROUND_COLOR);
+        setBackground(getBackgroundColor());
         setFocusable(true);
         
         // 제목 패널
@@ -78,7 +103,7 @@ public class MainMenuScene extends Scene implements KeyListener {
         // 메인 제목
         JLabel titleLabel = new JLabel("TETRIS");
         titleLabel.setFont(new Font("Arial", Font.BOLD, titleFontSize));
-        titleLabel.setForeground(TITLE_COLOR);
+        titleLabel.setForeground(getTitleColor());
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         
         // 그림자 효과를 위한 백그라운드 제목
@@ -90,7 +115,7 @@ public class MainMenuScene extends Scene implements KeyListener {
         // 서브타이틀
         JLabel subtitleLabel = new JLabel("Team 1 Edition");
         subtitleLabel.setFont(new Font("Arial", Font.ITALIC, subtitleFontSize));
-        subtitleLabel.setForeground(TEXT_COLOR);
+        subtitleLabel.setForeground(getTextColor());
         subtitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         titlePanel.add(Box.createVerticalStrut(20));
@@ -185,7 +210,7 @@ public class MainMenuScene extends Scene implements KeyListener {
         
         JLabel infoLabel = new JLabel("↑↓ 키로 선택, Enter로 확인, ESC로 종료");
         infoLabel.setFont(new Font("Malgun Gothic", Font.BOLD, infoFontSize));
-        infoLabel.setForeground(TEXT_COLOR);
+        infoLabel.setForeground(getTextColor());
         
         infoPanel.add(infoLabel);
         
@@ -203,11 +228,11 @@ public class MainMenuScene extends Scene implements KeyListener {
     private void updateButtonAppearance() {
         for (int i = 0; i < menuButtons.length; i++) {
             if (i == selectedButton) {
-                menuButtons[i].setBackground(SELECTED_BUTTON_COLOR);
+                menuButtons[i].setBackground(getSelectedButtonColor());
                 menuButtons[i].setForeground(Color.WHITE);
             } else {
-                menuButtons[i].setBackground(BUTTON_COLOR);
-                menuButtons[i].setForeground(TEXT_COLOR);
+                menuButtons[i].setBackground(getButtonColor());
+                menuButtons[i].setForeground(getTextColor());
             }
         }
         repaint();
@@ -291,10 +316,10 @@ public class MainMenuScene extends Scene implements KeyListener {
         
         // 다이얼로그 내용 패널 설정
         JPanel dialogPanel = new JPanel();
-        dialogPanel.setBackground(new Color(30, 30, 50));
+        dialogPanel.setBackground(getBackgroundColor());
         dialogPanel.setLayout(new BorderLayout());
         dialogPanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(255, 255, 100), 2), // 테두리 추가
+            BorderFactory.createLineBorder(getTitleColor(), 2), // 테두리 추가
             BorderFactory.createEmptyBorder(15, 15, 15, 15)
         ));
         
@@ -302,7 +327,7 @@ public class MainMenuScene extends Scene implements KeyListener {
         JLabel titleLabel = new JLabel("게임 모드 선택", SwingConstants.CENTER);
         int titleFontSize = Math.max(16, screenWidth / 50);
         titleLabel.setFont(new Font("Malgun Gothic", Font.BOLD, titleFontSize));
-        titleLabel.setForeground(new Color(255, 255, 100));
+        titleLabel.setForeground(getTitleColor());
         titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0));
         
         // 버튼 패널
@@ -330,8 +355,29 @@ public class MainMenuScene extends Scene implements KeyListener {
         itemButton.setToolTipText("폭탄 아이템과 함께하는 테트리스!");
         
         // 취소 버튼
-        JButton cancelButton = createDialogButton("취소");
-        cancelButton.setBackground(new Color(100, 50, 50));
+        JButton cancelButton = new JButton("취소");
+        cancelButton.setFont(new Font("Malgun Gothic", Font.BOLD, 14));
+        cancelButton.setPreferredSize(new Dimension(250, 35));
+        Color cancelColor = new Color(100, 50, 50);
+        cancelButton.setBackground(cancelColor);
+        cancelButton.setForeground(getTextColor());
+        cancelButton.setFocusPainted(false);
+        cancelButton.setBorderPainted(true);
+        cancelButton.setBorder(BorderFactory.createRaisedBevelBorder());
+        
+        // 취소 버튼 전용 호버 효과 (빨간색 유지)
+        cancelButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                cancelButton.setBackground(getSelectedButtonColor());
+            }
+            
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                cancelButton.setBackground(cancelColor);
+            }
+        });
+        
         cancelButton.addActionListener(e -> {
             System.out.println("Game start cancelled.");
             modeDialog.dispose();
@@ -340,6 +386,13 @@ public class MainMenuScene extends Scene implements KeyListener {
         buttonPanel.add(regularButton);
         buttonPanel.add(itemButton);
         buttonPanel.add(cancelButton);
+        
+        // 버튼 배열 (키보드 네비게이션용)
+        JButton[] buttons = {regularButton, itemButton, cancelButton};
+        final int[] currentIndex = {0}; // 현재 선택된 버튼 인덱스
+        
+        // 초기 포커스 설정
+        buttons[0].setBackground(getSelectedButtonColor());
         
         // 설명 라벨
         JLabel descLabel = new JLabel("<html><center>Regular Mode: 클래식 테트리스<br>Item Mode: 준비중</center></html>", SwingConstants.CENTER);
@@ -353,12 +406,43 @@ public class MainMenuScene extends Scene implements KeyListener {
         
         modeDialog.add(dialogPanel);
         
-        // ESC 키로 다이얼로그 닫기 기능 추가
+        // 키보드 네비게이션 추가
         modeDialog.addKeyListener(new java.awt.event.KeyAdapter() {
             @Override
             public void keyPressed(java.awt.event.KeyEvent e) {
-                if (e.getKeyCode() == java.awt.event.KeyEvent.VK_ESCAPE) {
+                int keyCode = e.getKeyCode();
+                
+                if (keyCode == java.awt.event.KeyEvent.VK_ESCAPE) {
                     modeDialog.dispose();
+                } else if (keyCode == java.awt.event.KeyEvent.VK_UP || keyCode == java.awt.event.KeyEvent.VK_LEFT) {
+                    // 이전 버튼으로 이동
+                    if (buttons[currentIndex[0]] == cancelButton) {
+                        buttons[currentIndex[0]].setBackground(cancelColor);
+                    } else {
+                        buttons[currentIndex[0]].setBackground(getButtonColor());
+                    }
+                    currentIndex[0] = (currentIndex[0] - 1 + buttons.length) % buttons.length;
+                    if (buttons[currentIndex[0]] == cancelButton) {
+                        buttons[currentIndex[0]].setBackground(getSelectedButtonColor());
+                    } else {
+                        buttons[currentIndex[0]].setBackground(getSelectedButtonColor());
+                    }
+                } else if (keyCode == java.awt.event.KeyEvent.VK_DOWN || keyCode == java.awt.event.KeyEvent.VK_RIGHT) {
+                    // 다음 버튼으로 이동
+                    if (buttons[currentIndex[0]] == cancelButton) {
+                        buttons[currentIndex[0]].setBackground(cancelColor);
+                    } else {
+                        buttons[currentIndex[0]].setBackground(getButtonColor());
+                    }
+                    currentIndex[0] = (currentIndex[0] + 1) % buttons.length;
+                    if (buttons[currentIndex[0]] == cancelButton) {
+                        buttons[currentIndex[0]].setBackground(getSelectedButtonColor());
+                    } else {
+                        buttons[currentIndex[0]].setBackground(getSelectedButtonColor());
+                    }
+                } else if (keyCode == java.awt.event.KeyEvent.VK_ENTER) {
+                    // 현재 선택된 버튼 클릭
+                    buttons[currentIndex[0]].doClick();
                 }
             }
         });
@@ -378,8 +462,8 @@ public class MainMenuScene extends Scene implements KeyListener {
         JButton button = new JButton(text);
         button.setFont(new Font("Malgun Gothic", Font.BOLD, 14));
         button.setPreferredSize(new Dimension(250, 35));
-        button.setBackground(new Color(70, 70, 120));
-        button.setForeground(Color.WHITE);
+        button.setBackground(getButtonColor());
+        button.setForeground(getTextColor());
         button.setFocusPainted(false);
         button.setBorderPainted(true);
         button.setBorder(BorderFactory.createRaisedBevelBorder());
@@ -389,14 +473,14 @@ public class MainMenuScene extends Scene implements KeyListener {
             @Override
             public void mouseEntered(java.awt.event.MouseEvent e) {
                 if (button.isEnabled()) {
-                    button.setBackground(new Color(120, 120, 200));
+                    button.setBackground(getSelectedButtonColor());
                 }
             }
             
             @Override
             public void mouseExited(java.awt.event.MouseEvent e) {
                 if (button.isEnabled()) {
-                    button.setBackground(new Color(70, 70, 120));
+                    button.setBackground(getButtonColor());
                 }
             }
         });
@@ -567,10 +651,24 @@ public class MainMenuScene extends Scene implements KeyListener {
         // 필요시 구현
     }
 
+    // 테마 색상을 업데이트하는 메서드 (UI 재구성 없이 색상만 변경)
+    private void updateThemeColors() {
+        // 배경색 업데이트
+        setBackground(getBackgroundColor());
+        
+        // 버튼 색상 업데이트
+        updateButtonAppearance();
+        
+        // 화면 갱신
+        repaint();
+    }
+
     // 씬이 활성화될 때 호출되는 메서드
     @Override
     public void onEnter() {
+        updateThemeColors(); // 색약 모드 변경사항 적용 (색상만)
         applyDisplaySettings();
+        setFocusable(true);
         requestFocusInWindow();
     }
 }

@@ -127,6 +127,11 @@ public class GameOver extends JPanel {
         setBorders();
         setButton();
         setField();
+        
+        // Theme 클래스에 현재 프레임 참조 설정 (폰트 크기 동적 계산용)
+        if (frame != null) {
+            tetris.util.Theme.setCurrentFrame(frame);
+        }
 
         run();
     }
@@ -254,7 +259,8 @@ public class GameOver extends JPanel {
      }
 
     void setBorders() { 
-        final int[] screenSize = GameSettings.getInstance().getResolutionSize();
+        // 실제 창 크기 사용 (동적 크기 조정)
+        final int[] screenSize = getActualScreenSize();
 
         // 팝업 캔버스 스크린 비율 맞추기
         final float[] borderRatio = {1-CANVAS_RATIO[0], 1-CANVAS_RATIO[1]};
@@ -277,6 +283,16 @@ public class GameOver extends JPanel {
         centerContainer.setBorder(BorderFactory.createEmptyBorder(paddingV, centerMarginLeft, paddingV, 0));
         bottomContainer.setBorder(BorderFactory.createEmptyBorder(paddingV, bottomMarginLR, 0, bottomMarginLR));
 
+    }
+    
+    // 실제 창 크기 또는 설정된 해상도를 반환하는 메서드
+    private int[] getActualScreenSize() {
+        if (frame != null) {
+            Dimension size = frame.getSize();
+            return new int[]{size.width, size.height};
+        }
+        // 폴백: GameSettings의 해상도 사용
+        return GameSettings.getInstance().getResolutionSize();
     }
 
     void setButton() {

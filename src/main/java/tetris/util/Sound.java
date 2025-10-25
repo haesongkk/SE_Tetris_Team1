@@ -27,7 +27,12 @@ public class Sound {
     public synchronized void play(boolean loop) {
         this.stop();
         device = new SoundDevice();
-        device.volume = Math.max(0f, Math.min(1f, GameSettings.getInstance().getVolume()/100f));
+        // 음소거 상태면 볼륨을 0으로, 아니면 설정된 볼륨 사용
+        if (GameSettings.getInstance().isMuted()) {
+            device.volume = 0f;
+        } else {
+            device.volume = Math.max(0f, Math.min(1f, GameSettings.getInstance().getVolume()/100f));
+        }
 
         this.running = true;
         thread = new Thread(() -> {

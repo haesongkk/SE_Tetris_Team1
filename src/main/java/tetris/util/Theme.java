@@ -7,7 +7,14 @@ import java.io.InputStream;
 import tetris.ColorBlindHelper;
 import tetris.GameSettings;
 
+import javax.swing.JFrame;
+
 public final class Theme {
+    private static JFrame currentFrame = null;
+    
+    public static void setCurrentFrame(JFrame frame) {
+        currentFrame = frame;
+    }
     public enum ColorType {
         RED, ORANGE, YELLOW, GREEN, CYAN, BLUE, PURPLE
     }
@@ -22,6 +29,37 @@ public final class Theme {
     public static Color Border() {
         int colorBlindMode = GameSettings.getInstance().getColorBlindMode();
         return ColorBlindHelper.getBorderColor(colorBlindMode);
+    }
+
+    // 메뉴용 색상 메서드들 (색맹 모드에 따라 변경)
+    public static Color MenuBG() {
+        int colorBlindMode = GameSettings.getInstance().getColorBlindMode();
+        if(colorBlindMode == 0) return new Color(20, 20, 40);  // 일반 모드 - 원래 색상
+        return ColorBlindHelper.getBackgroundColor(colorBlindMode);
+    }
+    
+    public static Color MenuTitle() {
+        int colorBlindMode = GameSettings.getInstance().getColorBlindMode();
+        if(colorBlindMode == 0) return new Color(255, 255, 100);  // 일반 모드 - 원래 색상
+        return Block(ColorType.YELLOW);
+    }
+    
+    public static Color MenuButton() {
+        int colorBlindMode = GameSettings.getInstance().getColorBlindMode();
+        if(colorBlindMode == 0) return new Color(70, 70, 120);  // 일반 모드 - 원래 색상
+        return Border();
+    }
+    
+    public static Color MenuPanel() {
+        int colorBlindMode = GameSettings.getInstance().getColorBlindMode();
+        if(colorBlindMode == 0) return new Color(40, 40, 70);  // 일반 모드 - 원래 색상
+        // 색약 모드에서는 배경색보다 조금 밝은 색상 사용
+        Color bg = ColorBlindHelper.getBackgroundColor(colorBlindMode);
+        return new Color(
+            Math.min(255, bg.getRed() + 30),
+            Math.min(255, bg.getGreen() + 30),
+            Math.min(255, bg.getBlue() + 30)
+        );
     }
 
     public static Color getCustomeBlock(int i) {
@@ -83,35 +121,45 @@ public final class Theme {
 
     public static Font GIANTS_INLINE(float sizeRatio) {
         float sizeRatioF = (float)sizeRatio / 100.0f;
-        int[] screenSize = GameSettings.getInstance().getResolutionSize();
+        int[] screenSize = getActualScreenSize();
         return GIANTS_INLINE.deriveFont(sizeRatioF * screenSize[0]);
     }
 
     public static Font GIANTS_BOLD(float sizeRatio) {
         float sizeRatioF = (float)sizeRatio / 100.0f;
-        int[] screenSize = GameSettings.getInstance().getResolutionSize();
+        int[] screenSize = getActualScreenSize();
         return GIANTS_BOLD.deriveFont(sizeRatioF * screenSize[0]);
     }
 
     public static Font GIANTS_REGULAR(float sizeRatio) {
         float sizeRatioF = (float)sizeRatio / 100.0f;
-        int[] screenSize = GameSettings.getInstance().getResolutionSize();
+        int[] screenSize = getActualScreenSize();
         return GIANTS_REGULAR.deriveFont(sizeRatioF * screenSize[0]);
     }
 
-
     public static Font getFont(Font font, float sizeRatio) {
-        int[] screenSize = GameSettings.getInstance().getResolutionSize();
+        int[] screenSize = getActualScreenSize();
         return font.deriveFont(sizeRatio * screenSize[0]);
     }
 
     public static int getPixelWidth(float sizeRatio) {
-        int[] screenSize = GameSettings.getInstance().getResolutionSize();
+        int[] screenSize = getActualScreenSize();
         return (int)(sizeRatio * screenSize[0]);
     }
+    
     public static int getPixelHeight(float sizeRatio) {
-        int[] screenSize = GameSettings.getInstance().getResolutionSize();
+        int[] screenSize = getActualScreenSize();
         return (int)(sizeRatio * screenSize[1]);
+    }
+    
+    // 실제 창 크기 또는 설정된 해상도를 반환하는 메서드
+    private static int[] getActualScreenSize() {
+        if (currentFrame != null) {
+            Dimension size = currentFrame.getSize();
+            return new int[]{size.width, size.height};
+        }
+        // 폴백: GameSettings의 해상도 사용
+        return GameSettings.getInstance().getResolutionSize();
     }
 
     static Font loadFont(String path) {

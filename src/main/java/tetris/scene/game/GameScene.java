@@ -15,6 +15,9 @@ import tetris.Game;
 import tetris.scene.menu.MainMenuScene;
 import tetris.GameSettings;
 
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+
 import javax.swing.*;
 import java.awt.*;
 import javax.swing.OverlayLayout;
@@ -96,6 +99,9 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
     }
 
     private void initUI() {
+        // 게임 시작 시 해상도 설정 적용
+        applyResolutionSettings();
+        
         // 프레임의 ContentPane을 이 GameScene으로 설정
         m_frame.setContentPane(this);
         
@@ -135,6 +141,24 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
         if (gamePanel != null) {
             gamePanel.repaint();
         }
+    }
+    
+    /**
+     * 게임 시작 시 해상도 설정을 적용합니다.
+     */
+    private void applyResolutionSettings() {
+        GameSettings gameSettings = GameSettings.getInstance();
+        int[] resolution = gameSettings.getResolutionSize();
+        int width = resolution[0];
+        int height = resolution[1];
+        
+        // 프레임 크기를 설정된 해상도로 설정
+        m_frame.setSize(width, height);
+        
+        // 화면 중앙에 위치
+        m_frame.setLocationRelativeTo(null);
+        
+        System.out.println("GameScene: Applied resolution " + width + "x" + height);
     }
 
     private void initGameState() {
@@ -197,6 +221,21 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
         if (gamePanel != null) {
             gamePanel.repaint();
         }
+        
+        // 창 크기 변경 리스너 추가 (동적 폰트 크기 조정용)
+        m_frame.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                // UIManager에서 크기 재계산 (폰트 크기 포함)
+                uiManager.recalculateSizes();
+                
+                // 게임 패널 다시 그리기
+                JPanel gamePanel = getGamePanel();
+                if (gamePanel != null) {
+                    gamePanel.repaint();
+                }
+            }
+        });
     }
 
     // ═══════════════════════════════════════════════════════════════
