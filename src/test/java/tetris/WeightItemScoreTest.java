@@ -44,7 +44,7 @@ public class WeightItemScoreTest {
         ScoreManager scoreManager = new ScoreManager(GameSettings.Difficulty.EASY);
         
         // 무게추가 블록들을 제거 (무게추 위치: x=4, y=16)
-        int clearedCount = weightBlock.clearBlocksBelow(testBoard, testBoardColors, 4, 16, scoreManager);
+        int clearedCount = weightBlock.clearBlocksBelow(testBoard, testBoardColors, 4, 16, scoreManager, null);
         
         // 제거된 셀 개수 확인 (무게추 범위 내의 셀들)
         assertTrue(clearedCount > 0, "무게추가 블록을 제거해야 함");
@@ -60,7 +60,7 @@ public class WeightItemScoreTest {
     void testWeightItemScoreNormal() {
         ScoreManager scoreManager = new ScoreManager(GameSettings.Difficulty.NORMAL);
         
-        int clearedCount = weightBlock.clearBlocksBelow(testBoard, testBoardColors, 4, 16, scoreManager);
+        int clearedCount = weightBlock.clearBlocksBelow(testBoard, testBoardColors, 4, 16, scoreManager, null);
         
         assertTrue(clearedCount > 0, "무게추가 블록을 제거해야 함");
         
@@ -75,7 +75,7 @@ public class WeightItemScoreTest {
     void testWeightItemScoreHard() {
         ScoreManager scoreManager = new ScoreManager(GameSettings.Difficulty.HARD);
         
-        int clearedCount = weightBlock.clearBlocksBelow(testBoard, testBoardColors, 4, 16, scoreManager);
+        int clearedCount = weightBlock.clearBlocksBelow(testBoard, testBoardColors, 4, 16, scoreManager, null);
         
         assertTrue(clearedCount > 0, "무게추가 블록을 제거해야 함");
         
@@ -129,7 +129,7 @@ public class WeightItemScoreTest {
         int[][] emptyBoard = new int[20][10];
         Color[][] emptyBoardColors = new Color[20][10];
         
-        int clearedCount = weightBlock.clearBlocksBelow(emptyBoard, emptyBoardColors, 4, 16, scoreManager);
+        int clearedCount = weightBlock.clearBlocksBelow(emptyBoard, emptyBoardColors, 4, 16, scoreManager, null);
         
         assertEquals(0, clearedCount, "빈 보드에서는 제거된 셀이 없어야 함");
         assertEquals(0, scoreManager.getScore(), "빈 보드에서는 점수 증가가 없어야 함");

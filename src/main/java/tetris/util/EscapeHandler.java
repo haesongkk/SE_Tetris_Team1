@@ -24,7 +24,8 @@ public class EscapeHandler implements AWTEventListener, KeyEventDispatcher{
 
     @Override
     public void eventDispatched(AWTEvent event) {
-        if (event instanceof MouseEvent me) {
+        if (event instanceof MouseEvent) {
+            MouseEvent me = (MouseEvent) event;
             //System.out.println("MOUSE EVENT");
 
             int id = me.getID();

@@ -244,6 +244,12 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
     
     @Override
     public void onGameAction(InputHandler.GameAction action) {
+        // 청소 아이템 점멸 중이거나 줄 삭제 점멸 중이면 블록 조작 불가 (일시정지와 메뉴 나가기는 제외)
+        if ((cleanupBlinkingActive || (timerManager.getLineBlinkEffect() != null && timerManager.getLineBlinkEffect().isActive())) &&
+            action != InputHandler.GameAction.PAUSE && action != InputHandler.GameAction.EXIT_TO_MENU) {
+            return;
+        }
+        
         switch (action) {
             case MOVE_LEFT:
                 moveBlockLeft();
@@ -590,6 +596,11 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
     
     @Override
     public void onDropTick() {
+        // 청소 아이템 점멸 중이거나 줄 삭제 점멸 중이면 블록 업데이트 건너뛰기
+        if (cleanupBlinkingActive || (timerManager.getLineBlinkEffect() != null && timerManager.getLineBlinkEffect().isActive())) {
+            return;
+        }
+        
         // 무게추 블록 업데이트 확인
         if (blockManager.updateWeightBlock()) {
             // 무게추가 사라졌으면 다음 블록 생성

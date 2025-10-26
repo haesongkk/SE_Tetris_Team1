@@ -292,9 +292,12 @@ public class WeightItemBlock extends Block {
      * @param weightX 무게추의 X 위치
      * @param weightY 무게추의 Y 위치
      * @param scoreManager 점수 관리자 (셀 제거 시 점수 추가용)
+     * @param boardManager 보드 매니저 (아이템 셀 정보 삭제용)
      * @return 제거된 블록의 개수
      */
-    public int clearBlocksBelow(int[][] board, Color[][] boardColors, int weightX, int weightY, tetris.scene.game.core.ScoreManager scoreManager) {
+    public int clearBlocksBelow(int[][] board, Color[][] boardColors, int weightX, int weightY, 
+                               tetris.scene.game.core.ScoreManager scoreManager, 
+                               tetris.scene.game.core.BoardManager boardManager) {
         int clearedCount = 0;
         int[] range = getDestructionRange(weightX, weightY);
         int startCol = Math.max(0, range[0]);
@@ -312,6 +315,12 @@ public class WeightItemBlock extends Block {
                         board[row][col] = 0;
                         boardColors[row][col] = null;
                         clearedCount++;
+                        
+                        // 🔧 아이템 셀 정보도 함께 삭제 (버그 수정)
+                        if (boardManager != null) {
+                            boardManager.clearItemBlockInfo(col, row);
+                            System.out.println("Cleared item info at (" + col + ", " + row + ")");
+                        }
                         
                         // 셀을 지울 때마다 50점 추가 (난이도 배율 적용)
                         if (scoreManager != null) {

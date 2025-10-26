@@ -11,6 +11,7 @@ import java.awt.*;
  */
 public class ItemGameScene extends GameScene {
     private ItemManager itemManager;
+    private boolean isItemLineClear = false; // 아이템으로 인한 줄 삭제인지 추적
     
     public ItemGameScene(JFrame frame) {
         super(frame, tetris.GameSettings.Difficulty.NORMAL);
@@ -101,9 +102,24 @@ public class ItemGameScene extends GameScene {
     @Override
     protected void notifyLinesCleared(int linesCleared) {
         if (itemManager != null) {
-            System.out.println("ItemGameScene: Notifying ItemManager of " + linesCleared + " lines cleared");
-            itemManager.onLinesCleared(linesCleared);
+            // LINE_CLEAR 아이템으로 인한 줄 삭제인지 확인
+            if (isItemLineClear) {
+                System.out.println("ItemGameScene: LINE_CLEAR item caused " + linesCleared + " lines to be cleared - NOT counting for item generation");
+                isItemLineClear = false; // 플래그 리셋
+            } else {
+                System.out.println("ItemGameScene: Notifying ItemManager of " + linesCleared + " lines cleared (natural line clearing)");
+                itemManager.onLinesCleared(linesCleared);
+            }
         }
+    }
+    
+    /**
+     * LINE_CLEAR 아이템이 사용되었음을 표시합니다.
+     * 이후 줄 삭제는 아이템으로 인한 것으로 간주되어 아이템 생성 카운트에서 제외됩니다.
+     */
+    public void markItemLineClear() {
+        isItemLineClear = true;
+        System.out.println("ItemGameScene: Marked next line clearing as item-caused");
     }
     
     /**

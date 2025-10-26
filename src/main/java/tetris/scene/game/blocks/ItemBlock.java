@@ -7,7 +7,7 @@ import javax.imageio.ImageIO;
 import tetris.scene.game.items.ItemEffectType;
 
 /**
- * 새로운 아이템 시스템을 위한 블록 클래s
+ * 새로운 아이템 시스템을 위한 블록 클래스
  * 기존 블록에 특정 아이템 효과를 추가한 블록입니다.
  * 
  * 지원되는 아이템 타입:
@@ -30,8 +30,9 @@ public class ItemBlock extends Block {
     }
     private final Block originalBlock; // 원본 블록
     private final ItemEffectType itemType; // 아이템 타입
-    private final int[][] itemShape; // 아이템 정보 (0: 일반, 1: 아이템)
+    private int[][] itemShape; // 아이템 정보 (0: 일반, 1: 아이템) - 회전 시 크기 변경 가능하도록 final 제거
     private int itemX, itemY; // 아이템 위치 (회전 시 업데이트 가능하도록 final 제거)
+    private int itemCellIndex; // 원본 블록에서 아이템 셀의 인덱스 (0,1,2,3...)
     
     /**
      * ItemBlock 생성자
@@ -45,14 +46,11 @@ public class ItemBlock extends Block {
         // 원본 블록의 모양과 색상을 복사
         copyOriginalBlockProperties();
         
-        // 아이템 위치 설정 (원본 블록의 셀 중 하나를 아이템으로 설정)
-        int[] itemPosition = setRandomItemPosition();
-        this.itemX = itemPosition[0];
-        this.itemY = itemPosition[1];
-        
         // 아이템 모양 배열 초기화
         this.itemShape = new int[shape.length][shape[0].length];
-        this.itemShape[itemY][itemX] = 1; // 아이템 위치 표시
+        
+        // 아이템 위치 설정 (원본 블록의 셀 중 하나를 아이템으로 설정)
+        setRandomItemPosition();
         
         System.out.println("Created ItemBlock with " + itemType.getDisplayName() + 
                           " at position (" + itemX + "," + itemY + ")");
@@ -119,8 +117,8 @@ public class ItemBlock extends Block {
      */
     private void copyOriginalBlockProperties() {
         // 원본 블록의 모양 복사
-        int height = originalBlock.height();
-        int width = originalBlock.width();
+        int height = originalBlock.shape.length; // 실제 배열 크기 사용
+        int width = originalBlock.shape[0].length; // 실제 배열 크기 사용
         this.shape = new int[height][width];
         
         for (int i = 0; i < height; i++) {
@@ -135,29 +133,32 @@ public class ItemBlock extends Block {
     
     /**
      * 원본 블록의 셀 중 하나를 랜덤하게 아이템 위치로 설정합니다.
-     * @return [x, y] 위치 배열
+     * BombItemBlock과 동일한 방식으로 셀 인덱스를 저장합니다.
      */
-    private int[] setRandomItemPosition() {
-        java.util.List<int[]> blockCells = new java.util.ArrayList<>();
+    private void setRandomItemPosition() {
+        java.util.Random random = new java.util.Random();
         
         // 블록이 있는 셀들의 위치를 찾습니다
+        java.util.List<int[]> blockCells = new java.util.ArrayList<>();
+        
         for (int i = 0; i < shape.length; i++) {
             for (int j = 0; j < shape[i].length; j++) {
                 if (shape[i][j] == 1) {
-                    blockCells.add(new int[]{j, i}); // x, y 순서
+                    blockCells.add(new int[]{i, j}); // y, x 순서 (BombItemBlock과 동일)
                 }
             }
         }
         
         // 무작위로 하나의 셀을 아이템으로 설정
         if (!blockCells.isEmpty()) {
-            java.util.Random random = new java.util.Random();
-            int randomIndex = random.nextInt(blockCells.size());
-            return blockCells.get(randomIndex);
+            itemCellIndex = random.nextInt(blockCells.size()); // 셀 인덱스 저장
+            int[] itemCell = blockCells.get(itemCellIndex);
+            itemY = itemCell[0];
+            itemX = itemCell[1];
+            itemShape[itemY][itemX] = 1; // 아이템 표시
+            
+            System.out.println("Item set at position: (" + itemX + ", " + itemY + ") with cell index: " + itemCellIndex);
         }
-        
-        // 블록 셀이 없으면 기본값 반환 (오류 방지)
-        return new int[]{0, 0};
     }
     
     /**
@@ -225,7 +226,7 @@ public class ItemBlock extends Block {
             case SPEED_UP:
                 return Color.YELLOW; // 노란색 - 속도 증가
             case VISION_BLOCK:
-                return Color.BLACK; // 검은색 - 시야 차단
+                return originalBlock.getColor(); // 원본 블록 색상 - 시야 차단
             default:
                 return Color.WHITE; // 기본값
         }
@@ -307,68 +308,153 @@ public class ItemBlock extends Block {
     @Override
     public void rotate() {
         // 원본 블록 회전
-        super.rotate();
+        originalBlock.rotate();
         
-        // 아이템 위치도 회전에 맞게 조정
-        rotateItemPosition();
+        // 회전된 모양 복사
+        copyOriginalShapeOnly();
+        
+        // 동일한 셀 인덱스의 새로운 위치로 아이템 이동
+        updateItemPositionAfterRotation();
     }
     
     /**
-     * 아이템 위치를 회전에 맞게 조정합니다.
+     * 회전 후 동일한 셀 인덱스 위치로 아이템을 이동시킵니다.
      */
-    private void rotateItemPosition() {
-        // 회전 후 새로운 shape 크기 확인
-        int height = shape.length;
-        int width = shape[0].length;
+    private void updateItemPositionAfterRotation() {
+        int oldItemX = itemX;
+        int oldItemY = itemY;
         
-        System.out.println("Rotating item position - new shape size: " + height + "x" + width);
-        System.out.println("Current itemShape size: " + itemShape.length + "x" + 
-                          (itemShape.length > 0 ? itemShape[0].length : 0));
+        // 블록 타입별 특별 처리
+        String blockType = originalBlock.getClass().getSimpleName();
         
-        // 기존 itemShape 배열을 모두 0으로 초기화
+        switch (blockType) {
+            case "OBlock":
+                // O블록: 2x2 사각형이므로 셀 인덱스 매핑이 단순함
+                handleOBlockRotation(oldItemX, oldItemY);
+                break;
+                
+            case "IBlock":
+                // I블록: 특별한 회전 상태 처리
+                handleIBlockRotation(oldItemX, oldItemY);
+                break;
+                
+            default:
+                // J, L, S, Z, T 블록: 기하학적 회전 공식 사용
+                handleGeometricRotation(oldItemX, oldItemY);
+                break;
+        }
+    }
+    
+    /**
+     * 기하학적 회전 공식을 사용하여 아이템 위치를 계산합니다.
+     * Block.java의 rotate() 공식과 동일: rotated[j][rows-1-i] = original[i][j]
+     */
+    private void handleGeometricRotation(int oldItemX, int oldItemY) {
+        // 회전 전 블록 크기 (원본 블록을 한 번 더 회전시켜서 이전 상태 확인)
+        originalBlock.rotate(); originalBlock.rotate(); originalBlock.rotate(); // 3번 더 회전 = 원래 상태로 복귀
+        int oldRows = originalBlock.shape.length; // 실제 배열 크기 사용
+        originalBlock.rotate(); // 다시 현재 상태로
+        
+        // 기하학적 회전 공식 적용: (x,y) -> (oldRows-1-y, x)
+        int newItemX = oldRows - 1 - oldItemY;
+        int newItemY = oldItemX;
+        
+        setItemAtPosition(newItemX, newItemY, oldItemX, oldItemY);
+    }
+    
+    /**
+     * O블록의 회전 처리 (2x2 정사각형)
+     */
+    private void handleOBlockRotation(int oldItemX, int oldItemY) {
+        // O블록은 2x2이므로 회전해도 상대적 위치가 유지됨
+        // 하지만 실제로는 시계방향으로 위치가 바뀜: (0,0)->(0,1)->(1,1)->(1,0)
+        int newItemX, newItemY;
+        
+        if (oldItemX == 0 && oldItemY == 0) {      // 좌상 -> 우상
+            newItemX = 1; newItemY = 0;
+        } else if (oldItemX == 1 && oldItemY == 0) { // 우상 -> 우하  
+            newItemX = 1; newItemY = 1;
+        } else if (oldItemX == 1 && oldItemY == 1) { // 우하 -> 좌하
+            newItemX = 0; newItemY = 1;
+        } else {                                   // 좌하 -> 좌상
+            newItemX = 0; newItemY = 0;
+        }
+        
+        setItemAtPosition(newItemX, newItemY, oldItemX, oldItemY);
+    }
+    
+    /**
+     * I블록의 회전 처리
+     */
+    private void handleIBlockRotation(int oldItemX, int oldItemY) {
+        // I블록이 일반 블록의 회전 공식을 사용하므로 기하학적 회전 적용
+        handleGeometricRotation(oldItemX, oldItemY);
+    }
+    
+    /**
+     * 아이템을 새로운 위치에 설정하고 로그를 출력합니다.
+     */
+    private void setItemAtPosition(int newItemX, int newItemY, int oldItemX, int oldItemY) {
+        // 범위 체크
+        if (newItemY >= 0 && newItemY < itemShape.length && 
+            newItemX >= 0 && newItemX < itemShape[newItemY].length) {
+            
+            itemX = newItemX;
+            itemY = newItemY;
+            
+            // itemShape 재초기화
+            clearItemShape();
+            itemShape[itemY][itemX] = 1;
+            
+            System.out.println("Item rotated from (" + oldItemX + ", " + oldItemY + ") to (" + itemX + ", " + itemY + ") [index: " + itemCellIndex + "]");
+        } else {
+            System.out.println("Warning: Item position out of bounds after rotation!");
+        }
+    }
+    
+    /**
+     * 원본 블록의 모양만 복사합니다 (itemShape는 건드리지 않음).
+     */
+    private void copyOriginalShapeOnly() {
+        int height = originalBlock.shape.length; // 실제 배열 크기 사용
+        int width = originalBlock.shape[0].length; // 실제 배열 크기 사용
+        
+        shape = new int[height][width];
+        
+        for (int i = 0; i < height; i++) {
+            for (int j = 0; j < width; j++) {
+                shape[i][j] = originalBlock.getShape(j, i);
+            }
+        }
+        
+        // itemShape 배열 크기 조정 (기존 데이터는 유지하되 크기만 맞춤)
+        if (itemShape == null || itemShape.length != height || itemShape[0].length != width) {
+            int[][] newItemShape = new int[height][width];
+            itemShape = newItemShape;
+        }
+    }
+    
+    /**
+     * itemShape 배열을 초기화합니다.
+     */
+    private void clearItemShape() {
         for (int i = 0; i < itemShape.length; i++) {
             for (int j = 0; j < itemShape[i].length; j++) {
                 itemShape[i][j] = 0;
             }
         }
-        
-        // 회전 후 블록이 있는 셀 중에서 새로운 아이템 위치를 찾음
-        boolean positionFound = false;
-        
-        // 먼저 기존 아이템 위치가 여전히 유효한지 확인
-        if (itemY >= 0 && itemY < height && itemX >= 0 && itemX < width && 
-            itemY < itemShape.length && itemX < itemShape[0].length && shape[itemY][itemX] == 1) {
-            // 기존 위치가 여전히 유효하면 그 위치 사용
-            itemShape[itemY][itemX] = 1;
-            positionFound = true;
-            System.out.println("Item position remained valid after rotation: (" + itemX + ", " + itemY + ")");
-        } else {
-            // 기존 위치가 유효하지 않으면 새로운 위치 찾기
-            System.out.println("Original item position (" + itemX + ", " + itemY + ") is invalid after rotation, finding new position");
-            
-            // 블록이 있는 첫 번째 셀을 아이템 위치로 설정
-            for (int i = 0; i < Math.min(height, itemShape.length) && !positionFound; i++) {
-                for (int j = 0; j < Math.min(width, itemShape[0].length) && !positionFound; j++) {
-                    if (shape[i][j] == 1) {
-                        itemX = j;
-                        itemY = i;
-                        itemShape[i][j] = 1;
-                        positionFound = true;
-                        System.out.println("Found new item position after rotation: (" + itemX + ", " + itemY + ")");
-                    }
-                }
-            }
-        }
-        
-        // 만약 블록이 없는 경우 (이론적으로 불가능하지만 안전을 위해)
-        if (!positionFound) {
-            System.out.println("Warning: No valid position found after rotation, using first available position");
-            if (itemShape.length > 0 && itemShape[0].length > 0) {
-                itemX = 0;
-                itemY = 0;
-                itemShape[0][0] = 1;
-            }
-        }
+    }
+    
+    /**
+     * 회전이 가능한지 확인합니다 (원본 블록을 기준으로).
+     * @param board 게임 보드
+     * @param x 현재 x 위치
+     * @param y 현재 y 위치
+     * @return 회전 가능 여부
+     */
+    public boolean canRotate(int[][] board, int x, int y) {
+        // 원본 블록의 canRotate 메소드를 직접 사용
+        return originalBlock.canRotate(x, y, board, board[0].length, board.length);
     }
     
     /**
