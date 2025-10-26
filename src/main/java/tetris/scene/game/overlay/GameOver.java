@@ -473,7 +473,8 @@ class Container extends Animation {
 
         int y = -1;
         LayoutManager lm = getLayout();
-        if (lm instanceof BorderLayout bl) {
+        if (lm instanceof BorderLayout) {
+            BorderLayout bl = (BorderLayout) lm;
             Component north = bl.getLayoutComponent(BorderLayout.NORTH);
             if (north != null && north.isVisible()) {
                 y = north.getY() + north.getHeight();

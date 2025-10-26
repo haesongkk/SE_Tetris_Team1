@@ -492,7 +492,8 @@ public class BlockManager {
                             boardManager.getBoardColors(), 
                             x, 
                             y,
-                            scoreManager
+                            scoreManager,
+                            boardManager  // 아이템 셀 정보 삭제를 위해 BoardManager 추가
                         );
                         
                         if (clearedCount > 0) {

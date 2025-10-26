@@ -70,14 +70,15 @@ public class RenderManager {
         // 게임 보드 경계 및 그리드 렌더링
         renderGameBoardFrame(g2d);
         
-        // 고정된 블록들 렌더링
-        renderFixedBlocks(g2d, lineBlinkEffect);
+        // 고정된 블록들 렌더링 (점멸 중인 셀들은 제외)
+        renderFixedBlocks(g2d, lineBlinkEffect, cleanupBlinkingActive, cleanupBlinkingCells);
         
         // 줄 점멸 효과 렌더링
         renderLineBlinkEffect(g2d, lineBlinkEffect);
         
         // 점멸 효과가 진행 중이 아닐 때만 현재 블록과 고스트 블록 렌더링
-        if (lineBlinkEffect == null || !lineBlinkEffect.isActive()) {
+        // (줄 삭제 점멸 또는 청소 아이템 점멸 모두 체크)
+        if ((lineBlinkEffect == null || !lineBlinkEffect.isActive()) && !cleanupBlinkingActive) {
             // 고스트 블록 렌더링 (하드드롭 미리보기)
             renderGhostBlock(g2d);
             
@@ -167,7 +168,8 @@ public class RenderManager {
     /**
      * 고정된 블록들을 렌더링합니다.
      */
-    private void renderFixedBlocks(Graphics2D g2d, LineBlinkEffect lineBlinkEffect) {
+    private void renderFixedBlocks(Graphics2D g2d, LineBlinkEffect lineBlinkEffect, 
+                                  boolean cleanupBlinkingActive, java.util.Set<java.awt.Point> cleanupBlinkingCells) {
         int[][] board = boardManager.getBoard();
         Color[][] boardColors = boardManager.getBoardColors();
         
@@ -178,6 +180,12 @@ public class RenderManager {
             }
             
             for (int col = 0; col < GAME_WIDTH; col++) {
+                // 청소 점멸 중인 셀은 renderCleanupBlinkingEffect에서 처리하므로 건너뜁니다
+                if (cleanupBlinkingActive && cleanupBlinkingCells != null && 
+                    cleanupBlinkingCells.contains(new java.awt.Point(col, row))) {
+                    continue;
+                }
+                
                 if (board[row][col] == 1) {
                     int drawX = (col + 1) * CELL_SIZE + 1;
                     int drawY = (row + 1) * CELL_SIZE + 1;
@@ -679,13 +687,21 @@ public class RenderManager {
      * 청소 블링킹 효과를 렌더링합니다 (기존 줄 삭제와 동일한 방식).
      */
     private void renderCleanupBlinkingEffect(Graphics2D g2d, java.util.Set<java.awt.Point> blinkingCells) {
-        // 기존 줄 삭제와 동일한 150ms 주기 블링킹
+        // LineBlinkEffect와 완전히 동일한 점멸 패턴 구현
         long currentTime = System.currentTimeMillis();
-        long elapsed = currentTime % 300; // 150ms * 2 = 300ms 주기 (토글)
-        boolean blinkState = elapsed < 150; // 전반부 150ms는 true, 후반부 150ms는 false
+        long elapsed = currentTime % 900; // 900ms 전체 주기
+        
+        // LineBlinkEffect와 동일한 점멸 계산: 150ms마다 토글, 3번만 점멸
+        int cycle = (int)(elapsed / 150); // 150ms 단위로 사이클 계산
+        boolean blinkState = (cycle % 2 == 0); // 짝수 사이클에서 점멸
+        
+        // 3번만 점멸하도록 제한 (cycle 0,2,4만 점멸)
+        if (cycle >= 6) {
+            blinkState = false;
+        }
         
         if (blinkState) {
-            // 블링킹 상태: 원래 블록들을 30% 투명도로 희미하게 표시
+            // 블링킹 상태: LineBlinkEffect와 완전히 동일한 렌더링
             int boardStartX = CELL_SIZE;
             int boardStartY = CELL_SIZE;
             
@@ -696,17 +712,17 @@ public class RenderManager {
                 // BoardManager에서 해당 위치의 원래 색상 가져오기
                 Color originalColor = boardManager.getBoardColor(cell.x, cell.y);
                 if (originalColor != null) {
-                    // 원래 색상을 30% 투명도로 희미하게 만들기
+                    // LineBlinkEffect와 동일한 색상 처리: 원래 색상을 30% 투명도로 희미하게 만들기
                     Color dimColor = new Color(
                         originalColor.getRed(),
                         originalColor.getGreen(),
                         originalColor.getBlue(),
-                        80  // 30% 투명도로 더 희미하게
+                        80  // LineBlinkEffect와 동일한 30% 투명도
                     );
                     g2d.setColor(dimColor);
                     g2d.fillRect(cellX + 1, cellY + 1, CELL_SIZE - 2, CELL_SIZE - 2);
                     
-                    // 희미한 테두리
+                    // LineBlinkEffect와 동일한 희미한 테두리
                     Color dimBorderColor = new Color(0, 0, 0, 128);
                     g2d.setColor(dimBorderColor);
                     g2d.setStroke(new BasicStroke(1));
@@ -714,7 +730,7 @@ public class RenderManager {
                 }
             }
         }
-        // blinkState가 false일 때는 원래 블록들이 그려지므로 별도 처리 불필요
+        // blinkState가 false일 때는 원래 블록들이 그려지므로 별도 처리 불필요 (LineBlinkEffect와 동일)
     }
     
     /**

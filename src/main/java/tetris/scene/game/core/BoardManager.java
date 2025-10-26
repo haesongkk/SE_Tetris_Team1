@@ -759,5 +759,63 @@ public class BoardManager {
         }
         return null;
     }
+    
+    /**
+     * 지정된 영역에서 삭제된 블록들로 인해 위에 있는 블록들을 아래로 내립니다.
+     * 각 열별로 중력을 적용하여 빈 공간을 채웁니다.
+     * 
+     * @param minX 영향받는 영역의 최소 X 좌표
+     * @param maxX 영향받는 영역의 최대 X 좌표  
+     * @param minY 영향받는 영역의 최소 Y 좌표
+     * @param maxY 영향받는 영역의 최대 Y 좌표
+     */
+    public void compactColumns(int minX, int maxX, int minY, int maxY) {
+        System.out.println("Compacting columns in area: (" + minX + "," + minY + ") to (" + maxX + "," + maxY + ")");
+        
+        // 각 열별로 중력 적용
+        for (int col = minX; col <= maxX; col++) {
+            if (col < 0 || col >= GAME_WIDTH) continue;
+            
+            int writeRow = maxY; // 아래부터 채워나갈 위치
+            
+            // 아래에서 위로 올라가면서 빈 공간이 아닌 블록들만 아래로 이동
+            for (int readRow = maxY; readRow >= 0; readRow--) {
+                if (board[readRow][col] != 0) {
+                    // 블록이 있으면 writeRow 위치로 이동
+                    if (writeRow != readRow) {
+                        System.out.println("Moving block from (" + col + "," + readRow + ") to (" + col + "," + writeRow + ")");
+                        
+                        // 블록 데이터 이동
+                        board[writeRow][col] = board[readRow][col];
+                        boardColors[writeRow][col] = boardColors[readRow][col];
+                        bombCells[writeRow][col] = bombCells[readRow][col];
+                        itemCells[writeRow][col] = itemCells[readRow][col];
+                        itemBlockInfo[writeRow][col] = itemBlockInfo[readRow][col];
+                        
+                        // 원래 위치는 비우기
+                        board[readRow][col] = 0;
+                        boardColors[readRow][col] = null;
+                        bombCells[readRow][col] = false;
+                        itemCells[readRow][col] = false;
+                        itemBlockInfo[readRow][col] = null;
+                    }
+                    writeRow--; // 다음에 채울 위치로 이동
+                }
+            }
+            
+            // 나머지 위쪽 칸들은 비우기
+            for (int row = writeRow; row >= 0; row--) {
+                if (board[row][col] != 0) {
+                    board[row][col] = 0;
+                    boardColors[row][col] = null;
+                    bombCells[row][col] = false;
+                    itemCells[row][col] = false;
+                    itemBlockInfo[row][col] = null;
+                }
+            }
+        }
+        
+        System.out.println("Column compaction completed");
+    }
 
 }
