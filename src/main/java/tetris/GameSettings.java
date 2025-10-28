@@ -349,4 +349,120 @@ public class GameSettings {
             getVolumeString()
         );
     }
+    
+    // 설정을 파일에 저장
+    public void saveSettings() {
+        try {
+            java.io.File settingsFile = new java.io.File("./data/settings.txt");
+            // data 폴더가 없으면 생성
+            if (!settingsFile.getParentFile().exists()) {
+                settingsFile.getParentFile().mkdirs();
+            }
+            
+            try (java.io.PrintWriter writer = new java.io.PrintWriter(new java.io.FileWriter(settingsFile))) {
+                writer.println("# Game Settings");
+                writer.println("displayMode=" + displayMode);
+                writer.println("resolution=" + resolution);
+                writer.println("colorBlindMode=" + colorBlindMode);
+                writer.println("difficulty=" + difficulty.ordinal());
+                writer.println("leftKey=" + leftKey);
+                writer.println("rightKey=" + rightKey);
+                writer.println("rotateKey=" + rotateKey);
+                writer.println("fallKey=" + fallKey);
+                writer.println("dropKey=" + dropKey);
+                writer.println("pauseKey=" + pauseKey);
+                writer.println("holdKey=" + holdKey);
+                writer.println("exitKey=" + exitKey);
+                writer.println("volume=" + volume);
+                writer.println("isMuted=" + isMuted);
+            }
+            System.out.println("설정이 저장되었습니다: " + settingsFile.getAbsolutePath());
+        } catch (java.io.IOException e) {
+            System.err.println("설정 저장 중 오류 발생: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    // 파일에서 설정 로드
+    public void loadSettings() {
+        try {
+            java.io.File settingsFile = new java.io.File("./data/settings.txt");
+            if (!settingsFile.exists()) {
+                System.out.println("설정 파일이 없습니다. 기본 설정을 사용합니다.");
+                return;
+            }
+            
+            try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(settingsFile))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    line = line.trim();
+                    // 주석이나 빈 줄 무시
+                    if (line.startsWith("#") || line.isEmpty()) {
+                        continue;
+                    }
+                    
+                    // key=value 형식 파싱
+                    String[] parts = line.split("=", 2);
+                    if (parts.length != 2) continue;
+                    
+                    String key = parts[0].trim();
+                    String value = parts[1].trim();
+                    
+                    try {
+                        switch (key) {
+                            case "displayMode":
+                                displayMode = Integer.parseInt(value);
+                                break;
+                            case "resolution":
+                                resolution = Integer.parseInt(value);
+                                break;
+                            case "colorBlindMode":
+                                colorBlindMode = Integer.parseInt(value);
+                                break;
+                            case "difficulty":
+                                int diffIndex = Integer.parseInt(value);
+                                difficulty = Difficulty.values()[diffIndex];
+                                break;
+                            case "leftKey":
+                                leftKey = Integer.parseInt(value);
+                                break;
+                            case "rightKey":
+                                rightKey = Integer.parseInt(value);
+                                break;
+                            case "rotateKey":
+                                rotateKey = Integer.parseInt(value);
+                                break;
+                            case "fallKey":
+                                fallKey = Integer.parseInt(value);
+                                break;
+                            case "dropKey":
+                                dropKey = Integer.parseInt(value);
+                                break;
+                            case "pauseKey":
+                                pauseKey = Integer.parseInt(value);
+                                break;
+                            case "holdKey":
+                                holdKey = Integer.parseInt(value);
+                                break;
+                            case "exitKey":
+                                exitKey = Integer.parseInt(value);
+                                break;
+                            case "volume":
+                                volume = Integer.parseInt(value);
+                                break;
+                            case "isMuted":
+                                isMuted = Boolean.parseBoolean(value);
+                                break;
+                        }
+                    } catch (Exception e) {
+                        System.err.println("설정 값 파싱 오류: " + key + "=" + value);
+                    }
+                }
+            }
+            System.out.println("설정이 로드되었습니다.");
+        } catch (java.io.IOException e) {
+            System.err.println("설정 로드 중 오류 발생: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 }
