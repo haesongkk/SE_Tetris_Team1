@@ -254,7 +254,6 @@ public class ScoreScene extends Scene {
         this.headerAnim.setBackground(Theme.BG());
         this.footerAnim.setBackground(Theme.BG());
         for(Animation a: rowAnims) a.setBackground(Theme.BG());
-        for(Animation a: rowAnims) a.setBorderColor(Theme.BG());
         for(Animation a: buttonAnims) a.setBackground(Theme.BG());
     }
 
@@ -341,6 +340,11 @@ public class ScoreScene extends Scene {
     }
 
     void setBorder() {
+
+        this.headerAnim.setBorderColor(Theme.BG());
+        this.footerAnim.setBorderColor(Theme.BG());
+        for(Animation a: rowAnims) a.setBorderColor(Theme.BG());
+        for(Animation a: buttonAnims) a.setBorderColor(Theme.BG());
 
         // 버튼 패널 좌우 여백
         int padding = Theme.getPixelWidth(0.25f);

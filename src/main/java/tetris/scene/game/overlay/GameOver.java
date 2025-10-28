@@ -172,11 +172,14 @@ public class GameOver extends JPanel {
         centerContainer.setBackground(Theme.BG());
         bottomContainer.setBackground(Theme.BG());
 
+
         for(int i = 0; i < ITEM_COUNT; i++) {
-            itemKeyContainers[i].setBackground(Theme.LIGHT_GRAY);
-            itemKeyLabels[i].setBackground(Theme.BLACK);
-            itemKeyLabels[i].setOpaque(true);
+            itemKeyContainers[i].setBackground(Theme.BG());
             itemValueContainers[i].setBackground(Theme.BG());
+            itemKeyLabels[i].setBackground(Theme.BG());
+            itemKeyLabels[i].setOpaque(true);
+            itemValueLabels[i].setOpaque(true);
+            itemValueLabels[i].setBackground(Theme.BG());
         }
 
     }
@@ -259,6 +262,11 @@ public class GameOver extends JPanel {
      }
 
     void setBorders() { 
+
+        mainContainer.setBorderColor(Theme.BG());
+        topContainer.setBorderColor(Theme.BG());
+        bottomContainer.setBorderColor(Theme.BG());
+
         // 실제 창 크기 사용 (동적 크기 조정)
         final int[] screenSize = getActualScreenSize();
 
@@ -273,7 +281,7 @@ public class GameOver extends JPanel {
         mainContainer.setBorderThickness(thickness);
 
         final int marginTB = Theme.getPixelWidth(0.025f);
-        mainContainer.setBorder(BorderFactory.createEmptyBorder(marginTB, thickness + 1, marginTB, thickness));
+        mainContainer.setBorder(BorderFactory.createEmptyBorder(marginTB, thickness + 1, marginTB, thickness + 1));
 
         final int paddingV = Theme.getPixelWidth(0.01f);
         final int centerMarginLeft = Theme.getPixelWidth(0.05f);
