@@ -42,6 +42,8 @@ public class ScoreScene extends Scene {
     HighScore highScore;
 
     EscapeHandler escHandler;
+    KeyEventDispatcher tabDispatcher;
+
 
     boolean bAnimationEnd = false;
     
@@ -145,6 +147,38 @@ public class ScoreScene extends Scene {
         this.frame.setContentPane(this);
         super.revalidate();
 
+        tabDispatcher = new KeyEventDispatcher() {
+            @Override
+            public boolean dispatchKeyEvent(KeyEvent e) {
+                if (e.getID() == KeyEvent.KEY_PRESSED){
+                    int code = e.getKeyCode();
+                    if(code == KeyEvent.VK_TAB || code == KeyEvent.VK_RIGHT){
+                        int index = 0;
+                        for(index = 0; index < BUTTON_TEXT.length; index++)
+                            if(buttons[index].getForeground() == Theme.WHITE)
+                                break;
+                        int next = (index + 1) % BUTTON_TEXT.length;
+                        onButtonClick(BUTTON_TEXT[next]);
+
+                        return true;
+                    } else if (code == KeyEvent.VK_LEFT) {
+                        int index = 0;
+                        for(index = 0; index < BUTTON_TEXT.length; index++)
+                            if(buttons[index].getForeground() == Theme.WHITE)
+                                break;
+                        int next = --index < 0 ? BUTTON_TEXT.length - 1 : index;
+                        onButtonClick(BUTTON_TEXT[next]);
+
+                        return true;
+                    }
+                }
+                
+                return false;
+            }
+        };
+        KeyboardFocusManager.getCurrentKeyboardFocusManager()
+                .addKeyEventDispatcher(tabDispatcher);
+
 
 
     }
@@ -157,6 +191,9 @@ public class ScoreScene extends Scene {
     public void onExit() { }
 
     void release() {
+        KeyboardFocusManager.getCurrentKeyboardFocusManager()
+                    .removeKeyEventDispatcher(tabDispatcher);
+        
         if(this.escHandler != null) {
             this.escHandler.release();
             this.escHandler = null;
