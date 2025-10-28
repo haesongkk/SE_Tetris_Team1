@@ -11,6 +11,7 @@ public class IBlock extends Block {
 			{1, 1, 1, 1}, 
 			{0, 0, 0, 0}
 		};
+		type = 4; // I 블록 타입
 		// ColorBlindHelper를 사용하여 색맹 모드에 따른 색상 설정
 		int colorBlindMode = GameSettings.getInstance().getColorBlindMode();
 		color = ColorBlindHelper.getBlockColor(4, colorBlindMode); // I블록은 타입 4

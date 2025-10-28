@@ -11,6 +11,7 @@ public class SBlock extends Block {
 			{0, 1, 1},
 			{1, 1, 0}
 		};
+		type = 3; // S 블록 타입
 		// ColorBlindHelper를 사용하여 색맹 모드에 따른 색상 설정
 		int colorBlindMode = GameSettings.getInstance().getColorBlindMode();
 		color = ColorBlindHelper.getBlockColor(3, colorBlindMode); // S블록은 타입 3

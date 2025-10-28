@@ -11,6 +11,7 @@ public class ZBlock extends Block {
 			{1, 1, 0},
 			{0, 1, 1}
 		};
+		type = 0; // Z 블록 타입
 		// ColorBlindHelper를 사용하여 색맹 모드에 따른 색상 설정
 		int colorBlindMode = GameSettings.getInstance().getColorBlindMode();
 		color = ColorBlindHelper.getBlockColor(0, colorBlindMode); // Z블록은 타입 0

@@ -19,6 +19,7 @@ public class BoardManager {
     
     private int[][] board; // 게임 보드 상태 (0: 빈칸, 1: 블록 있음)
     private Color[][] boardColors; // 각 셀의 색상 정보
+    private int[][] boardTypes; // 각 셀의 블록 타입 정보 (패턴 그리기용)
     private boolean[][] bombCells; // 폭탄 셀 정보 (아이템 모드용)
     private boolean[][] itemCells; // 아이템 셀 정보 (ItemBlock용)
     private ItemBlock[][] itemBlockInfo; // 아이템 블록 정보 저장 (이미지 렌더링용)
@@ -36,6 +37,7 @@ public class BoardManager {
     private void initializeBoard() {
         board = new int[GAME_HEIGHT][GAME_WIDTH];
         boardColors = new Color[GAME_HEIGHT][GAME_WIDTH];
+        boardTypes = new int[GAME_HEIGHT][GAME_WIDTH];
         bombCells = new boolean[GAME_HEIGHT][GAME_WIDTH];
         itemCells = new boolean[GAME_HEIGHT][GAME_WIDTH];
         itemBlockInfo = new ItemBlock[GAME_HEIGHT][GAME_WIDTH];
@@ -45,6 +47,7 @@ public class BoardManager {
             for (int j = 0; j < GAME_WIDTH; j++) {
                 board[i][j] = 0;
                 boardColors[i][j] = null;
+                boardTypes[i][j] = -1; // -1은 빈 셀을 의미
                 bombCells[i][j] = false;
                 itemCells[i][j] = false;
                 itemBlockInfo[i][j] = null;
@@ -101,6 +104,9 @@ public class BoardManager {
                     if (boardY >= 0 && boardY < GAME_HEIGHT && 
                         boardX >= 0 && boardX < GAME_WIDTH) {
                         board[boardY][boardX] = 1;
+                        
+                        // 블록 타입 저장 (패턴 그리기용)
+                        boardTypes[boardY][boardX] = block.getType();
                         
                         // 아이템 블록인 경우 특별 처리
                         if (block instanceof BombItemBlock) {
@@ -217,6 +223,7 @@ public class BoardManager {
                     for (int col = 0; col < GAME_WIDTH; col++) {
                         board[writeRow][col] = board[readRow][col];
                         boardColors[writeRow][col] = boardColors[readRow][col];
+                        boardTypes[writeRow][col] = boardTypes[readRow][col];
                         bombCells[writeRow][col] = bombCells[readRow][col];
                     }
                 }
@@ -229,6 +236,7 @@ public class BoardManager {
             for (int col = 0; col < GAME_WIDTH; col++) {
                 board[writeRow][col] = 0;
                 boardColors[writeRow][col] = null;
+                boardTypes[writeRow][col] = -1;
                 bombCells[writeRow][col] = false;
             }
             writeRow--;
@@ -383,6 +391,7 @@ public class BoardManager {
                 for (int col = 0; col < GAME_WIDTH; col++) {
                     board[writeRow][col] = board[readRow][col];
                     boardColors[writeRow][col] = boardColors[readRow][col];
+                    boardTypes[writeRow][col] = boardTypes[readRow][col];
                     bombCells[writeRow][col] = bombCells[readRow][col];
                     itemCells[writeRow][col] = itemCells[readRow][col];
                     itemBlockInfo[writeRow][col] = itemBlockInfo[readRow][col];
@@ -398,6 +407,7 @@ public class BoardManager {
             for (int col = 0; col < GAME_WIDTH; col++) {
                 board[writeRow][col] = 0;
                 boardColors[writeRow][col] = null;
+                boardTypes[writeRow][col] = -1;
                 bombCells[writeRow][col] = false;
                 itemCells[writeRow][col] = false;
                 itemBlockInfo[writeRow][col] = null;
@@ -482,6 +492,7 @@ public class BoardManager {
     // Getter 메서드들
     public int[][] getBoard() { return board; }
     public Color[][] getBoardColors() { return boardColors; }
+    public int[][] getBoardTypes() { return boardTypes; }
     public boolean[][] getBombCells() { return bombCells; }
     public int getWidth() { return GAME_WIDTH; }
     public int getHeight() { return GAME_HEIGHT; }
@@ -681,6 +692,7 @@ public class BoardManager {
             for (int col = 0; col < GAME_WIDTH; col++) {
                 board[row][col] = board[row - 1][col];
                 boardColors[row][col] = boardColors[row - 1][col];
+                boardTypes[row][col] = boardTypes[row - 1][col];
                 bombCells[row][col] = bombCells[row - 1][col];
                 itemCells[row][col] = itemCells[row - 1][col];
                 itemBlockInfo[row][col] = itemBlockInfo[row - 1][col];
@@ -691,6 +703,7 @@ public class BoardManager {
         for (int col = 0; col < GAME_WIDTH; col++) {
             board[0][col] = 0;
             boardColors[0][col] = null;
+            boardTypes[0][col] = -1;
             bombCells[0][col] = false;
             itemCells[0][col] = false;
             itemBlockInfo[0][col] = null;
@@ -788,6 +801,7 @@ public class BoardManager {
                         // 블록 데이터 이동
                         board[writeRow][col] = board[readRow][col];
                         boardColors[writeRow][col] = boardColors[readRow][col];
+                        boardTypes[writeRow][col] = boardTypes[readRow][col];
                         bombCells[writeRow][col] = bombCells[readRow][col];
                         itemCells[writeRow][col] = itemCells[readRow][col];
                         itemBlockInfo[writeRow][col] = itemBlockInfo[readRow][col];
@@ -795,6 +809,7 @@ public class BoardManager {
                         // 원래 위치는 비우기
                         board[readRow][col] = 0;
                         boardColors[readRow][col] = null;
+                        boardTypes[readRow][col] = -1;
                         bombCells[readRow][col] = false;
                         itemCells[readRow][col] = false;
                         itemBlockInfo[readRow][col] = null;
@@ -808,6 +823,7 @@ public class BoardManager {
                 if (board[row][col] != 0) {
                     board[row][col] = 0;
                     boardColors[row][col] = null;
+                    boardTypes[row][col] = -1;
                     bombCells[row][col] = false;
                     itemCells[row][col] = false;
                     itemBlockInfo[row][col] = null;
