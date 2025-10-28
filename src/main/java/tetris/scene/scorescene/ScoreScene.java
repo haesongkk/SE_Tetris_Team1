@@ -191,8 +191,12 @@ public class ScoreScene extends Scene {
     public void onExit() { }
 
     void release() {
-        KeyboardFocusManager.getCurrentKeyboardFocusManager()
-                    .removeKeyEventDispatcher(tabDispatcher);
+        if(tabDispatcher != null) {
+            KeyboardFocusManager.getCurrentKeyboardFocusManager()
+                .removeKeyEventDispatcher(tabDispatcher);
+            tabDispatcher = null;
+        }
+        
         
         if(this.escHandler != null) {
             this.escHandler.release();

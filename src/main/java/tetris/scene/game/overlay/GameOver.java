@@ -75,7 +75,7 @@ public class GameOver extends JPanel {
     HighScore highScore = new HighScore(TABLE_FILE);
 
     EscapeHandler escHandler;
-    
+    KeyEventDispatcher enterDispatcher;
 
     public GameOver(JFrame frame, int score, int lines, int time, String difficulty){
         this.SCORE = score;
@@ -133,6 +133,22 @@ public class GameOver extends JPanel {
             tetris.util.Theme.setCurrentFrame(frame);
         }
 
+        if(RANK >= 10) {
+            enterDispatcher = new KeyEventDispatcher() {
+                @Override
+                public boolean dispatchKeyEvent(KeyEvent e) {
+                    if (e.getID() == KeyEvent.KEY_PRESSED && e.getKeyCode() == KeyEvent.VK_ENTER){
+                        onButtonClick();
+                        return true;
+                    }
+                    return false;
+                }
+            };
+            KeyboardFocusManager.getCurrentKeyboardFocusManager()
+                .addKeyEventDispatcher(enterDispatcher);
+        } else enterDispatcher = null;
+        
+        
         run();
     }
 
@@ -328,6 +344,7 @@ public class GameOver extends JPanel {
         ((AbstractDocument) nameField.getDocument())
         .setDocumentFilter(new NoCommaFilter());
 
+
     }
 
     void run() {
@@ -363,7 +380,12 @@ public class GameOver extends JPanel {
             offset,  () -> {
                 bottomContainer.move(BOTTOM_ANIM_DURATION, 0, 100);
                 this.bRunEnd = true;
-                if(RANK < 10) mainContainer.setBadgeAnimation();
+                if(RANK < 10) {
+                    mainContainer.setBadgeAnimation();
+                    SwingUtilities.invokeLater(() -> nameField.requestFocusInWindow());
+                }
+
+                
             }
         );
 
@@ -385,6 +407,12 @@ public class GameOver extends JPanel {
 
 
     public void release() {
+        if(enterDispatcher != null) {
+            KeyboardFocusManager.getCurrentKeyboardFocusManager()
+                .removeKeyEventDispatcher(enterDispatcher);
+            enterDispatcher = null;
+        }
+        
         if(this.escHandler != null) {
             this.escHandler.release();
             this.escHandler = null;
