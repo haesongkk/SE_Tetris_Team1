@@ -11,6 +11,7 @@ public class OBlock extends Block {
 			{1, 1}, 
 			{1, 1}
 		};
+		type = 2; // O 블록 타입
 		// ColorBlindHelper를 사용하여 색맹 모드에 따른 색상 설정
 		int colorBlindMode = GameSettings.getInstance().getColorBlindMode();
 		color = ColorBlindHelper.getBlockColor(2, colorBlindMode); // O블록은 타입 2

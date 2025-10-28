@@ -6,6 +6,8 @@ import tetris.scene.game.blocks.BombItemBlock;
 import tetris.scene.game.blocks.ItemBlock;
 import tetris.scene.game.blocks.WeightItemBlock;
 import tetris.util.LineBlinkEffect;
+import tetris.ColorBlindHelper;
+import tetris.GameSettings;
 
 import java.awt.*;
 import java.awt.BasicStroke;
@@ -239,6 +241,16 @@ public class RenderManager {
                         if (blockColor != null) {
                             g2d.setColor(blockColor);
                             g2d.fillRect(drawX, drawY, CELL_SIZE - 2, CELL_SIZE - 2);
+                            
+                            // 색맹 모드에서 패턴 추가
+                            int colorBlindMode = tetris.GameSettings.getInstance().getColorBlindMode();
+                            if (colorBlindMode > 0) {
+                                int[][] boardTypes = boardManager.getBoardTypes();
+                                int blockType = boardTypes[row][col];
+                                if (blockType >= 0) {
+                                    tetris.ColorBlindHelper.drawBlockPattern(g2d, blockType, drawX, drawY, CELL_SIZE - 2, colorBlindMode, blockColor);
+                                }
+                            }
                         }
                     }
                     
@@ -361,8 +373,16 @@ public class RenderManager {
                             }
                         } else {
                             // 일반 블록 그리기
-                            g2d.setColor(blockToDraw.getColor());
+                            Color blockColor = blockToDraw.getColor();
+                            g2d.setColor(blockColor);
                             g2d.fillRect(drawX, drawY, CELL_SIZE - 2, CELL_SIZE - 2);
+                            
+                            // 색맹 모드에서 패턴 추가
+                            int colorBlindMode = tetris.GameSettings.getInstance().getColorBlindMode();
+                            if (colorBlindMode > 0) {
+                                int blockType = blockToDraw.getType();
+                                tetris.ColorBlindHelper.drawBlockPattern(g2d, blockType, drawX, drawY, CELL_SIZE - 2, colorBlindMode, blockColor);
+                            }
                         }
                         
                         // 현재 블록 테두리
@@ -431,8 +451,16 @@ public class RenderManager {
                     
                     // 아이템 이미지가 렌더링되지 않은 셀은 일반 블록으로 렌더링
                     if (!itemRenderedForThisCell) {
-                        g2d.setColor(nextBlock.getColor());
+                        Color blockColor = nextBlock.getColor();
+                        g2d.setColor(blockColor);
                         g2d.fillRect(drawX, drawY, PREVIEW_CELL_SIZE - 4, PREVIEW_CELL_SIZE - 4);
+                        
+                        // 색맹 모드에서 패턴 추가
+                        int colorBlindMode = GameSettings.getInstance().getColorBlindMode();
+                        if (colorBlindMode > 0) {
+                            int blockType = nextBlock.getType();
+                            ColorBlindHelper.drawBlockPattern(g2d, blockType, drawX, drawY, PREVIEW_CELL_SIZE - 4, colorBlindMode, blockColor);
+                        }
                         
                         // 블록 테두리
                         g2d.setColor(Color.BLACK);

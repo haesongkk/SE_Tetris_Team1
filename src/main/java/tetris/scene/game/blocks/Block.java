@@ -6,6 +6,7 @@ public abstract class Block {
 		
 	protected int[][] shape;//
 	protected Color color;
+	protected int type; // 블록 타입 (0-6: Z, L, O, S, I, J, T)
 	
 	public Block() {
 		shape = new int[][]{ 
@@ -13,6 +14,7 @@ public abstract class Block {
 				{1, 1}
 		};
 		color = Color.YELLOW;
+		type = 0; // 기본값
 	}
 	
 	public int getShape(int x, int y) {
@@ -24,6 +26,10 @@ public abstract class Block {
 	
 	public Color getColor() {
 		return color;
+	}
+	
+	public int getType() {
+		return type;
 	}
 	
 	public void rotate() {
