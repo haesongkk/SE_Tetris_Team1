@@ -13,6 +13,9 @@ public class Game {
     JFrame frame;
 
     public static void run() {
+        // 설정 파일 로드
+        GameSettings.getInstance().loadSettings();
+        
         instance.frame = new JFrame("Tetris");                                  // 게임 창 생성
         instance.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);                // 창 닫기 시 프로그램 종료
         instance.frame.setVisible(true);                                            // 창 표시

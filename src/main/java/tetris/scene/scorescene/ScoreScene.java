@@ -42,6 +42,8 @@ public class ScoreScene extends Scene {
     HighScore highScore;
 
     EscapeHandler escHandler;
+    KeyEventDispatcher tabDispatcher;
+
 
     boolean bAnimationEnd = false;
     
@@ -145,6 +147,38 @@ public class ScoreScene extends Scene {
         this.frame.setContentPane(this);
         super.revalidate();
 
+        tabDispatcher = new KeyEventDispatcher() {
+            @Override
+            public boolean dispatchKeyEvent(KeyEvent e) {
+                if (e.getID() == KeyEvent.KEY_PRESSED){
+                    int code = e.getKeyCode();
+                    if(code == KeyEvent.VK_TAB || code == KeyEvent.VK_RIGHT){
+                        int index = 0;
+                        for(index = 0; index < BUTTON_TEXT.length; index++)
+                            if(buttons[index].getForeground() == Theme.WHITE)
+                                break;
+                        int next = (index + 1) % BUTTON_TEXT.length;
+                        onButtonClick(BUTTON_TEXT[next]);
+
+                        return true;
+                    } else if (code == KeyEvent.VK_LEFT) {
+                        int index = 0;
+                        for(index = 0; index < BUTTON_TEXT.length; index++)
+                            if(buttons[index].getForeground() == Theme.WHITE)
+                                break;
+                        int next = --index < 0 ? BUTTON_TEXT.length - 1 : index;
+                        onButtonClick(BUTTON_TEXT[next]);
+
+                        return true;
+                    }
+                }
+                
+                return false;
+            }
+        };
+        KeyboardFocusManager.getCurrentKeyboardFocusManager()
+                .addKeyEventDispatcher(tabDispatcher);
+
 
 
     }
@@ -157,6 +191,13 @@ public class ScoreScene extends Scene {
     public void onExit() { }
 
     void release() {
+        if(tabDispatcher != null) {
+            KeyboardFocusManager.getCurrentKeyboardFocusManager()
+                .removeKeyEventDispatcher(tabDispatcher);
+            tabDispatcher = null;
+        }
+        
+        
         if(this.escHandler != null) {
             this.escHandler.release();
             this.escHandler = null;
@@ -254,7 +295,6 @@ public class ScoreScene extends Scene {
         this.headerAnim.setBackground(Theme.BG());
         this.footerAnim.setBackground(Theme.BG());
         for(Animation a: rowAnims) a.setBackground(Theme.BG());
-        for(Animation a: rowAnims) a.setBorderColor(Theme.BG());
         for(Animation a: buttonAnims) a.setBackground(Theme.BG());
     }
 
@@ -341,6 +381,11 @@ public class ScoreScene extends Scene {
     }
 
     void setBorder() {
+
+        this.headerAnim.setBorderColor(Theme.BG());
+        this.footerAnim.setBorderColor(Theme.BG());
+        for(Animation a: rowAnims) a.setBorderColor(Theme.BG());
+        for(Animation a: buttonAnims) a.setBorderColor(Theme.BG());
 
         // 버튼 패널 좌우 여백
         int padding = Theme.getPixelWidth(0.25f);

@@ -75,7 +75,7 @@ public class GameOver extends JPanel {
     HighScore highScore = new HighScore(TABLE_FILE);
 
     EscapeHandler escHandler;
-    
+    KeyEventDispatcher enterDispatcher;
 
     public GameOver(JFrame frame, int score, int lines, int time, String difficulty){
         this.SCORE = score;
@@ -133,6 +133,22 @@ public class GameOver extends JPanel {
             tetris.util.Theme.setCurrentFrame(frame);
         }
 
+        if(RANK >= 10) {
+            enterDispatcher = new KeyEventDispatcher() {
+                @Override
+                public boolean dispatchKeyEvent(KeyEvent e) {
+                    if (e.getID() == KeyEvent.KEY_PRESSED && e.getKeyCode() == KeyEvent.VK_ENTER){
+                        onButtonClick();
+                        return true;
+                    }
+                    return false;
+                }
+            };
+            KeyboardFocusManager.getCurrentKeyboardFocusManager()
+                .addKeyEventDispatcher(enterDispatcher);
+        } else enterDispatcher = null;
+        
+        
         run();
     }
 
@@ -172,11 +188,14 @@ public class GameOver extends JPanel {
         centerContainer.setBackground(Theme.BG());
         bottomContainer.setBackground(Theme.BG());
 
+
         for(int i = 0; i < ITEM_COUNT; i++) {
-            itemKeyContainers[i].setBackground(Theme.LIGHT_GRAY);
-            itemKeyLabels[i].setBackground(Theme.BLACK);
-            itemKeyLabels[i].setOpaque(true);
+            itemKeyContainers[i].setBackground(Theme.BG());
             itemValueContainers[i].setBackground(Theme.BG());
+            itemKeyLabels[i].setBackground(Theme.BG());
+            itemKeyLabels[i].setOpaque(true);
+            itemValueLabels[i].setOpaque(true);
+            itemValueLabels[i].setBackground(Theme.BG());
         }
 
     }
@@ -225,15 +244,15 @@ public class GameOver extends JPanel {
 
     void setFrontColors() {
 
-        titleLabel.setForeground(Theme.Block('Z'));
+        titleLabel.setForeground(Theme.Block(ColorType.RED));
 
         for(int i = 0; i < ITEM_COUNT; i++) {
             itemValueLabels[i].setForeground(Theme.LIGHT_GRAY);
         }
-        itemKeyLabels[0].setForeground(Theme.Block('I'));
-        itemKeyLabels[1].setForeground(Theme.Block('S'));
-        itemKeyLabels[2].setForeground(Theme.Block('T'));
-        itemKeyLabels[3].setForeground(Theme.Block('L'));
+        itemKeyLabels[0].setForeground(Theme.Block(ColorType.CYAN));
+        itemKeyLabels[1].setForeground(Theme.Block(ColorType.GREEN));
+        itemKeyLabels[2].setForeground(Theme.Block(ColorType.PURPLE));
+        itemKeyLabels[3].setForeground(Theme.Block(ColorType.ORANGE));
 
 
         if(RANK < 10) {
@@ -259,6 +278,11 @@ public class GameOver extends JPanel {
      }
 
     void setBorders() { 
+
+        mainContainer.setBorderColor(Theme.BG());
+        topContainer.setBorderColor(Theme.BG());
+        bottomContainer.setBorderColor(Theme.BG());
+
         // 실제 창 크기 사용 (동적 크기 조정)
         final int[] screenSize = getActualScreenSize();
 
@@ -273,7 +297,7 @@ public class GameOver extends JPanel {
         mainContainer.setBorderThickness(thickness);
 
         final int marginTB = Theme.getPixelWidth(0.025f);
-        mainContainer.setBorder(BorderFactory.createEmptyBorder(marginTB, thickness + 1, marginTB, thickness));
+        mainContainer.setBorder(BorderFactory.createEmptyBorder(marginTB, thickness + 1, marginTB, thickness + 1));
 
         final int paddingV = Theme.getPixelWidth(0.01f);
         final int centerMarginLeft = Theme.getPixelWidth(0.05f);
@@ -320,6 +344,7 @@ public class GameOver extends JPanel {
         ((AbstractDocument) nameField.getDocument())
         .setDocumentFilter(new NoCommaFilter());
 
+
     }
 
     void run() {
@@ -355,7 +380,12 @@ public class GameOver extends JPanel {
             offset,  () -> {
                 bottomContainer.move(BOTTOM_ANIM_DURATION, 0, 100);
                 this.bRunEnd = true;
-                if(RANK < 10) mainContainer.setBadgeAnimation();
+                if(RANK < 10) {
+                    mainContainer.setBadgeAnimation();
+                    SwingUtilities.invokeLater(() -> nameField.requestFocusInWindow());
+                }
+
+                
             }
         );
 
@@ -377,6 +407,12 @@ public class GameOver extends JPanel {
 
 
     public void release() {
+        if(enterDispatcher != null) {
+            KeyboardFocusManager.getCurrentKeyboardFocusManager()
+                .removeKeyEventDispatcher(enterDispatcher);
+            enterDispatcher = null;
+        }
+        
         if(this.escHandler != null) {
             this.escHandler.release();
             this.escHandler = null;
@@ -464,7 +500,7 @@ class Container extends Animation {
     
     void setBadgeAnimation() {
         badge = new Animation();
-        badge.setBorderColor(Theme.Block('O'));
+        badge.setBorderColor(Theme.Block(ColorType.ORANGE));
         badge.saturateBorder(2.5f, true);
     }
     @Override
@@ -528,7 +564,7 @@ class Container extends Animation {
 
         // 배지 텍스트
         g2.setColor(Theme.WHITE);
-        g2.setFont(Theme.getFont(Theme.GIANTS_BOLD, 0.009f));
+        g2.setFont(Theme.GIANTS_BOLD(0.9f));
         
         // 텍스트 중앙 정렬
         FontMetrics fm = g2.getFontMetrics();

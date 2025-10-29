@@ -85,8 +85,6 @@ public final class Theme {
         else if(blockType == 'T') blockId = 6;
         else blockId = 0;
 
-
-        if(colorBlindMode == 0) return getCustomeBlock(blockId);
         return ColorBlindHelper.getBlockColor(blockId, colorBlindMode);
     }
 
@@ -135,11 +133,6 @@ public final class Theme {
         float sizeRatioF = (float)sizeRatio / 100.0f;
         int[] screenSize = getActualScreenSize();
         return GIANTS_REGULAR.deriveFont(sizeRatioF * screenSize[0]);
-    }
-
-    public static Font getFont(Font font, float sizeRatio) {
-        int[] screenSize = getActualScreenSize();
-        return font.deriveFont(sizeRatio * screenSize[0]);
     }
 
     public static int getPixelWidth(float sizeRatio) {

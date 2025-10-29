@@ -304,6 +304,7 @@ public class SettingsScene extends Scene implements KeyListener {
 
     private void applySettings() {
         saveCurrentSettings();
+        gameSettings.saveSettings(); // 파일에 저장
         applyDisplaySettings();
         updateThemeColors(); // 색맹 모드 적용 후 색상 업데이트
         JOptionPane.showMessageDialog(this,

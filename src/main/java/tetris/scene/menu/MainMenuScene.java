@@ -608,10 +608,60 @@ public class MainMenuScene extends Scene implements KeyListener {
 
     // 게임 종료 확인 다이얼로그를 표시하는 메서드
     private void quitGame() {
-        int choice = JOptionPane.showConfirmDialog(this, 
-            "정말로 게임을 종료하시겠습니까?", 
-            "종료 확인", 
-            JOptionPane.YES_NO_OPTION);
+        JOptionPane pane = new JOptionPane(
+            "정말로 게임을 종료하시겠습니까?",
+            JOptionPane.QUESTION_MESSAGE,
+            JOptionPane.YES_NO_OPTION
+        );
+        JDialog dialog = pane.createDialog(this, "종료 확인");
+        dialog.setModal(true);
+
+        JComponent target = dialog.getRootPane();
+        InputMap im = target.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+        ActionMap am = target.getActionMap();
+
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, 0), "focusPrev");
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP, 0),   "focusPrev");
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, 0), "focusNext");
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, 0),  "focusNext");
+
+        am.put("focusPrev", new AbstractAction() {
+            @Override public void actionPerformed(ActionEvent e) {
+                KeyboardFocusManager.getCurrentKeyboardFocusManager().focusPreviousComponent();
+            }
+        });
+        am.put("focusNext", new AbstractAction() {
+            @Override public void actionPerformed(ActionEvent e) {
+                KeyboardFocusManager.getCurrentKeyboardFocusManager().focusNextComponent();
+            }
+        });
+
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), "pressFocused");
+        am.put("pressFocused", new AbstractAction() {
+            @Override public void actionPerformed(ActionEvent e) {
+                Component fo = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
+                if (fo instanceof JButton b) b.doClick();
+            }
+        });
+
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "cancel");
+        am.put("cancel", new AbstractAction() {
+            @Override public void actionPerformed(ActionEvent e) {
+                pane.setValue(JOptionPane.NO_OPTION);
+                dialog.dispose();
+            }
+        });
+
+        dialog.setVisible(true);
+
+        Object val = pane.getValue();
+        int choice = (val instanceof Integer) ? (Integer) val : JOptionPane.CLOSED_OPTION;
+
+        
+        // int choice = JOptionPane.showConfirmDialog(this, 
+        //     "정말로 게임을 종료하시겠습니까?", 
+        //     "종료 확인", 
+        //     JOptionPane.YES_NO_OPTION);
         
         if (choice == JOptionPane.YES_OPTION) {
             Game.quit();
