@@ -4,35 +4,34 @@ import java.awt.*;
 import javax.swing.*;
 
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 
 public class Animation extends JPanel {
     final int delay = 16;
+    
+    public float alpha = 0.f;
+
+    public float scaleX = 1.f;
+    public float scaleY = 1.f;
+
+    public float rotate = 0.f;
+
+    public float offsetX = 0.f;
+    public float offsetY = 0.f;
+
+    public boolean bVisible = false;
+    
+    public int borderRadius = 0;
+    public int borderThickness = 0;
+    public float[] borderHSB = new float[3];
+    public float[] backgroundHSB = new float[3];
 
     public Animation() { 
         setOpaque(false);
+        counter.add(this);
     }
-
-    @Override
-    public void setBackground(Color background) {
-        super.setBackground(background);
-        backgroundHSB = Color.RGBtoHSB(background.getRed(), background.getGreen(), background.getBlue(), null);
-    }
-
-    public void setBorderThickness(int thickness) {
-        borderThickness = thickness;
-    }
-
-    public void setBorderRadius(int radius) {
-        borderRadius = radius;
-    }
-
-    public void setBorderColor(Color border) {
-        borderHSB = Color.RGBtoHSB(border.getRed(), border.getGreen(), border.getBlue(), null);
-    }
-
 
     public void release() {
         if(animTimers != null) {
@@ -56,25 +55,6 @@ public class Animation extends JPanel {
     }
     static List<Animation> counter = new CopyOnWriteArrayList<>();
 
-
-    public float alpha = 0.f;
-
-    public float scaleX = 1.f;
-    public float scaleY = 1.f;
-
-    public float rotate = 0.f;
-
-    public float offsetX = 0.f;
-    public float offsetY = 0.f;
-
-    public boolean bVisible = false;
-    
-    public int borderRadius = 0;
-    public int borderThickness = 0;
-    public float[] borderHSB = new float[3];
-    public float[] backgroundHSB = new float[3];
-
-
     class AnimTimer {
         Timer timer;
         long startTime = -1L;
@@ -82,7 +62,6 @@ public class Animation extends JPanel {
             return System.nanoTime() - startTime;
         }
     }
-
     List<AnimTimer> animTimers = new ArrayList<>();
     AnimTimer addAnimTimer() {
         AnimTimer animTimer = new AnimTimer();
@@ -104,7 +83,6 @@ public class Animation extends JPanel {
             //animTimers = null;
         }
     }
-
 
     public void hueBackground(float duration, boolean bLoop) {
         alpha = 1f;
@@ -128,7 +106,6 @@ public class Animation extends JPanel {
             if(!bLoop && tp >= 1f) {
                 ((Timer)e.getSource()).stop();
             }
-
             repaint();
         });
         animTimer.timer.start();
@@ -241,11 +218,7 @@ public class Animation extends JPanel {
         animTimer.timer.start();
     }
 
-    @Override 
-    public void setVisible(boolean _bVisible) {
-        //super.setVisible(aFlag);
-        this.bVisible = _bVisible;
-    }
+
     public void popOut(float duration) {
         setVisible(true);
         final float overshoot = 1.4f;
@@ -335,7 +308,6 @@ public class Animation extends JPanel {
         return t*t*t;
     }
 
-
     protected float interpolate(float start, float end, float overshoot, float t) {
         t = clamp01(t);  // 0~1로 보정
         float eased;
@@ -353,15 +325,9 @@ public class Animation extends JPanel {
         return start + (end - start) * eased;
     }
 
-    protected float nanosToSec(long nanos) {
-        return nanos / 1_000_000_000f;
-    }
-
     protected long secToNanos(float sec) {
         return (long)(sec * 1_000_000_000L);
     }
-
-
 
     protected float getTimeProgress(long cur, long total) {
         return (float)cur / (float)total;
@@ -370,48 +336,30 @@ public class Animation extends JPanel {
     protected Color HSBtoColor(float[] hsb) {
         return Color.getHSBColor(hsb[0], hsb[1], hsb[2]);
     }
-
-    @Override
-    public Dimension getPreferredSize() {
-        LayoutManager lm = getLayout();
-        if (lm != null) {
-            Dimension d = lm.preferredLayoutSize(this);
-            Insets in = getInsets();
-            d.width  += in.left + in.right;
-            d.height += in.top  + in.bottom;
-            return d;
-        }
-        // JLabel 기본 크기만 쓰고, 강제 최소치 제거
-        return super.getPreferredSize();
+    
+    public void setBorderThickness(int thickness) {
+        borderThickness = thickness;
     }
-
+    
+    public void setBorderRadius(int radius) {
+        borderRadius = radius;
+    }
+    
+    public void setBorderColor(Color border) {
+        borderHSB = Color.RGBtoHSB(border.getRed(), border.getGreen(), border.getBlue(), null);
+    }
     
     @Override
-    public Dimension getMinimumSize() {
-        LayoutManager lm = getLayout();
-        if (lm != null) {
-            Dimension d = lm.minimumLayoutSize(this);
-            Insets in = getInsets();
-            d.width  += in.left + in.right;
-            d.height += in.top  + in.bottom;
-            return d;
-        }
-        return super.getMinimumSize();
+    public void setBackground(Color background) {
+        super.setBackground(background);
+        backgroundHSB = Color.RGBtoHSB(background.getRed(), background.getGreen(), background.getBlue(), null);
     }
 
-    @Override
-    public Dimension getMaximumSize() {
-        LayoutManager lm = getLayout();
-        if (lm != null) {
-            Dimension d = lm.preferredLayoutSize(this); // 과하게 커지지 않게 preferred로 고정
-            Insets in = getInsets();
-            d.width  += in.left + in.right;
-            d.height += in.top  + in.bottom;
-            return d;
-        }
-        return super.getMaximumSize();
+    @Override 
+    public void setVisible(boolean _bVisible) {
+        //super.setVisible(aFlag);
+        this.bVisible = _bVisible;
     }
-
 
     @Override
     public void paint(Graphics g) {
@@ -432,8 +380,6 @@ public class Animation extends JPanel {
         super.paint(g2);
         g2.dispose();
     }
-
-
 
     @Override
     protected void paintComponent(Graphics g) {

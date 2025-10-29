@@ -3,6 +3,7 @@ package tetris;
 import javax.swing.JFrame;
 import tetris.scene.*;
 import tetris.scene.menu.MainMenuScene;
+import tetris.util.Theme;
 
 public class Game {
     private Game() {}
@@ -19,7 +20,8 @@ public class Game {
         instance.frame = new JFrame("Tetris");                                  // 게임 창 생성
         instance.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);                // 창 닫기 시 프로그램 종료
         instance.frame.setVisible(true);                                            // 창 표시
-
+        
+        Theme.setCurrentFrame(instance.frame);
         instance.curScene = new MainMenuScene(instance.frame);
         instance.curScene.onEnter();
     }
