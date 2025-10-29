@@ -36,9 +36,6 @@ public class UIManager {
         // 프레임 참조 저장
         this.frame = frame;
         
-        // 해상도에 따른 동적 크기 계산
-        calculateDynamicSizes();
-        
         // 기존 컴포넌트들 제거
         parentPanel.removeAll();
         
@@ -48,11 +45,21 @@ public class UIManager {
         // 색상 테마 적용
         applyColorTheme(parentPanel);
         
+        // 래퍼 패널 먼저 생성 (크기 계산에 필요)
+        wrapperPanel = new JPanel(new GridBagLayout());
+        int colorBlindMode = GameSettings.getInstance().getColorBlindMode();
+        Color backgroundColor = ColorBlindHelper.getBackgroundColor(colorBlindMode);
+        wrapperPanel.setBackground(backgroundColor);
+        parentPanel.add(wrapperPanel, BorderLayout.CENTER);
+        
+        // 해상도에 따른 동적 크기 계산 (wrapperPanel 생성 후)
+        calculateDynamicSizes();
+        
         // 게임 패널 생성 및 설정
         createGamePanel();
         
-        // 래퍼 패널 생성 및 배치
-        createWrapperPanel(parentPanel);
+        // 게임 패널을 래퍼에 추가
+        wrapperPanel.add(gamePanel, new GridBagConstraints());
         
         // 입력 시스템 설정
         setupInputSystem(parentPanel, inputHandler);
