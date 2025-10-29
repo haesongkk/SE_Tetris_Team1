@@ -16,28 +16,26 @@ public class Sound {
     String origin = null; 
     volatile boolean running = false;
     volatile Thread thread = null;
-    SoundDevice device = null;
 
     public Sound(String filePath) {
         this.origin = filePath;
-        device = new SoundDevice();
         counter.add(this);
     }
 
     public synchronized void play(boolean loop) {
         this.stop();
-        device = new SoundDevice();
-        // 음소거 상태면 볼륨을 0으로, 아니면 설정된 볼륨 사용
-        if (GameSettings.getInstance().isMuted()) {
-            device.volume = 0f;
-        } else {
-            device.volume = Math.max(0f, Math.min(1f, GameSettings.getInstance().getVolume()/100f));
-        }
+
+        final float volume = GameSettings.getInstance().isMuted()? 0f
+            : Math.max(0f, Math.min(1f, GameSettings.getInstance().getVolume() / 100f));
+        
 
         this.running = true;
         thread = new Thread(() -> {
             while (this.running) {
 
+                SoundDevice device = new SoundDevice();
+                device.volume = volume;
+                
                 // 1) 리소스 로드
                 InputStream in = Thread.currentThread()
                     .getContextClassLoader()
@@ -85,10 +83,6 @@ public class Sound {
             try { thread.join(500); } 
             catch (InterruptedException ignored) {}
             thread = null;
-        }
-        if(device != null){
-            device.close();
-            device = null;
         }
     }
 
