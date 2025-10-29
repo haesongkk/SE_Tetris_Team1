@@ -1,7 +1,7 @@
 # Game Settings
 displayMode=0
 resolution=0
-colorBlindMode=2
+colorBlindMode=0
 difficulty=2
 leftKey=37
 rightKey=39

@@ -114,6 +114,19 @@ public class ScoreManager {
     }
     
     /**
+     * 하드드롭으로 블록이 떨어진 높이만큼 점수를 추가합니다.
+     * 1칸당 10점씩 획득합니다 (난이도와 무관하게 고정).
+     * @param dropHeight 하드드롭으로 떨어진 높이 (칸 수)
+     */
+    public void addHardDropScore(int dropHeight) {
+        if (dropHeight > 0) {
+            int hardDropScore = dropHeight * 10; // 1칸당 10점
+            score += hardDropScore;
+            System.out.println("Hard drop " + dropHeight + " cells! Added " + hardDropScore + " points. Total score: " + score);
+        }
+    }
+    
+    /**
      * 현재 점수를 반환합니다.
      * @return 현재 점수
      */
@@ -199,5 +212,20 @@ public class ScoreManager {
         String scoreText = String.format("%,d", score);
         int scoreWidth = fm.stringWidth(scoreText);
         g2d.drawString(scoreText, scoreBoardX + (scoreBoardWidth - scoreWidth) / 2, scoreBoardY + 45);
+        
+        // 배율 정보 표시 (디버깅용)
+        g2d.setFont(new Font("Arial", Font.PLAIN, 10));
+        fm = g2d.getFontMetrics();
+        
+        // 속도 배율
+        String speedMultiplierText = String.format("Speed: %.1fx", speedMultiplier);
+        int speedMultiplierWidth = fm.stringWidth(speedMultiplierText);
+        g2d.drawString(speedMultiplierText, scoreBoardX + (scoreBoardWidth - speedMultiplierWidth) / 2, scoreBoardY + 65);
+        
+        // 난이도 배율
+        String difficultyMultiplierText = String.format("Difficulty: %.1fx", difficultyMultiplier);
+        int difficultyMultiplierWidth = fm.stringWidth(difficultyMultiplierText);
+        g2d.drawString(difficultyMultiplierText, scoreBoardX + (scoreBoardWidth - difficultyMultiplierWidth) / 2, scoreBoardY + 78);
+        
     }
 }
