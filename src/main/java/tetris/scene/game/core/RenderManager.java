@@ -2,7 +2,6 @@ package tetris.scene.game.core;
 
 import tetris.scene.game.blocks.Block;
 import tetris.scene.game.blocks.BlockShake;
-import tetris.scene.game.blocks.BombItemBlock;
 import tetris.scene.game.blocks.ItemBlock;
 import tetris.scene.game.blocks.WeightItemBlock;
 import tetris.util.LineBlinkEffect;
@@ -345,18 +344,8 @@ public class RenderManager {
                             drawY += blockShake.getShakeOffsetY();
                         }
                         
-                        // BombItemBlock인 경우 폭탄 셀 처리
-                        if (blockToDraw instanceof BombItemBlock) {
-                            BombItemBlock bombBlock = (BombItemBlock) blockToDraw;
-                            if (bombBlock.isBombCell(blockCol, blockRow)) {
-                                // 폭탄 셀 그리기
-                                bombBlock.drawBombCell((Graphics2D) g2d.create(), drawX, drawY, CELL_SIZE - 2);
-                            } else {
-                                // 일반 셀 그리기
-                                g2d.setColor(bombBlock.getCellColor(blockCol, blockRow));
-                                g2d.fillRect(drawX, drawY, CELL_SIZE - 2, CELL_SIZE - 2);
-                            }
-                        } else if (blockToDraw instanceof WeightItemBlock) {
+                        // 블록 타입별 렌더링 처리
+                        if (blockToDraw instanceof WeightItemBlock) {
                             // WeightItemBlock인 경우 무게추 셀 처리
                             WeightItemBlock weightBlock = (WeightItemBlock) blockToDraw;
                             weightBlock.drawWeightCell((Graphics2D) g2d.create(), drawX, drawY, CELL_SIZE - 2);

@@ -640,7 +640,9 @@ public class MainMenuScene extends Scene implements KeyListener {
         am.put("pressFocused", new AbstractAction() {
             @Override public void actionPerformed(ActionEvent e) {
                 Component fo = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
-                if (fo instanceof JButton b) b.doClick();
+                if (fo instanceof JButton) {
+                    ((JButton) fo).doClick();
+                }
             }
         });
 

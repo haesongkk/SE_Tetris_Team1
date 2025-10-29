@@ -133,7 +133,6 @@ public class ItemBlock extends Block {
     
     /**
      * 원본 블록의 셀 중 하나를 랜덤하게 아이템 위치로 설정합니다.
-     * BombItemBlock과 동일한 방식으로 셀 인덱스를 저장합니다.
      */
     private void setRandomItemPosition() {
         java.util.Random random = new java.util.Random();
@@ -144,7 +143,7 @@ public class ItemBlock extends Block {
         for (int i = 0; i < shape.length; i++) {
             for (int j = 0; j < shape[i].length; j++) {
                 if (shape[i][j] == 1) {
-                    blockCells.add(new int[]{i, j}); // y, x 순서 (BombItemBlock과 동일)
+                    blockCells.add(new int[]{i, j}); // y, x 순서
                 }
             }
         }
