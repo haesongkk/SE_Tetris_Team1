@@ -286,6 +286,28 @@ tasks.register('jpackageExe', Exec) {
     commandLine([jp] + commandArgs)
 }
 
+// 새로운 통합 태스크
+tasks.register('createDistribution', Zip) {
+    dependsOn 'compileJava', 'jar', 'jpackageExe'
+    group = 'distribution'
+    description = 'Creates a complete distribution package with JAR, native executable, and ZIP archive'
+    
+    def version = '1.0.0'
+    def timestamp = new Date().format('yyyyMMdd_HHmmss')
+    archiveFileName = "TetrisGame_v${version}_${timestamp}_Windows.zip"
+    destinationDirectory = layout.buildDirectory.dir('dist')
+    
+    from(layout.projectDirectory.dir('dist/Tetris Game')) {
+        include '**/*'
+    }
+    
+    doLast {
+        println '🎉 배포 패키지 생성 완료!'
+        println "📦 패키지 위치: ${archiveFile.get().asFile.absolutePath}"
+        println "📏 패키지 크기: ${archiveFile.get().asFile.length() / (1024 * 1024)} MB"
+    }
+}
+
 // Checkstyle 설정 (비활성화)
 checkstyle {
     toolVersion = '8.45.1'
