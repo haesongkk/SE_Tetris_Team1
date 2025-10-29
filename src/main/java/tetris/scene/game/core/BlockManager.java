@@ -457,11 +457,6 @@ public class BlockManager {
     public boolean canRotate() {
         if (currentBlock == null) return false;
         
-        // BombItemBlock의 경우 특별 처리
-        if (currentBlock instanceof BombItemBlock) {
-            return ((BombItemBlock) currentBlock).canRotate(boardManager.getBoard(), x, y);
-        }
-        
         // 일반 블록의 경우 Block.canRotate() 사용
         return currentBlock.canRotate(x, y, boardManager.getBoard(), gameWidth, gameHeight);
     }
