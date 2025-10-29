@@ -24,8 +24,8 @@ import javax.swing.OverlayLayout;
 
 public class GameScene extends Scene implements InputHandler.InputCallback, GameStateManager.StateChangeCallback, TimerManager.TimerCallback {
     private JFrame m_frame;
-    private static final int GAME_HEIGHT = 30; // 실제 블록이 놓이는 높이
-    private static final int GAME_WIDTH = 20; // 실제 블록이 놓이는 너비
+    private static final int GAME_HEIGHT = 20; // 실제 블록이 놓이는 높이
+    private static final int GAME_WIDTH = 10; // 실제 블록이 놓이는 너비
 
     // 다음 블록 미리보기 관련 상수
     private static final int PREVIEW_SIZE = 4; // 미리보기 영역 크기 (4x4)

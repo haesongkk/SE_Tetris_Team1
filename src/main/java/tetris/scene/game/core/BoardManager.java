@@ -13,8 +13,8 @@ import java.awt.Color;
  * 보드 상태, 줄 완성 확인, 줄 삭제 등의 로직을 처리합니다.
  */
 public class BoardManager {
-    private static final int GAME_HEIGHT = 30;
-    private static final int GAME_WIDTH = 20;
+    private static final int GAME_HEIGHT = 20;
+    private static final int GAME_WIDTH = 10;
     
     private int[][] board; // 게임 보드 상태 (0: 빈칸, 1: 블록 있음)
     private Color[][] boardColors; // 각 셀의 색상 정보
