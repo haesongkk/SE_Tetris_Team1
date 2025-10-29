@@ -15,7 +15,7 @@ import tetris.scene.game.items.ItemEffectType;
  * - CLEANUP (C): 청소 아이템 - 3x3 영역 제거
  * - SPEED_DOWN (S): 속도 감소 아이템 - 5초간 50% 속도 감소
  * - SPEED_UP (F): 속도 증가 아이템 - 5초간 100% 속도 증가
- * - VISION_BLOCK (V): 시야 차단 아이템 - 8초간 4x20 영역 차단
+ * - VISION_BLOCK (V): 시야 차단 아이템 - 5초간 4x20 영역 차단
  */
 public class ItemBlock extends Block {
     // 아이템 이미지들
