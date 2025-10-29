@@ -75,7 +75,7 @@ test {
     testLogging {
         events "passed", "skipped", "failed"
         exceptionFormat "full"
-        showStandardStreams = false
+        showStandardStreams = true  // System.out.println 출력 활성화
         
         // 테스트 완료 후 요약 정보 출력
         afterSuite { desc, result ->
