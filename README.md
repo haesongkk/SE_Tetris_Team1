@@ -135,4 +135,8 @@ dist/                           # 배포 패키지 출력 디렉토리
 
 [arcade-beat-323176.mp3](https://pixabay.com/ko/music/%EB%B9%84%EB%94%94%EC%98%A4-%EA%B2%8C%EC%9E%84-arcade-beat-323176/)
 
+[the-return-of-the-8-bit-era-301292.mp3](https://pixabay.com/music/video-games-the-return-of-the-8-bit-era-301292/)
+
+[bit-bit-loop-127680.mp3](https://pixabay.com/ko/music/%EB%B9%84%EB%94%94%EC%98%A4-%EA%B2%8C%EC%9E%84-bit-bit-loop-127680/)
+
 

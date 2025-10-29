@@ -3,6 +3,7 @@ package tetris.scene.menu;
 import tetris.ColorBlindHelper;
 import tetris.Game;
 import tetris.GameSettings;
+import tetris.util.Sound;
 import tetris.util.Theme;
 import tetris.scene.Scene;
 import tetris.scene.game.GameScene;
@@ -21,6 +22,8 @@ public class MainMenuScene extends Scene implements KeyListener {
     private final GameSettings gameSettings;
     private JButton[] menuButtons;
     private int selectedButton = 0;
+    
+    private Sound bgm = null;
     
     // 색상 getter 메서드들
     private Color getBackgroundColor() {
@@ -60,6 +63,7 @@ public class MainMenuScene extends Scene implements KeyListener {
         
         setupUI();
         setupKeyListener();
+
     }
 
     // UI 컴포넌트들을 초기화하고 배치하는 메서드
@@ -722,5 +726,13 @@ public class MainMenuScene extends Scene implements KeyListener {
         applyDisplaySettings();
         setFocusable(true);
         requestFocusInWindow();
+        
+        this.bgm = new Sound("bit-bit-loop-127680.mp3");
+        this.bgm.play(true);
+    }
+
+    @Override
+    public void onExit() {
+        bgm.release();
     }
 }

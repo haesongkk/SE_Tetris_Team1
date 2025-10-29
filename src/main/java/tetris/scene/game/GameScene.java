@@ -13,6 +13,7 @@ import tetris.scene.game.overlay.GameOver;
 import tetris.scene.game.core.ScoreManager;
 import tetris.Game;
 import tetris.scene.menu.MainMenuScene;
+import tetris.util.Sound;
 import tetris.GameSettings;
 
 import java.awt.event.ComponentAdapter;
@@ -61,6 +62,9 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
     // 속도 아이템 효과 상태
     private boolean speedItemActive = false;
 
+    // 배경 음악 추가
+    private Sound bgm = null;
+
     // ─────────────────────────────────────────────────────────────
     // Scene lifecycle
     // ─────────────────────────────────────────────────────────────
@@ -77,6 +81,8 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
         inputHandler = new InputHandler(frame, this); // InputHandler 초기화
         // GamePlayManager는 initGameState에서 초기화 (BlockManager가 필요하므로)
         // 여기서 setContentPane 제거 - Scene 전환 시 처리하도록
+
+
     }
 
     @Override
@@ -88,6 +94,9 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
         initGameState();
         
         timerManager.startTimers();
+
+        bgm = new Sound("the-return-of-the-8-bit-era-301292.mp3");
+        bgm.play(true);
         
         System.out.println("GameScene: Initialization complete");
     }
@@ -96,6 +105,12 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
     public void onExit() {
         timerManager.stopTimers();
         if (blockShake != null) blockShake.cleanup(); // 흔들림 효과 정리
+
+        if(bgm != null) {
+            bgm.release();
+            bgm = null;
+        }
+
     }
 
     private void initUI() {
@@ -564,6 +579,11 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
         String difficultyStr = difficulty.toString().toLowerCase(); // 실제 난이도 사용
         
         GameOver gameOverOverlay = new GameOver(m_frame, currentScore, currentLines, currentTime, difficultyStr);
+        if(bgm != null) {
+            bgm.release();
+            bgm = null;
+        }
+
         
         // 게임 종료 화면을 현재 패널에 추가
         setLayout(new OverlayLayout(this));
