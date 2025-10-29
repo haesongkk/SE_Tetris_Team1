@@ -129,11 +129,6 @@ public class GameOver extends JPanel {
         setButton();
         setField();
         
-        // Theme 클래스에 현재 프레임 참조 설정 (폰트 크기 동적 계산용)
-        if (frame != null) {
-            tetris.util.Theme.setCurrentFrame(frame);
-        }
-
         if(RANK >= 10) {
             enterDispatcher = new KeyEventDispatcher() {
                 @Override
