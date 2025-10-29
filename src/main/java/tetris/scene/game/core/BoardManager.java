@@ -1,7 +1,6 @@
 package tetris.scene.game.core;
 
 import tetris.scene.game.blocks.Block;
-import tetris.scene.game.blocks.BombItemBlock;
 import tetris.scene.game.blocks.ItemBlock;
 import tetris.scene.game.items.ItemEffect;
 import tetris.scene.game.items.ItemEffectContext;
@@ -109,16 +108,7 @@ public class BoardManager {
                         boardTypes[boardY][boardX] = block.getType();
                         
                         // 아이템 블록인 경우 특별 처리
-                        if (block instanceof BombItemBlock) {
-                            BombItemBlock bombBlock = (BombItemBlock) block;
-                            if (bombBlock.isBombCell(i, j)) {
-                                bombCells[boardY][boardX] = true;
-                                boardColors[boardY][boardX] = bombBlock.getBombColor();
-                                System.out.println("Bomb placed at board position: (" + boardX + ", " + boardY + ")");
-                            } else {
-                                boardColors[boardY][boardX] = bombBlock.getCellColor(i, j);
-                            }
-                        } else if (block instanceof ItemBlock) {
+                        if (block instanceof ItemBlock) {
                             ItemBlock itemBlock = (ItemBlock) block;
                             boardColors[boardY][boardX] = itemBlock.getCellColor(i, j);
                             // 아이템 셀인 경우 아이템 정보 저장 (렌더링용)
@@ -243,76 +233,6 @@ public class BoardManager {
         }
     }
     
-    /**
-     * 완성된 모든 줄을 찾아서 제거하고 삭제된 줄 수를 반환합니다.
-     * 여러 줄이 동시에 완성된 경우를 위한 개선된 버전
-     */
-    // ===== 중복 및 미사용 코드 주석처리, 25.10.24 =====
-    /*
-    public int clearCompletedLines() {
-        int linesClearedCount = 0;
-        boolean[] linesToClear = new boolean[GAME_HEIGHT];
-        
-        // 1단계: 완성된 모든 줄 찾기
-        for (int row = 0; row < GAME_HEIGHT; row++) {
-            if (isLineFull(row)) {
-                linesToClear[row] = true;
-                linesClearedCount++;
-                System.out.println("Line " + row + " is complete and will be cleared.");
-            }
-        }
-        
-        // 2단계: 완성된 줄들 제거 및 블록들 재배치
-        if (linesClearedCount > 0) {
-            clearLines(linesToClear);
-            System.out.println("Cleared " + linesClearedCount + " lines simultaneously!");
-        }
-        
-        return linesClearedCount;
-    }
-    */
-    // ===== 중복 및 미사용 코드 주석처리 끝 =====
-    
-    /**
-     * 완성된 줄과 폭탄이 있는 줄을 모두 삭제하고 총 삭제된 줄 수를 반환합니다.
-     */
-    // ===== 중복 및 미사용 코드 주석처리, 25.10.24 =====
-    /*
-    public int clearCompletedAndBombLines() {
-        boolean[] linesToClear = new boolean[GAME_HEIGHT];
-        int totalLinesCleared = 0;
-        
-        // 1단계: 완성된 줄 찾기
-        for (int row = 0; row < GAME_HEIGHT; row++) {
-            if (isLineFull(row)) {
-                linesToClear[row] = true;
-                totalLinesCleared++;
-                System.out.println("Line " + row + " is complete and will be cleared.");
-            }
-        }
-        
-        // 2단계: 폭탄이 있는 줄 찾기
-        for (int row = 0; row < GAME_HEIGHT; row++) {
-            for (int col = 0; col < GAME_WIDTH; col++) {
-                if (bombCells[row][col] && !linesToClear[row]) {
-                    linesToClear[row] = true;
-                    totalLinesCleared++;
-                    System.out.println("Line " + row + " has bomb and will be cleared.");
-                    break; // 해당 줄에서 폭탄을 찾았으면 다음 줄로
-                }
-            }
-        }
-        
-        // 3단계: 선택된 줄들 제거 및 블록들 재배치
-        if (totalLinesCleared > 0) {
-            clearLines(linesToClear);
-            System.out.println("Cleared " + totalLinesCleared + " lines (completed + bomb lines)!");
-        }
-        
-        return totalLinesCleared;
-    }
-    */
-    // ===== 중복 및 미사용 코드 주석처리 끝 =====
     
     /**
      * 완성된 줄과 폭탄이 있는 줄을 구분해서 삭제하고 각각의 개수를 반환합니다.
