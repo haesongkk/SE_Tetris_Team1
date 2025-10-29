@@ -1,0 +1,15 @@
+# Game Settings
+displayMode=0
+resolution=2
+colorBlindMode=0
+difficulty=1
+leftKey=37
+rightKey=39
+rotateKey=38
+fallKey=40
+dropKey=32
+pauseKey=80
+holdKey=16
+exitKey=81
+volume=20
+isMuted=false

@@ -148,6 +148,8 @@ public class BasicTest {
     /**
      * 3. 테트로미노(블럭) 무작위 생성 테스트
      * - 총 7가지의 테트로미노가 무작위로 등장하는지 확인
+     * - Fitness Proportionate Selection 방식 검증
+     * - 난이도별 가중치 시스템 검증
      */
     @Test
     @Order(3)
@@ -173,7 +175,169 @@ public class BasicTest {
 
         assertEquals(7, foundBlocks.size(), "7가지 테트로미노가 모두 존재해야 합니다.");
         System.out.println("발견된 테트로미노 종류: " + foundBlocks);
+        
+        // Fitness Proportionate Selection 방식 테스트
+        testFitnessProportionateSelection();
+        
         System.out.println("✅ 총 7가지 테트로미노 확인 완료");
+    }
+    
+    /**
+     * Fitness Proportionate Selection (Roulette Wheel Selection) 방식 테스트
+     * - 난이도별 가중치에 따른 블록 생성 확률 검증
+     * - 최소 1,000번 이상 블록 선택을 반복하여 검증
+     * - 설정된 확률의 오차범위 ±5% 이내 검증
+     */
+    private void testFitnessProportionateSelection() throws Exception {
+        System.out.println("\n=== Fitness Proportionate Selection 테스트 ===");
+        
+        // 헤드리스 환경에서는 테스트 스킵
+        Assumptions.assumeFalse(GraphicsEnvironment.isHeadless());
+        
+        // 각 난이도별로 테스트
+        GameSettings.Difficulty[] difficulties = {
+            GameSettings.Difficulty.EASY,
+            GameSettings.Difficulty.NORMAL, 
+            GameSettings.Difficulty.HARD
+        };
+        
+        for (GameSettings.Difficulty difficulty : difficulties) {
+            System.out.println("\n--- " + difficulty + " 모드 블록 생성 확률 테스트 ---");
+            testBlockGenerationProbability(difficulty);
+        }
+    }
+    
+    /**
+     * 특정 난이도에서 블록 생성 확률을 테스트합니다.
+     */
+    private void testBlockGenerationProbability(GameSettings.Difficulty difficulty) throws Exception {
+        // GameScene 생성 (BlockManager 접근을 위해)
+        GameScene gameScene = new GameScene(testFrame, difficulty);
+        gameScene.onEnter();
+        
+        // BlockManager 접근
+        Field blockManagerField = GameScene.class.getDeclaredField("blockManager");
+        blockManagerField.setAccessible(true);
+        Object blockManager = blockManagerField.get(gameScene);
+        
+        // BlockManager의 테스트용 getRandomBlockForTest 메서드 사용
+        Method getRandomBlockMethod = blockManager.getClass().getDeclaredMethod("getRandomBlockForTest");
+        getRandomBlockMethod.setAccessible(true);
+        
+        // 블록 생성 카운터
+        int[] blockCounts = new int[7]; // I=0, J=1, L=2, Z=3, S=4, T=5, O=6
+        int totalBlocks = 2000; // 2000번 테스트 (요구사항: 최소 1000번)
+        
+        System.out.println("블록 생성 테스트 시작: " + totalBlocks + "번 반복");
+        
+        // 블록 생성 반복
+        for (int i = 0; i < totalBlocks; i++) {
+            Object block = getRandomBlockMethod.invoke(blockManager);
+            String blockClassName = block.getClass().getSimpleName();
+            
+            // 블록 타입별 카운트 증가
+            switch (blockClassName) {
+                case "IBlock": blockCounts[0]++; break;
+                case "JBlock": blockCounts[1]++; break;
+                case "LBlock": blockCounts[2]++; break;
+                case "ZBlock": blockCounts[3]++; break;
+                case "SBlock": blockCounts[4]++; break;
+                case "TBlock": blockCounts[5]++; break;
+                case "OBlock": blockCounts[6]++; break;
+            }
+        }
+        
+        // 기대 확률 계산 (가중치 기반)
+        double[] expectedWeights = getExpectedWeights(difficulty);
+        double totalWeight = 0.0;
+        for (double weight : expectedWeights) {
+            totalWeight += weight;
+        }
+        
+        // 결과 분석 및 검증
+        String[] blockNames = {"I", "J", "L", "Z", "S", "T", "O"};
+        System.out.println("\n블록 생성 결과 분석:");
+        System.out.println("블록타입 | 실제개수 | 실제확률 | 기대확률 | 오차");
+        System.out.println("---------|----------|----------|----------|----------");
+        
+        for (int i = 0; i < 7; i++) {
+            double actualProbability = (double) blockCounts[i] / totalBlocks * 100;
+            double expectedProbability = expectedWeights[i] / totalWeight * 100;
+            double error = Math.abs(actualProbability - expectedProbability);
+            
+            System.out.printf("%-8s | %8d | %7.2f%% | %7.2f%% | %6.2f%%\n", 
+                blockNames[i], blockCounts[i], actualProbability, expectedProbability, error);
+            
+            // 오차범위 ±5% 이내 검증
+            assertTrue(error <= 5.0, 
+                String.format("%s블록의 확률 오차가 5%%를 초과했습니다. (오차: %.2f%%)", 
+                blockNames[i], error));
+        }
+        
+        // I블록 특별 검증 (난이도별 요구사항)
+        double iBlockProbability = (double) blockCounts[0] / totalBlocks * 100;
+        double baseIProbability = 100.0 / 7; // 약 14.29%
+        
+        switch (difficulty) {
+            case EASY:
+                // Easy 모드: I블록 확률 20% 증가 (약 17.14%)
+                double expectedEasyI = baseIProbability * 1.2 / (1 + 0.2 - 0.1 * 2 / 6); // 가중치 정규화 고려
+                assertTrue(iBlockProbability > baseIProbability, 
+                    "Easy 모드에서 I블록 확률이 기본값보다 높아야 합니다.");
+                System.out.println("✅ Easy 모드 I블록 확률 증가 확인");
+                break;
+                
+            case HARD:
+                // Hard 모드: I블록 확률 20% 감소 (약 11.43%)
+                assertTrue(iBlockProbability < baseIProbability, 
+                    "Hard 모드에서 I블록 확률이 기본값보다 낮아야 합니다.");
+                System.out.println("✅ Hard 모드 I블록 확률 감소 확인");
+                break;
+                
+            case NORMAL:
+                // Normal 모드: 균등 확률
+                assertTrue(Math.abs(iBlockProbability - baseIProbability) <= 3.0, 
+                    "Normal 모드에서 I블록 확률이 기본값과 유사해야 합니다.");
+                System.out.println("✅ Normal 모드 I블록 균등 확률 확인");
+                break;
+        }
+        
+        System.out.println("✅ " + difficulty + " 모드 블록 생성 확률 테스트 통과");
+    }
+    
+    /**
+     * 난이도별 기대 가중치를 반환합니다.
+     */
+    private double[] getExpectedWeights(GameSettings.Difficulty difficulty) {
+        double[] weights = new double[7];
+        
+        switch (difficulty) {
+            case EASY:
+                // I블록 20% 증가, 나머지 블록들이 남은 확률을 균등 분배
+                weights[0] = 1.2;
+                double remainingWeightEasy = (7.0 - 1.2) / 6.0; // = 0.967
+                for (int i = 1; i < 7; i++) {
+                    weights[i] = remainingWeightEasy;
+                }
+                break;
+                
+            case HARD:
+                // I블록 20% 감소, 나머지 블록들이 남은 확률을 균등 분배
+                weights[0] = 0.8;
+                double remainingWeightHard = (7.0 - 0.8) / 6.0; // = 1.033
+                for (int i = 1; i < 7; i++) {
+                    weights[i] = remainingWeightHard;
+                }
+                break;
+                
+            default: // NORMAL
+                for (int i = 0; i < weights.length; i++) {
+                    weights[i] = 1.0; // 균등 확률
+                }
+                break;
+        }
+        
+        return weights;
     }
 
     /**
