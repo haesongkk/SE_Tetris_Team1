@@ -11,7 +11,7 @@ import java.util.ArrayList;
  * 객체지향적 설계를 통해 아이템 효과를 관리합니다.
  */
 public class ItemManager {
-    private static final int LINES_FOR_ITEM = 1; // 아이템 등장을 위한 줄 삭제 수 (누적) - 빠른 테스트를 위해 10 → 1줄로 변경
+    private static final int LINES_FOR_ITEM = 10; // 아이템 등장을 위한 줄 삭제 수 (누적) - 빠른 테스트를 위해 10 → 1줄로 변경
     
     private int totalLinesCleared = 0; // 총 삭제된 줄 수 (누적)
     private final Random random;

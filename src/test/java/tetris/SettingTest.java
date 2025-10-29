@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import tetris.GameSettings;
 import tetris.scene.menu.SettingsScene;
+import tetris.util.DataPathManager;
 import tetris.Game;
 
 import javax.swing.*;
@@ -255,7 +256,7 @@ public class SettingTest {
             setupGameSettings();
             
             // 스코어 파일이 존재하는지 확인하고 테스트 데이터 생성
-            File scoreFile = new File("./data/highscore.txt");
+            File scoreFile = new File(DataPathManager.getInstance().getHighScoreV2File().getAbsolutePath());
             
             // 디렉토리가 없다면 생성
             if (!scoreFile.getParentFile().exists()) {
