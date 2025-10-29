@@ -293,6 +293,8 @@ public class BlockManager {
     public boolean executeHardDrop() {
         if (currentBlock == null || isGameOver) return false;
         
+        int originalY = y; // 하드드롭 전 원래 Y 위치 저장
+        
         // 무게추 블록의 경우 특별 처리
         if (currentBlock instanceof WeightItemBlock) {
             WeightItemBlock weightBlock = (WeightItemBlock) currentBlock;
@@ -300,6 +302,13 @@ public class BlockManager {
             // BlockHardDrop 클래스를 사용하여 하드 드롭 실행
             int newY = BlockHardDrop.executeHardDrop(currentBlock, x, y, 
                                                     boardManager.getBoard(), gameWidth, gameHeight);
+            
+            // 하드드롭 점수 계산 및 추가
+            int dropHeight = newY - originalY;
+            if (dropHeight > 0) {
+                scoreManager.addHardDropScore(dropHeight);
+            }
+            
             y = newY;
             
             // 무게추는 하드드롭 후 활성화되고 자동 낙하 시작
@@ -314,6 +323,13 @@ public class BlockManager {
             // BlockHardDrop 클래스를 사용하여 하드 드롭 실행
             int newY = BlockHardDrop.executeHardDrop(currentBlock, x, y, 
                                                     boardManager.getBoard(), gameWidth, gameHeight);
+            
+            // 하드드롭 점수 계산 및 추가
+            int dropHeight = newY - originalY;
+            if (dropHeight > 0) {
+                scoreManager.addHardDropScore(dropHeight);
+            }
+            
             y = newY;
             
             // 블록이 바닥에 닿았으므로 즉시 고정
