@@ -244,15 +244,15 @@ public class GameOver extends JPanel {
 
     void setFrontColors() {
 
-        titleLabel.setForeground(Theme.Block('Z'));
+        titleLabel.setForeground(Theme.Block(ColorType.RED));
 
         for(int i = 0; i < ITEM_COUNT; i++) {
             itemValueLabels[i].setForeground(Theme.LIGHT_GRAY);
         }
-        itemKeyLabels[0].setForeground(Theme.Block('I'));
-        itemKeyLabels[1].setForeground(Theme.Block('S'));
-        itemKeyLabels[2].setForeground(Theme.Block('T'));
-        itemKeyLabels[3].setForeground(Theme.Block('L'));
+        itemKeyLabels[0].setForeground(Theme.Block(ColorType.CYAN));
+        itemKeyLabels[1].setForeground(Theme.Block(ColorType.GREEN));
+        itemKeyLabels[2].setForeground(Theme.Block(ColorType.PURPLE));
+        itemKeyLabels[3].setForeground(Theme.Block(ColorType.ORANGE));
 
 
         if(RANK < 10) {
@@ -500,7 +500,7 @@ class Container extends Animation {
     
     void setBadgeAnimation() {
         badge = new Animation();
-        badge.setBorderColor(Theme.Block('O'));
+        badge.setBorderColor(Theme.Block(ColorType.ORANGE));
         badge.saturateBorder(2.5f, true);
     }
     @Override
@@ -564,7 +564,7 @@ class Container extends Animation {
 
         // 배지 텍스트
         g2.setColor(Theme.WHITE);
-        g2.setFont(Theme.getFont(Theme.GIANTS_BOLD, 0.009f));
+        g2.setFont(Theme.GIANTS_BOLD(0.9f));
         
         // 텍스트 중앙 정렬
         FontMetrics fm = g2.getFontMetrics();
