@@ -256,18 +256,34 @@ tasks.register('cleanDist', Delete) {
 tasks.register('jpackageExe', Exec) {
     dependsOn 'cleanDist', 'jar'
     group = 'distribution'
-    description = 'Creates a native application image'
+    description = 'Creates a native application image with icon'
 
     def jp = "${System.getProperty('java.home')}/bin/jpackage.exe"
-    commandLine jp,
+    
+    // 아이콘 파일 확인
+    def iconFile = file("D:/SE/SE_Tetris_Team1/src/main/resources/Tetris.ico")
+    def commandArgs = [
         '--input', 'build/libs',
         '--main-jar', jar.archiveFileName.get(),
         '--main-class', 'tetris.Tetris',
         '--name', 'Tetris Game',
         '--type', 'app-image',
-        '--dest', 'dist'
-        //'--icon', 'icon.ico'        // ★ Windows는 .ico 사용
-        //,'--win-console'           // 콘솔창 필요하면 주석 해제
+        '--dest', 'dist',
+        '--vendor', 'SE_Tetris_Team1',
+        '--description', 'Tetris Game with Items and Difficulty Modes',
+        '--app-version', '1.0.0'
+    ]
+    
+    // 아이콘 파일이 존재하면 추가
+    if (iconFile.exists()) {
+        commandArgs.add('--icon')
+        commandArgs.add(iconFile.absolutePath)
+        println "Using icon file: ${iconFile.absolutePath}"
+    } else {
+        println "Warning: icon.ico not found. Building without icon."
+    }
+    
+    commandLine([jp] + commandArgs)
 }
 
 // Checkstyle 설정 (비활성화)

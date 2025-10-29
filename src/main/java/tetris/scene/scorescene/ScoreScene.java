@@ -28,7 +28,6 @@ public class ScoreScene extends Scene {
 
     final String BGM_FILE = "8-bit-game-music-122259.mp3";
     final String EFFECT_FILE = "gameboy-pluck-41265.mp3";
-    final String TABLE_FILE = "./data/highscore_v2.txt";
 
     final String NO_RECORD_TEXT = "아직 기록이 없습니다. 첫 기록을 세워주세요!";
 
@@ -84,7 +83,9 @@ public class ScoreScene extends Scene {
         else this.highlightRank = highlightRank;
         this.mode = mode;
 
-        this.highScore = new HighScore(TABLE_FILE);
+        // DataPathManager를 통한 파일 경로 관리
+        String tableFile = DataPathManager.getInstance().getHighScoreV2File().getAbsolutePath();
+        this.highScore = new HighScore(tableFile);
 
         this.bgm = new Sound(BGM_FILE);
         this.effect = new Sound(EFFECT_FILE);

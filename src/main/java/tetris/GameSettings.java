@@ -1,5 +1,7 @@
 package tetris;
 
+import tetris.util.DataPathManager;
+
 public class GameSettings {
     // 난이도 enum
     public enum Difficulty {
@@ -315,19 +317,10 @@ public class GameSettings {
     // 스코어 보드 데이터를 초기화하는 메서드
     public void clearScoreBoard() {
         try {
-            // 두 개의 스코어 파일 모두 초기화
-            String[] scoreFiles = {"./data/highscore.txt", "./data/highscore_v2.txt"};
-            
-            for (String filePath : scoreFiles) {
-                java.io.File scoreFile = new java.io.File(filePath);
-                if (scoreFile.exists()) {
-                    // 파일을 빈 내용으로 덮어쓰기
-                    try (java.io.FileWriter writer = new java.io.FileWriter(scoreFile, false)) {
-                        writer.write(""); // 빈 내용으로 덮어쓰기
-                    }
-                }
-            }
-        } catch (java.io.IOException e) {
+            // DataPathManager를 통한 파일 경로 관리
+            DataPathManager pathManager = DataPathManager.getInstance();
+            pathManager.clearAllScores();
+        } catch (Exception e) {
             System.err.println("스코어 보드 초기화 중 오류 발생: " + e.getMessage());
             e.printStackTrace();
         }
@@ -353,11 +346,8 @@ public class GameSettings {
     // 설정을 파일에 저장
     public void saveSettings() {
         try {
-            java.io.File settingsFile = new java.io.File("./data/settings.txt");
-            // data 폴더가 없으면 생성
-            if (!settingsFile.getParentFile().exists()) {
-                settingsFile.getParentFile().mkdirs();
-            }
+            DataPathManager pathManager = DataPathManager.getInstance();
+            java.io.File settingsFile = pathManager.getSettingsFile();
             
             try (java.io.PrintWriter writer = new java.io.PrintWriter(new java.io.FileWriter(settingsFile))) {
                 writer.println("# Game Settings");
@@ -386,7 +376,9 @@ public class GameSettings {
     // 파일에서 설정 로드
     public void loadSettings() {
         try {
-            java.io.File settingsFile = new java.io.File("./data/settings.txt");
+            DataPathManager pathManager = DataPathManager.getInstance();
+            java.io.File settingsFile = pathManager.getSettingsFile();
+            
             if (!settingsFile.exists()) {
                 System.out.println("설정 파일이 없습니다. 기본 설정을 사용합니다.");
                 return;
