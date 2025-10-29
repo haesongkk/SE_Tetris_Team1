@@ -8,6 +8,7 @@ import tetris.GameSettings;
 import tetris.scene.game.GameScene;
 import tetris.scene.scorescene.ScoreScene;
 import tetris.util.Animation;
+import tetris.util.DataPathManager;
 import tetris.util.EscapeHandler;
 import tetris.util.HighScore;
 import tetris.util.NoCommaFilter;
@@ -42,7 +43,6 @@ public class GameOver extends JPanel {
 
     final String BGM_FILE = "arcade-beat-323176.mp3";
     final String EFFECT_FILE = "gameboy-pluck-41265.mp3";
-    final String TABLE_FILE = "./data/highscore_v2.txt";
 
     JFrame frame;
     Container mainContainer;
@@ -72,7 +72,8 @@ public class GameOver extends JPanel {
     Sound bgm = new Sound(BGM_FILE);
     Sound effect = new Sound(EFFECT_FILE);
     
-    HighScore highScore = new HighScore(TABLE_FILE);
+    // DataPathManager를 통한 파일 경로 관리
+    HighScore highScore = new HighScore(DataPathManager.getInstance().getHighScoreV2File().getAbsolutePath());
 
     EscapeHandler escHandler;
     KeyEventDispatcher enterDispatcher;

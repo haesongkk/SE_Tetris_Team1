@@ -75,7 +75,7 @@ test {
     testLogging {
         events "passed", "skipped", "failed"
         exceptionFormat "full"
-        showStandardStreams = false
+        showStandardStreams = true  // System.out.println 출력 활성화
         
         // 테스트 완료 후 요약 정보 출력
         afterSuite { desc, result ->
@@ -256,18 +256,56 @@ tasks.register('cleanDist', Delete) {
 tasks.register('jpackageExe', Exec) {
     dependsOn 'cleanDist', 'jar'
     group = 'distribution'
-    description = 'Creates a native application image'
+    description = 'Creates a native application image with icon'
 
     def jp = "${System.getProperty('java.home')}/bin/jpackage.exe"
-    commandLine jp,
+    
+    // 아이콘 파일 확인
+    def iconFile = file("D:/SE/SE_Tetris_Team1/src/main/resources/Tetris.ico")
+    def commandArgs = [
         '--input', 'build/libs',
         '--main-jar', jar.archiveFileName.get(),
         '--main-class', 'tetris.Tetris',
         '--name', 'Tetris Game',
         '--type', 'app-image',
-        '--dest', 'dist'
-        //'--icon', 'icon.ico'        // ★ Windows는 .ico 사용
-        //,'--win-console'           // 콘솔창 필요하면 주석 해제
+        '--dest', 'dist',
+        '--vendor', 'SE_Tetris_Team1',
+        '--description', 'Tetris Game with Items and Difficulty Modes',
+        '--app-version', '1.0.0'
+    ]
+    
+    // 아이콘 파일이 존재하면 추가
+    if (iconFile.exists()) {
+        commandArgs.add('--icon')
+        commandArgs.add(iconFile.absolutePath)
+        println "Using icon file: ${iconFile.absolutePath}"
+    } else {
+        println "Warning: icon.ico not found. Building without icon."
+    }
+    
+    commandLine([jp] + commandArgs)
+}
+
+// 새로운 통합 태스크
+tasks.register('createDistribution', Zip) {
+    dependsOn 'compileJava', 'jar', 'jpackageExe'
+    group = 'distribution'
+    description = 'Creates a complete distribution package with JAR, native executable, and ZIP archive'
+    
+    def version = '1.0.0'
+    def timestamp = new Date().format('yyyyMMdd_HHmmss')
+    archiveFileName = "TetrisGame_v${version}_${timestamp}_Windows.zip"
+    destinationDirectory = layout.buildDirectory.dir('dist')
+    
+    from(layout.projectDirectory.dir('dist/Tetris Game')) {
+        include '**/*'
+    }
+    
+    doLast {
+        println '🎉 배포 패키지 생성 완료!'
+        println "📦 패키지 위치: ${archiveFile.get().asFile.absolutePath}"
+        println "📏 패키지 크기: ${archiveFile.get().asFile.length() / (1024 * 1024)} MB"
+    }
 }
 
 // Checkstyle 설정 (비활성화)

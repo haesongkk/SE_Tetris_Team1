@@ -84,38 +84,36 @@ public class BlockManager {
     
     /**
      * 랜덤 블록을 생성합니다.
+     * Fitness Proportionate Selection (Roulette Wheel Selection) 방식을 사용합니다.
      * 
      * @return 생성된 블록
      */
     private Block getRandomBlock() {
-        // 난이도에 따른 I형 블럭 확률 계산
-        double iBlockProbability;
-        switch (difficulty) {
-            case EASY:
-                iBlockProbability = 1.0 / 7 * 1.2; // 20% 증가
-                break;
-            case HARD:
-                iBlockProbability = 1.0 / 7 * 0.8; // 20% 감소
-                break;
-            default:
-                iBlockProbability = 1.0 / 7; // 기본 확률
+        // 난이도별 블록 적합도(가중치) 설정
+        double[] blockWeights = getBlockWeights();
+        
+        // 전체 가중치 합계 계산
+        double totalWeight = 0.0;
+        for (double weight : blockWeights) {
+            totalWeight += weight;
         }
         
-        Block newBlock;
-        if (random.nextDouble() < iBlockProbability) {
-            newBlock = new IBlock();
-        } else {
-            // IBlock 외 다른 블록들 중 랜덤 선택
-            int block = random.nextInt(6) + 1; // 1~6 (IBlock 제외)
-            switch (block) {
-                case 1: newBlock = new JBlock(); break;
-                case 2: newBlock = new LBlock(); break;
-                case 3: newBlock = new ZBlock(); break;
-                case 4: newBlock = new SBlock(); break;
-                case 5: newBlock = new TBlock(); break;
-                case 6: newBlock = new OBlock(); break;
-                default: newBlock = new LBlock(); break;
+        // Roulette Wheel Selection 실행
+        double randomValue = random.nextDouble() * totalWeight;
+        double cumulativeWeight = 0.0;
+        
+        Block newBlock = null;
+        for (int i = 0; i < blockWeights.length; i++) {
+            cumulativeWeight += blockWeights[i];
+            if (randomValue <= cumulativeWeight) {
+                newBlock = createBlockByIndex(i);
+                break;
             }
+        }
+        
+        // 예외 상황 처리 (마지막 블록으로 기본값 설정)
+        if (newBlock == null) {
+            newBlock = createBlockByIndex(6); // TBlock as default
         }
         
         // 블록 생성 수 증가 (SpeedUp 관리자 사용)
@@ -130,6 +128,69 @@ public class BlockManager {
         }
         
         return newBlock;
+    }
+    
+    /**
+     * 난이도별 블록 가중치를 반환합니다.
+     * 인덱스: 0=I, 1=J, 2=L, 3=Z, 4=S, 5=T, 6=O
+     * 
+     * @return 블록별 가중치 배열
+     */
+    private double[] getBlockWeights() {
+        double[] weights = new double[7];
+        
+        switch (difficulty) {
+            case EASY:
+                // Easy 모드: I블록 확률 20% 증가, 어려운 블록(S, Z) 확률 감소
+                weights[0] = 1.2; // I블록 증가
+                weights[1] = 1.0; // J블록
+                weights[2] = 1.0; // L블록
+                weights[3] = 0.9; // Z블록 감소
+                weights[4] = 0.9; // S블록 감소
+                weights[5] = 1.0; // T블록
+                weights[6] = 1.0; // O블록
+                break;
+                
+            case HARD:
+                // Hard 모드: I블록 확률 20% 감소, 어려운 블록(S, Z) 확률 증가
+                weights[0] = 0.8; // I블록 감소
+                weights[1] = 1.0; // J블록
+                weights[2] = 1.0; // L블록
+                weights[3] = 1.1; // Z블록 증가
+                weights[4] = 1.1; // S블록 증가
+                weights[5] = 1.0; // T블록
+                weights[6] = 1.0; // O블록
+                break;
+                
+            default: // NORMAL
+                // Normal 모드: 모든 블록 균등 확률
+                for (int i = 0; i < weights.length; i++) {
+                    weights[i] = 1.0;
+                }
+                break;
+        }
+        
+        return weights;
+    }
+    
+    /**
+     * 인덱스에 따라 블록을 생성합니다.
+     * 인덱스: 0=I, 1=J, 2=L, 3=Z, 4=S, 5=T, 6=O
+     * 
+     * @param index 블록 인덱스
+     * @return 생성된 블록
+     */
+    private Block createBlockByIndex(int index) {
+        switch (index) {
+            case 0: return new IBlock();
+            case 1: return new JBlock();
+            case 2: return new LBlock();
+            case 3: return new ZBlock();
+            case 4: return new SBlock();
+            case 5: return new TBlock();
+            case 6: return new OBlock();
+            default: return new TBlock(); // 기본값
+        }
     }
     
     /**
