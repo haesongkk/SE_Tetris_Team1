@@ -135,8 +135,4 @@ dist/                           # 배포 패키지 출력 디렉토리
 
 [arcade-beat-323176.mp3](https://pixabay.com/ko/music/%EB%B9%84%EB%94%94%EC%98%A4-%EA%B2%8C%EC%9E%84-arcade-beat-323176/)
 
-## 📝 추가 문서
-
-- **배포 테스트 가이드**: [`DEPLOYMENT_TEST_GUIDE.md`](DEPLOYMENT_TEST_GUIDE.md)
-- **테스트 자동화 가이드**: [`TEST_AUTOMATION_GUIDE.md`](TEST_AUTOMATION_GUIDE.md)
 
