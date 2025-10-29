@@ -121,9 +121,17 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
         // 포커스 요청
         uiManager.requestFocus(this);
         
-        // 화면 갱신
+        // 화면 갱신 및 레이아웃 완료 대기
         m_frame.revalidate();
         m_frame.repaint();
+        
+        // UI가 완전히 레이아웃된 후 크기 재계산 (전체화면 모드 대응)
+        // wrapperPanel이 크기를 갖게 될 때까지 대기 후 재계산
+        SwingUtilities.invokeLater(() -> {
+            SwingUtilities.invokeLater(() -> {
+                uiManager.recalculateSizes();
+            });
+        });
     }
     
     /**
@@ -152,13 +160,24 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
         int width = resolution[0];
         int height = resolution[1];
         
-        // 프레임 크기를 설정된 해상도로 설정
-        m_frame.setSize(width, height);
+        if (gameSettings.getDisplayMode() == 1) { // 전체화면
+            m_frame.dispose();
+            m_frame.setUndecorated(true);
+            m_frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+            m_frame.setVisible(true);
+            System.out.println("GameScene: Applied FULLSCREEN mode");
+        } else { // 창모드
+            m_frame.dispose();
+            m_frame.setUndecorated(false);
+            m_frame.setExtendedState(JFrame.NORMAL);
+            m_frame.setSize(width, height);
+            m_frame.setLocationRelativeTo(null);
+            m_frame.setVisible(true);
+            System.out.println("GameScene: Applied WINDOWED mode " + width + "x" + height);
+        }
         
-        // 화면 중앙에 위치
-        m_frame.setLocationRelativeTo(null);
-        
-        System.out.println("GameScene: Applied resolution " + width + "x" + height);
+        m_frame.revalidate();
+        m_frame.repaint();
     }
 
     private void initGameState() {
