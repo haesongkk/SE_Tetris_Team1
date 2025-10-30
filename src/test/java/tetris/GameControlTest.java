@@ -13,7 +13,7 @@ import tetris.GameSettings;
 import tetris.Game;
 
 import javax.swing.*;
-import javax.swing.Timer;
+
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.lang.reflect.Field;
@@ -443,35 +443,29 @@ public class GameControlTest {
             assertEquals(0, speedUp.getTotalLinesCleared(), "0줄 삭제는 카운팅되지 않아야 합니다.");
             System.out.println("✅ 0줄 삭제 무시 완료");
 
-            // ===== 테스트 케이스 4: 줄 삭제 - 정상 줄 삭제 =====
-            System.out.println("테스트 4: 정상 줄 삭제 (임계값 확인)");
+            // ===== 테스트 케이스 4: 줄 삭제 - 정상 줄 삭제 (임계값 미만) =====
+            System.out.println("테스트 4: 정상 줄 삭제 (임계값 미만)");
             
-            // 현재 LINES_THRESHOLD = 1이므로, 1줄 삭제하면 즉시 리셋됨
-            // 따라서 줄 삭제 전후로 동작을 확인
-            int linesBeforeClear = speedUp.getTotalLinesCleared();
-            System.out.println("줄 삭제 전 카운트: " + linesBeforeClear);
+            // LINES_THRESHOLD = 2이므로, 1줄만 삭제하면 임계값에 도달하지 않음
+            speedUp.onLinesCleared(1); // 1줄 삭제 (임계값 2보다 작게)
             
-            // 1줄 삭제 - 임계값(LINES_THRESHOLD=1)에 도달하여 속도 증가 및 리셋 발생
-            speedUp.onLinesCleared(1);
-            
-            // 리셋 후 카운트는 0이 되어야 함 (정상 동작)
-            // 임계값 도달로 인한 리셋이 정상적으로 작동하는지 확인
-            int linesAfterClear = speedUp.getTotalLinesCleared();
-            System.out.println("줄 삭제 후 카운트: " + linesAfterClear + " (임계값 도달로 리셋됨)");
-            
-            // 줄 삭제가 처리되었는지 확인 (리셋되었다는 것은 처리되었다는 의미)
-            // 속도 증가 콜백이 호출되었는지 확인
-            assertTrue(speedIncreased[0] || linesAfterClear == 0, 
-                "줄 삭제 처리 확인: 임계값 도달로 속도 증가 또는 카운터 리셋 필요");
-            System.out.println("✅ 정상 줄 삭제 처리 완료");
+            int linesAfterFirstClear = speedUp.getTotalLinesCleared();
+            assertEquals(1, linesAfterFirstClear, "1줄 삭제 시 카운트는 1이어야 합니다. 현재: " + linesAfterFirstClear);
+            System.out.println("✅ 1줄 삭제 후 카운트: " + linesAfterFirstClear);
 
             // ===== 테스트 케이스 5: 속도 증가 조건 충족 (줄 삭제 임계값) =====
-            System.out.println("테스트 5: 줄 삭제 임계값에 의한 속도 증가 확인");
+            System.out.println("테스트 5: 줄 삭제 임계값에 의한 속도 증가");
             
-            // 테스트 4에서 이미 1줄 삭제로 임계값(LINES_THRESHOLD=1)에 도달하여 속도 증가 발생
-            // 속도 증가 콜백이 호출되었는지 확인
+            // 추가로 1줄 더 삭제하여 임계값(LINES_THRESHOLD=2)에 도달
+            speedUp.onLinesCleared(1); // 총 2줄 삭제
+            
+            // 임계값 도달로 속도 증가 발생 및 카운터 리셋
             assertTrue(speedIncreased[0], "줄 삭제 임계값 도달 시 속도 증가가 발생해야 합니다.");
             assertTrue(speedIncreaseCount[0] >= 1, "속도 증가 콜백이 최소 1회 호출되어야 합니다.");
+            
+            // 임계값 도달 후 카운터는 리셋되어 0이 됨
+            int linesAfterThreshold = speedUp.getTotalLinesCleared();
+            assertEquals(0, linesAfterThreshold, "임계값 도달 후 카운터는 리셋되어야 합니다. 현재: " + linesAfterThreshold);
             System.out.println("✅ 줄 삭제 임계값 속도 증가 확인 완료 (콜백 호출 횟수: " + speedIncreaseCount[0] + ")");
 
             // ===== 테스트 케이스 6: 속도 증가 조건 충족 (블록 임계값) =====
