@@ -406,7 +406,7 @@ public class MainMenuScene extends Scene implements KeyListener {
         // 컴포넌트 배치
         dialogPanel.add(titleLabel, BorderLayout.NORTH);
         dialogPanel.add(buttonPanel, BorderLayout.CENTER);
-        dialogPanel.add(descLabel, BorderLayout.SOUTH);
+        // dialogPanel.add(descLabel, BorderLayout.SOUTH);
         
         modeDialog.add(dialogPanel);
         
