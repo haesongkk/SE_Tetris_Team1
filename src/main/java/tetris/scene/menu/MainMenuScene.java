@@ -1,6 +1,5 @@
 package tetris.scene.menu;
 
-import tetris.ColorBlindHelper;
 import tetris.Game;
 import tetris.GameSettings;
 import tetris.util.Sound;
@@ -40,14 +39,15 @@ public class MainMenuScene extends Scene implements KeyListener {
     
     private Color getSelectedButtonColor() {
         int colorBlindMode = GameSettings.getInstance().getColorBlindMode();
-        if(colorBlindMode == 0) {
-            return new Color(120, 120, 200); // 일반 모드 - 원래 색상 유지
-        } else if(colorBlindMode == 1) {
-            // 적록색맹 - 밝은 보라색 (더 진하게)
-            return new Color(150, 100, 255);
-        } else {
-            // 청황색맹 - 밝은 주황색
-            return new Color(255, 150, 80);
+        switch (colorBlindMode) {
+            case 0:
+                return new Color(120, 120, 200); // 일반 모드 - 원래 색상 유지
+            case 1:
+                // 적록색맹 - 밝은 보라색 (더 진하게)
+                return new Color(150, 100, 255);
+            default:
+                // 청황색맹 - 밝은 주황색
+                return new Color(255, 150, 80);
         }
     }
     
@@ -143,7 +143,7 @@ public class MainMenuScene extends Scene implements KeyListener {
         gbc.anchor = GridBagConstraints.CENTER;
         
         // 메뉴 버튼들
-        String[] buttonTexts = {"Start Game", "Settings", "Score", "Exit"};
+        String[] buttonTexts = {"Start Game", "P2P", "Settings", "Score", "Exit"};
         menuButtons = new JButton[buttonTexts.length];
         
         // 해상도에 따른 버튼 간격 조정 (고정된 작은 간격)
@@ -276,13 +276,16 @@ public class MainMenuScene extends Scene implements KeyListener {
             case 0: // 게임 시작
                 startGame();
                 break;
-            case 1: // 설정
+            case 1: // P2P 모드
+                showP2PModeDialog();
+                break;
+            case 2: // 설정
                 showSettings();
                 break;
-            case 2: // 점수 기록
+            case 3: // 점수 기록
                 showScores();
                 break;
-            case 3: // 종료
+            case 4: // 종료
                 quitGame();
                 break;
             default:
@@ -300,12 +303,6 @@ public class MainMenuScene extends Scene implements KeyListener {
      * 게임 모드 선택 다이얼로그를 표시합니다.
      */
     private void showGameModeDialog() {
-        // 커스텀 다이얼로그 생성 (제목표시줄 없음)
-        JDialog modeDialog = new JDialog(frame, true);
-        modeDialog.setUndecorated(true); // 제목표시줄 제거
-        modeDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-        modeDialog.setResizable(false);
-        
         // 해상도에 따른 다이얼로그 크기 조정
         int[] resolution = gameSettings.getResolutionSize();
         int screenWidth = resolution[0];
@@ -314,25 +311,16 @@ public class MainMenuScene extends Scene implements KeyListener {
         int dialogWidth = Math.max(300, Math.min(400, screenWidth / 2));
         int dialogHeight = Math.max(200, Math.min(300, screenHeight / 3));
         
-        // 다이얼로그 크기 설정
-        modeDialog.setSize(dialogWidth, dialogHeight);
-        modeDialog.setLocationRelativeTo(frame);
-        
-        // 다이얼로그 내용 패널 설정
-        JPanel dialogPanel = new JPanel();
-        dialogPanel.setBackground(getBackgroundColor());
-        dialogPanel.setLayout(new BorderLayout());
+        // 다이얼로그 생성
+        JDialog modeDialog = createBaseDialog(dialogWidth, dialogHeight);
+        JPanel dialogPanel = createDialogPanel();
         dialogPanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(getTitleColor(), 2), // 테두리 추가
+            BorderFactory.createLineBorder(getTitleColor(), 2),
             BorderFactory.createEmptyBorder(15, 15, 15, 15)
         ));
         
         // 제목 라벨
-        JLabel titleLabel = new JLabel("게임 모드 선택", SwingConstants.CENTER);
-        int titleFontSize = Math.max(16, screenWidth / 50);
-        titleLabel.setFont(new Font("Malgun Gothic", Font.BOLD, titleFontSize));
-        titleLabel.setForeground(getTitleColor());
-        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0));
+        JLabel titleLabel = createDialogTitle("게임 모드 선택");
         
         // 버튼 패널
         JPanel buttonPanel = new JPanel();
@@ -343,49 +331,21 @@ public class MainMenuScene extends Scene implements KeyListener {
         JButton regularButton = createDialogButton("Regular Mode");
         regularButton.addActionListener(e -> {
             modeDialog.dispose();
-            // 난이도 선택 다이얼로그 표시
             System.out.println("Starting Regular Mode game...");
             Game.setScene(new GameScene(frame, gameSettings.getDifficulty()));
         });
         
-        // Item Mode 버튼 (활성화)
+        // Item Mode 버튼
         JButton itemButton = createDialogButton("Item Mode");
         itemButton.addActionListener(e -> {
             modeDialog.dispose();
-            // 해상도 설정을 유지하며 ItemGameScene으로 전환
             System.out.println("Starting Item Mode game...");
             Game.setScene(new ItemGameScene(frame));
         });
         itemButton.setToolTipText("폭탄 아이템과 함께하는 테트리스!");
         
         // 취소 버튼
-        JButton cancelButton = new JButton("취소");
-        cancelButton.setFont(new Font("Malgun Gothic", Font.BOLD, 14));
-        cancelButton.setPreferredSize(new Dimension(250, 35));
-        Color cancelColor = new Color(100, 50, 50);
-        cancelButton.setBackground(cancelColor);
-        cancelButton.setForeground(getTextColor());
-        cancelButton.setFocusPainted(false);
-        cancelButton.setBorderPainted(true);
-        cancelButton.setBorder(BorderFactory.createRaisedBevelBorder());
-        
-        // 취소 버튼 전용 호버 효과 (빨간색 유지)
-        cancelButton.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-            public void mouseEntered(java.awt.event.MouseEvent e) {
-                cancelButton.setBackground(getSelectedButtonColor());
-            }
-            
-            @Override
-            public void mouseExited(java.awt.event.MouseEvent e) {
-                cancelButton.setBackground(cancelColor);
-            }
-        });
-        
-        cancelButton.addActionListener(e -> {
-            System.out.println("Game start cancelled.");
-            modeDialog.dispose();
-        });
+        JButton cancelButton = createCancelButton(modeDialog);
         
         buttonPanel.add(regularButton);
         buttonPanel.add(itemButton);
@@ -393,70 +353,19 @@ public class MainMenuScene extends Scene implements KeyListener {
         
         // 버튼 배열 (키보드 네비게이션용)
         JButton[] buttons = {regularButton, itemButton, cancelButton};
-        final int[] currentIndex = {0}; // 현재 선택된 버튼 인덱스
-        
-        // 초기 포커스 설정
-        buttons[0].setBackground(getSelectedButtonColor());
-        
-        // 설명 라벨
-        // JLabel descLabel = new JLabel("<html><center>Regular Mode: 클래식 테트리스<br>Item Mode: 준비중</center></html>", SwingConstants.CENTER);
-        // descLabel.setFont(new Font("Malgun Gothic", Font.PLAIN, 11));
-        // descLabel.setForeground(Color.LIGHT_GRAY);
         
         // 컴포넌트 배치
         dialogPanel.add(titleLabel, BorderLayout.NORTH);
         dialogPanel.add(buttonPanel, BorderLayout.CENTER);
-        // dialogPanel.add(descLabel, BorderLayout.SOUTH);
         
         modeDialog.add(dialogPanel);
         
         // 키보드 네비게이션 추가
-        modeDialog.addKeyListener(new java.awt.event.KeyAdapter() {
-            @Override
-            public void keyPressed(java.awt.event.KeyEvent e) {
-                int keyCode = e.getKeyCode();
-                
-                if (keyCode == java.awt.event.KeyEvent.VK_ESCAPE) {
-                    modeDialog.dispose();
-                } else if (keyCode == java.awt.event.KeyEvent.VK_UP || keyCode == java.awt.event.KeyEvent.VK_LEFT) {
-                    // 이전 버튼으로 이동
-                    if (buttons[currentIndex[0]] == cancelButton) {
-                        buttons[currentIndex[0]].setBackground(cancelColor);
-                    } else {
-                        buttons[currentIndex[0]].setBackground(getButtonColor());
-                    }
-                    currentIndex[0] = (currentIndex[0] - 1 + buttons.length) % buttons.length;
-                    if (buttons[currentIndex[0]] == cancelButton) {
-                        buttons[currentIndex[0]].setBackground(getSelectedButtonColor());
-                    } else {
-                        buttons[currentIndex[0]].setBackground(getSelectedButtonColor());
-                    }
-                } else if (keyCode == java.awt.event.KeyEvent.VK_DOWN || keyCode == java.awt.event.KeyEvent.VK_RIGHT) {
-                    // 다음 버튼으로 이동
-                    if (buttons[currentIndex[0]] == cancelButton) {
-                        buttons[currentIndex[0]].setBackground(cancelColor);
-                    } else {
-                        buttons[currentIndex[0]].setBackground(getButtonColor());
-                    }
-                    currentIndex[0] = (currentIndex[0] + 1) % buttons.length;
-                    if (buttons[currentIndex[0]] == cancelButton) {
-                        buttons[currentIndex[0]].setBackground(getSelectedButtonColor());
-                    } else {
-                        buttons[currentIndex[0]].setBackground(getSelectedButtonColor());
-                    }
-                } else if (keyCode == java.awt.event.KeyEvent.VK_ENTER) {
-                    // 현재 선택된 버튼 클릭
-                    buttons[currentIndex[0]].doClick();
-                }
-            }
-        });
-        
-        // 다이얼로그가 포커스를 받을 수 있도록 설정
-        modeDialog.setFocusable(true);
+        addDialogKeyNavigation(modeDialog, buttons, cancelButton);
         
         // 다이얼로그 표시
         modeDialog.setVisible(true);
-        modeDialog.requestFocus(); // 포커스 요청
+        modeDialog.requestFocus();
     }
     
     /**
@@ -490,6 +399,239 @@ public class MainMenuScene extends Scene implements KeyListener {
         });
         
         return button;
+    }
+    
+    /**
+     * 공통 다이얼로그를 생성합니다.
+     */
+    private JDialog createBaseDialog(int width, int height) {
+        JDialog dialog = new JDialog(frame, true);
+        dialog.setUndecorated(true);
+        dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        dialog.setResizable(false);
+        dialog.setSize(width, height);
+        dialog.setLocationRelativeTo(frame);
+        dialog.setFocusable(true);
+        return dialog;
+    }
+    
+    /**
+     * 다이얼로그 메인 패널을 생성합니다.
+     */
+    private JPanel createDialogPanel() {
+        JPanel dialogPanel = new JPanel();
+        dialogPanel.setBackground(getBackgroundColor());
+        dialogPanel.setLayout(new BorderLayout());
+        dialogPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(getTitleColor(), 2),
+            BorderFactory.createEmptyBorder(20, 20, 20, 20)
+        ));
+        return dialogPanel;
+    }
+    
+    /**
+     * 다이얼로그 제목 라벨을 생성합니다.
+     */
+    private JLabel createDialogTitle(String title) {
+        int[] resolution = gameSettings.getResolutionSize();
+        int screenWidth = resolution[0];
+        int titleFontSize = Math.max(16, screenWidth / 50);
+        
+        JLabel titleLabel = new JLabel(title, SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Malgun Gothic", Font.BOLD, titleFontSize));
+        titleLabel.setForeground(getTitleColor());
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0));
+        return titleLabel;
+    }
+    
+    /**
+     * 취소 버튼을 생성합니다.
+     */
+    private JButton createCancelButton(JDialog dialog) {
+        JButton cancelButton = new JButton("취소");
+        cancelButton.setFont(new Font("Malgun Gothic", Font.BOLD, 14));
+        cancelButton.setPreferredSize(new Dimension(250, 35));
+        Color cancelColor = new Color(100, 50, 50);
+        cancelButton.setBackground(cancelColor);
+        cancelButton.setForeground(getTextColor());
+        cancelButton.setFocusPainted(false);
+        cancelButton.setBorderPainted(true);
+        cancelButton.setBorder(BorderFactory.createRaisedBevelBorder());
+        
+        // 취소 버튼 전용 호버 효과
+        cancelButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                cancelButton.setBackground(getSelectedButtonColor());
+            }
+            
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                cancelButton.setBackground(cancelColor);
+            }
+        });
+        
+        cancelButton.addActionListener(e -> dialog.dispose());
+        return cancelButton;
+    }
+    
+    /**
+     * 다이얼로그에 키보드 네비게이션을 추가합니다.
+     */
+    private void addDialogKeyNavigation(JDialog dialog, JButton[] buttons, JButton cancelButton) {
+        final int[] currentIndex = {0};
+        buttons[0].setBackground(getSelectedButtonColor());
+        
+        dialog.addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override
+            public void keyPressed(java.awt.event.KeyEvent e) {
+                int keyCode = e.getKeyCode();
+                Color cancelColor = new Color(100, 50, 50);
+                
+                switch (keyCode) {
+                    case java.awt.event.KeyEvent.VK_ESCAPE:
+                        dialog.dispose();
+                        break;
+                    case java.awt.event.KeyEvent.VK_UP:
+                    case java.awt.event.KeyEvent.VK_LEFT:
+                        // 이전 버튼으로 이동
+                        if (buttons[currentIndex[0]] == cancelButton) {
+                            buttons[currentIndex[0]].setBackground(cancelColor);
+                        } else {
+                            buttons[currentIndex[0]].setBackground(getButtonColor());
+                        }
+                        currentIndex[0] = (currentIndex[0] - 1 + buttons.length) % buttons.length;
+                        buttons[currentIndex[0]].setBackground(getSelectedButtonColor());
+                        break;
+                    case java.awt.event.KeyEvent.VK_DOWN:
+                    case java.awt.event.KeyEvent.VK_RIGHT:
+                        // 다음 버튼으로 이동
+                        if (buttons[currentIndex[0]] == cancelButton) {
+                            buttons[currentIndex[0]].setBackground(cancelColor);
+                        } else {
+                            buttons[currentIndex[0]].setBackground(getButtonColor());
+                        }
+                        currentIndex[0] = (currentIndex[0] + 1) % buttons.length;
+                        buttons[currentIndex[0]].setBackground(getSelectedButtonColor());
+                        break;
+                    case java.awt.event.KeyEvent.VK_ENTER:
+                        buttons[currentIndex[0]].doClick();
+                        break;
+                }
+            }
+        });
+    }
+    
+    /**
+     * P2P 모드 선택 다이얼로그를 표시합니다.
+     */
+    private void showP2PModeDialog() {
+        // 해상도에 따른 다이얼로그 크기 조정
+        int[] resolution = gameSettings.getResolutionSize();
+        int screenWidth = resolution[0];
+        int screenHeight = resolution[1];
+        
+        int dialogWidth = Math.max(350, Math.min(450, screenWidth / 2));
+        int dialogHeight = Math.max(280, Math.min(380, screenHeight / 3));
+        
+        // 다이얼로그 생성
+        JDialog p2pDialog = createBaseDialog(dialogWidth, dialogHeight);
+        JPanel dialogPanel = createDialogPanel();
+        
+        // 제목 라벨
+        JLabel titleLabel = createDialogTitle("P2P 대전 모드");
+        titleLabel.setFont(new Font("Malgun Gothic", Font.BOLD, Math.max(18, screenWidth / 45)));
+        
+        // 설명 라벨
+        JLabel descLabel = new JLabel("<html><center>네트워크를 통해 다른 플레이어와 대전하세요<br>서버 또는 클라이언트 역할을 선택해주세요</center></html>", SwingConstants.CENTER);
+        descLabel.setFont(new Font("Malgun Gothic", Font.PLAIN, 12));
+        descLabel.setForeground(getTextColor());
+        descLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 20, 0));
+        
+        // 상단 패널 (제목 + 설명)
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setOpaque(false);
+        topPanel.add(titleLabel, BorderLayout.NORTH);
+        topPanel.add(descLabel, BorderLayout.CENTER);
+        
+        // 버튼 패널
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setOpaque(false);
+        buttonPanel.setLayout(new GridLayout(3, 1, 0, 15));
+        
+        // 서버 버튼
+        JButton serverButton = createDialogButton("서버로 시작");
+        serverButton.setToolTipText("서버를 열고 클라이언트의 접속을 기다립니다");
+        serverButton.addActionListener(e -> {
+            p2pDialog.dispose();
+            showServerMode();
+        });
+        
+        // 클라이언트 버튼
+        JButton clientButton = createDialogButton("클라이언트로 접속");
+        clientButton.setToolTipText("다른 플레이어가 연 서버에 접속합니다");
+        clientButton.addActionListener(e -> {
+            p2pDialog.dispose();
+            showClientMode();
+        });
+        
+        // 취소 버튼
+        JButton cancelButton = createCancelButton(p2pDialog);
+        cancelButton.setPreferredSize(new Dimension(280, 40));
+        
+        buttonPanel.add(serverButton);
+        buttonPanel.add(clientButton);
+        buttonPanel.add(cancelButton);
+        
+        // 버튼 배열 (키보드 네비게이션용)
+        JButton[] buttons = {serverButton, clientButton, cancelButton};
+        
+        // 컴포넌트 배치
+        dialogPanel.add(topPanel, BorderLayout.NORTH);
+        dialogPanel.add(buttonPanel, BorderLayout.CENTER);
+        
+        p2pDialog.add(dialogPanel);
+        
+        // 키보드 네비게이션 추가
+        addDialogKeyNavigation(p2pDialog, buttons, cancelButton);
+        
+        // 다이얼로그 표시
+        p2pDialog.setVisible(true);
+        p2pDialog.requestFocus();
+    }
+    
+    /**
+     * 서버 모드를 시작합니다.
+     */
+    private void showServerMode() {
+        System.out.println("Starting Server Mode...");
+        // TODO: 서버 대기 화면 구현
+        JOptionPane.showMessageDialog(this, 
+            "서버 모드를 시작합니다.\n클라이언트의 접속을 기다립니다.\n\n(추후 서버 대기 화면으로 구현 예정)", 
+            "서버 모드", 
+            JOptionPane.INFORMATION_MESSAGE);
+    }
+    
+    /**
+     * 클라이언트 모드를 시작합니다.
+     */
+    private void showClientMode() {
+        System.out.println("Starting Client Mode...");
+        // TODO: IP 입력 및 연결 화면 구현
+        String serverIP = JOptionPane.showInputDialog(this, 
+            "접속할 서버의 IP 주소를 입력해주세요:\n\n예: 192.168.1.100", 
+            "클라이언트 모드", 
+            JOptionPane.QUESTION_MESSAGE);
+        
+        if (serverIP != null && !serverIP.trim().isEmpty()) {
+            System.out.println("Attempting to connect to server: " + serverIP);
+            JOptionPane.showMessageDialog(this, 
+                "서버 " + serverIP + "에 접속을 시도합니다.\n\n(추후 네트워크 연결 기능으로 구현 예정)", 
+                "클라이언트 모드", 
+                JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            System.out.println("Client connection cancelled.");
+        }
     }
 
     /**
