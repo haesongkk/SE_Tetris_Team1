@@ -399,9 +399,9 @@ public class MainMenuScene extends Scene implements KeyListener {
         buttons[0].setBackground(getSelectedButtonColor());
         
         // 설명 라벨
-        JLabel descLabel = new JLabel("<html><center>Regular Mode: 클래식 테트리스<br>Item Mode: 준비중</center></html>", SwingConstants.CENTER);
-        descLabel.setFont(new Font("Malgun Gothic", Font.PLAIN, 11));
-        descLabel.setForeground(Color.LIGHT_GRAY);
+        // JLabel descLabel = new JLabel("<html><center>Regular Mode: 클래식 테트리스<br>Item Mode: 준비중</center></html>", SwingConstants.CENTER);
+        // descLabel.setFont(new Font("Malgun Gothic", Font.PLAIN, 11));
+        // descLabel.setForeground(Color.LIGHT_GRAY);
         
         // 컴포넌트 배치
         dialogPanel.add(titleLabel, BorderLayout.NORTH);
