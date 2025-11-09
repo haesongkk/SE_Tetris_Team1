@@ -607,10 +607,11 @@ public class MainMenuScene extends Scene implements KeyListener {
      * 서버 모드를 시작합니다.
      */
     private void showServerMode() {
+        tetris.network.EchoServer echoServer = new tetris.network.EchoServer();
         System.out.println("Starting Server Mode...");
         // TODO: 서버 대기 화면 구현
         JOptionPane.showMessageDialog(this, 
-            "서버 모드를 시작합니다.\n클라이언트의 접속을 기다립니다.\n\n(추후 서버 대기 화면으로 구현 예정)", 
+            "서버 모드를 시작합니다.\n클라이언트의 접속을 기다립니다.\n\n서버 IP 주소: " + echoServer.HOST, 
             "서버 모드", 
             JOptionPane.INFORMATION_MESSAGE);
     }
@@ -627,11 +628,12 @@ public class MainMenuScene extends Scene implements KeyListener {
             JOptionPane.QUESTION_MESSAGE);
         
         if (serverIP != null && !serverIP.trim().isEmpty()) {
-            System.out.println("Attempting to connect to server: " + serverIP);
-            JOptionPane.showMessageDialog(this, 
-                "서버 " + serverIP + "에 접속을 시도합니다.\n\n(추후 네트워크 연결 기능으로 구현 예정)", 
-                "클라이언트 모드", 
-                JOptionPane.INFORMATION_MESSAGE);
+            // System.out.println("Attempting to connect to server: " + serverIP);
+            // JOptionPane.showMessageDialog(this, 
+            //     "서버 " + serverIP + "에 접속을 시도합니다.\n\n(추후 네트워크 연결 기능으로 구현 예정)", 
+            //     "클라이언트 모드", 
+            //     JOptionPane.INFORMATION_MESSAGE);
+            new tetris.network.EchoClient(serverIP.trim());
         } else {
             System.out.println("Client connection cancelled.");
         }
