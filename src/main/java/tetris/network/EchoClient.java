@@ -38,6 +38,8 @@ public class EchoClient {
             public boolean dispatchKeyEvent(KeyEvent e) {
                 if (e.getID() == KeyEvent.KEY_PRESSED){
                     int code = e.getKeyCode();
+                    String keyString = KeyEvent.getKeyText(code);
+                    System.out.println("키 입력 감지: " + code + " (" + keyString + ")");
                     sendToServer(String.valueOf(code));
                 }
                 
