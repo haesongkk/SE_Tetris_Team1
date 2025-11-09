@@ -51,7 +51,7 @@ public class EchoClient {
     }
 
     void sendToServer(String message) {
-        try { out.write(message); }
+        try { out.write(message + "\n"); out.flush(); }
         catch (IOException ex) { ex.printStackTrace(); }
     }
 }
