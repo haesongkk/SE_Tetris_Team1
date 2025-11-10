@@ -545,16 +545,6 @@ public class BattleScene extends Scene {
         container.setBackground(bg);
         container.setOpaque(true);
         
-        // 1P/2P 라벨 (임시 주석)
-        /*
-        JLabel playerLabel = new JLabel(playerNum == 1 ? "1P" : "2P", SwingConstants.CENTER);
-        playerLabel.setFont(new Font("Arial", Font.BOLD, 18));
-        playerLabel.setForeground(Color.WHITE);
-        playerLabel.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
-        playerLabel.setOpaque(false);
-        container.add(playerLabel, BorderLayout.NORTH);
-        */
-        
         // 래퍼 패널 생성 (GameScene의 UIManager처럼)
         JPanel wrapper = new JPanel(new GridBagLayout());
         wrapper.setBackground(bg);
@@ -562,9 +552,21 @@ public class BattleScene extends Scene {
         // 게임 패널 생성 (RenderManager 사용)
         GameBoardPanel gamePanel = new GameBoardPanel(boardMgr, blockMgr, scoreMgr, lineBlinkEffect, playerNum);
         
-        // 고정 셀 크기 사용 (UIManager 초기화 문제 회피)
-        int cellSize = 30;
-        int previewCellSize = 20;
+        // 화면 크기에 따라 동적으로 셀 크기 계산
+        int frameHeight = m_frame.getHeight();
+        int frameWidth = m_frame.getWidth();
+        
+        // 배틀 모드: 두 보드가 좌우로 배치되므로 너비를 절반으로 나눔
+        int availableWidth = (frameWidth - 100) / 2; // 간격 및 여백 고려
+        int availableHeight = frameHeight - 100; // 상하 여백 고려
+        
+        // 셀 크기 계산 (보드 크기 + 미리보기 영역 고려)
+        int cellSizeByHeight = availableHeight / (GAME_HEIGHT + 2);
+        int cellSizeByWidth = availableWidth / (GAME_WIDTH + 2 + PREVIEW_SIZE + 2); // 보드 + 미리보기
+        int cellSize = Math.min(cellSizeByHeight, cellSizeByWidth);
+        cellSize = Math.max(15, Math.min(cellSize, 35)); // 15~35 사이로 제한
+        
+        int previewCellSize = cellSize * 2 / 3; // 셀 크기의 2/3
         
         if (playerNum == 1) {
             renderManager1 = new RenderManager(
@@ -622,9 +624,9 @@ public class BattleScene extends Scene {
             g2.setFont(new Font("Arial", Font.BOLD, 16));
             String playerText = (playerNum == 1) ? "1P" : "2P";
             
-            // RenderManager 레이아웃 기준 위치 계산
-            int cellSize = 30;
-            int previewCellSize = 20;
+            // RenderManager에서 동적으로 계산된 셀 크기 가져오기
+            int cellSize = renderMgr.getCellSize();
+            int previewCellSize = renderMgr.getPreviewCellSize();
             int previewX = (GAME_WIDTH + 2) * cellSize + 20;
             int previewY = cellSize + 20;
             int previewAreaSize = PREVIEW_SIZE * previewCellSize;
