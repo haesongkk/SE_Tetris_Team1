@@ -59,6 +59,10 @@ public class BattleScene extends Scene {
     private Timer blinkTimer;
     private static final int BLINK_INTERVAL_MS = 50; // 점멸 효과 업데이트 주기 (밀리초)
     
+    // 공격 대기 블록 수 (상대가 삭제한 줄 수)
+    private int pendingAttackLines1 = 0; // 1P가 받을 공격 (2P가 삭제한 줄)
+    private int pendingAttackLines2 = 0; // 2P가 받을 공격 (1P가 삭제한 줄)
+    
     // 게임 오버 상태 (어느 한쪽이라도 게임 오버되면 양쪽 모두 종료)
     private boolean isGameOver = false;
 
@@ -639,6 +643,22 @@ public class BattleScene extends Scene {
             int labelX = previewX;
             int labelY = timeBoardY + timeBoardHeight + 25; // 타이머 아래 25px 간격
             g2.drawString(playerText, labelX, labelY);
+            
+            // ═══════════════════════════════════════════════════════════════
+            // 공격 대기 블록 표시 영역 (1P/2P 라벨 아래)
+            // ═══════════════════════════════════════════════════════════════
+            int attackBoardY = labelY + 30; // 라벨 아래 30px 간격
+            int attackBoardWidth = PREVIEW_SIZE * previewCellSize + 20;
+            int attackBoardHeight = 200;
+            
+            // 공격 대기 블록 프레임 그리기
+            g2.setColor(new Color(60, 60, 60)); // 어두운 회색 배경
+            g2.fillRect(previewX - 10, attackBoardY, attackBoardWidth, attackBoardHeight);
+            
+            // 프레임 테두리
+            g2.setColor(new Color(100, 100, 100));
+            g2.setStroke(new BasicStroke(2));
+            g2.drawRect(previewX - 10, attackBoardY, attackBoardWidth, attackBoardHeight);
             
             g2.dispose();
         }
