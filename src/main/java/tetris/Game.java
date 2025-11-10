@@ -30,8 +30,15 @@ public class Game {
         if (instance.curScene != null) {               // null 체크 추가
             instance.curScene.onExit();                 // 현재 씬 종료 처리    
         }
+        
         instance.curScene = scene;                      // 씬 교체     
+        
         if (instance.curScene != null) {               // null 체크 추가
+            // JFrame의 ContentPane을 새로운 Scene으로 교체
+            instance.frame.setContentPane(instance.curScene);
+            instance.frame.revalidate();
+            instance.frame.repaint();
+            
             instance.curScene.onEnter();                // 새 씬 진입 처리
         }
     }

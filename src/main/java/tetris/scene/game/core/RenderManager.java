@@ -776,4 +776,18 @@ public class RenderManager {
             return null;
         }
     }
+    
+    /**
+     * 셀 크기를 반환합니다.
+     */
+    public int getCellSize() {
+        return CELL_SIZE;
+    }
+    
+    /**
+     * 미리보기 셀 크기를 반환합니다.
+     */
+    public int getPreviewCellSize() {
+        return PREVIEW_CELL_SIZE;
+    }
 }

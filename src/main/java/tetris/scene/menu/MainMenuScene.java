@@ -143,11 +143,11 @@ public class MainMenuScene extends Scene implements KeyListener {
         gbc.anchor = GridBagConstraints.CENTER;
         
         // 메뉴 버튼들
-        String[] buttonTexts = {"Start Game", "P2P", "Settings", "Score", "Exit"};
+        String[] buttonTexts = {"Start Game", "Local Battle", "P2P", "Settings", "Score", "Exit"};
         menuButtons = new JButton[buttonTexts.length];
         
-        // 해상도에 따른 버튼 간격 조정 (고정된 작은 간격)
-        int buttonSpacing = 20; // 고정된 간격
+        // 해상도에 따른 버튼 간격 조정 (6개 버튼에 맞춰 더 작은 간격)
+        int buttonSpacing = 15; // 더 작은 간격
         
         for (int i = 0; i < buttonTexts.length; i++) {
             menuButtons[i] = createMenuButton(buttonTexts[i], i);
@@ -172,10 +172,10 @@ public class MainMenuScene extends Scene implements KeyListener {
         int screenWidth = resolution[0];
         int screenHeight = resolution[1];
         
-        // 해상도에 따른 동적 크기 조정 (더 합리적인 크기)
+        // 해상도에 따른 동적 크기 조정 (6개 버튼에 맞춰 조정)
         int buttonWidth = Math.max(200, Math.min(400, screenWidth / 3));  // 최소 200px, 최대 400px
-        int buttonHeight = Math.max(50, Math.min(80, screenHeight / 12)); // 최소 50px, 최대 80px
-        int fontSize = Math.max(18, Math.min(28, screenWidth / 30));      // 최소 18px, 최대 28px
+        int buttonHeight = Math.max(40, Math.min(65, screenHeight / 15)); // 최소 40px, 최대 65px (더 작게)
+        int fontSize = Math.max(16, Math.min(24, screenWidth / 35));      // 최소 16px, 최대 24px (더 작게)
         
         button.setFont(new Font("Arial", Font.BOLD, fontSize));
         button.setPreferredSize(new Dimension(buttonWidth, buttonHeight));
@@ -276,16 +276,19 @@ public class MainMenuScene extends Scene implements KeyListener {
             case 0: // 게임 시작
                 startGame();
                 break;
-            case 1: // P2P 모드
+            case 1: // 로컬 배틀
+                showLocalBattleModeSelection();
+                break;
+            case 2: // P2P 모드
                 showP2PModeDialog();
                 break;
-            case 2: // 설정
+            case 3: // 설정
                 showSettings();
                 break;
-            case 3: // 점수 기록
+            case 4: // 점수 기록
                 showScores();
                 break;
-            case 4: // 종료
+            case 5: // 종료
                 quitGame();
                 break;
             default:
@@ -876,5 +879,141 @@ public class MainMenuScene extends Scene implements KeyListener {
     @Override
     public void onExit() {
         bgm.release();
+    }
+    
+    /**
+     * 로컬 배틀 모드 선택 다이얼로그 (역할 2 담당)
+     */
+    private void showLocalBattleModeSelection() {
+        // 해상도에 따른 다이얼로그 크기 조정
+        int[] resolution = gameSettings.getResolutionSize();
+        int screenWidth = resolution[0];
+        int screenHeight = resolution[1];
+        
+        int dialogWidth = Math.max(350, Math.min(450, screenWidth / 2));
+        int dialogHeight = Math.max(280, Math.min(380, screenHeight / 2));
+        
+        // 다이얼로그 생성
+        JDialog battleModeDialog = createBaseDialog(dialogWidth, dialogHeight);
+        JPanel dialogPanel = createDialogPanel();
+        
+        // 제목 라벨
+        JLabel titleLabel = createDialogTitle("로컬 배틀 모드 선택");
+        titleLabel.setFont(new Font("Malgun Gothic", Font.BOLD, Math.max(18, screenWidth / 45)));
+        
+        // 설명 라벨
+        JLabel descLabel = new JLabel("<html><center>한 PC에서 2명이 대전합니다 (1P vs 2P)<br>게임 모드를 선택해주세요</center></html>", SwingConstants.CENTER);
+        descLabel.setFont(new Font("Malgun Gothic", Font.PLAIN, 12));
+        descLabel.setForeground(getTextColor());
+        descLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 20, 0));
+        
+        // 상단 패널 (제목 + 설명)
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setOpaque(false);
+        topPanel.add(titleLabel, BorderLayout.NORTH);
+        topPanel.add(descLabel, BorderLayout.CENTER);
+        
+        // 버튼 패널
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setOpaque(false);
+        buttonPanel.setLayout(new GridLayout(4, 1, 0, 12));
+        
+        // 일반 모드 버튼
+        JButton normalModeButton = createDialogButton("일반 모드");
+        normalModeButton.setToolTipText("기본 테트리스 룰로 대전합니다");
+        normalModeButton.addActionListener(e -> {
+            SwingUtilities.invokeLater(() -> {
+                startLocalBattleGame("normal");
+                battleModeDialog.dispose();
+            });
+        });
+        
+        // 아이템 모드 버튼
+        JButton itemModeButton = createDialogButton("아이템 모드");
+        itemModeButton.setToolTipText("폭탄 아이템과 함께 대전합니다");
+        itemModeButton.addActionListener(e -> {
+            SwingUtilities.invokeLater(() -> {
+                startLocalBattleGame("item");
+                battleModeDialog.dispose();
+            });
+        });
+        
+        // 시간 제한 모드 버튼
+        JButton timeLimitButton = createDialogButton("시간 제한 모드");
+        timeLimitButton.setToolTipText("제한 시간 내에 승부를 결정합니다");
+        timeLimitButton.addActionListener(e -> {
+            SwingUtilities.invokeLater(() -> {
+                startLocalBattleGame("time_limit");
+                battleModeDialog.dispose();
+            });
+        });
+        
+        // 취소 버튼
+        JButton cancelButton = createCancelButton(battleModeDialog);
+        
+        buttonPanel.add(normalModeButton);
+        buttonPanel.add(itemModeButton);
+        buttonPanel.add(timeLimitButton);
+        buttonPanel.add(cancelButton);
+        
+        // 버튼 배열 (키보드 네비게이션용)
+        JButton[] buttons = {normalModeButton, itemModeButton, timeLimitButton, cancelButton};
+        
+        // 컴포넌트 배치
+        dialogPanel.add(topPanel, BorderLayout.NORTH);
+        dialogPanel.add(buttonPanel, BorderLayout.CENTER);
+        
+        battleModeDialog.add(dialogPanel);
+        
+        // 키보드 네비게이션 추가
+        addDialogKeyNavigation(battleModeDialog, buttons, cancelButton);
+        
+        // 다이얼로그 표시
+        battleModeDialog.setVisible(true);
+        battleModeDialog.requestFocus();
+    }
+    
+    /**
+     * 선택된 모드로 로컬 배틀 게임을 시작합니다.
+     */
+    private void startLocalBattleGame(String gameMode) {
+        System.out.println("=== LOCAL BATTLE DEBUG ===");
+        System.out.println("로컬 배틀 게임 시작 시도: " + gameMode);
+        System.out.println("현재 Scene: " + this.getClass().getSimpleName());
+        
+        // 2P 보드가 있는 로컬 배틀 화면으로 전환
+        try {
+            System.out.println("TwoPlayerBattleScene 생성 중...");
+            
+            // 새 BattleScene (UI-only, 두 개 보드) 사용
+            tetris.scene.battle.BattleScene battleScene = 
+                new tetris.scene.battle.BattleScene(frame, gameMode);
+            
+            System.out.println("생성된 Scene 타입: " + battleScene.getClass().getSimpleName());
+            System.out.println("Scene 전환 중...");
+            tetris.Game.setScene(battleScene);
+            System.out.println("Scene 전환 완료!");
+            System.out.println("=== LOCAL BATTLE DEBUG 끝 ===");
+            
+        } catch (Exception e) {
+            System.err.println("로컬 배틀 화면 로딩 실패: " + e.getMessage());
+            e.printStackTrace();
+            
+            String modeDescription = switch (gameMode) {
+                case "normal" -> "일반 모드";
+                case "item" -> "아이템 모드";  
+                case "time_limit" -> "시간 제한 모드";
+                default -> "알 수 없는 모드";
+            };
+            
+            // 에러 발생 시 사용자에게 알림
+            JOptionPane.showMessageDialog(frame, 
+                "게임 화면을 로딩하는 중 오류가 발생했습니다.\n" +
+                "모드: " + modeDescription + "\n\n" +
+                "오류: " + e.getMessage() + "\n\n" +
+                "다시 시도해주세요.", 
+                "로딩 오류", 
+                JOptionPane.ERROR_MESSAGE);
+        }
     }
 }

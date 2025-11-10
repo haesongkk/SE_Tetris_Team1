@@ -17,6 +17,9 @@ public class GameSettings {
     private Difficulty difficulty = Difficulty.NORMAL; // 기본 난이도
     
     // 게임 조작키 설정값들 (KeyEvent 상수값 사용)
+    // ═══════════════════════════════════════════════════════════════
+    // 싱글 플레이 모드 키 설정
+    // ═══════════════════════════════════════════════════════════════
     private int leftKey = 37;   // VK_LEFT (←)
     private int rightKey = 39;  // VK_RIGHT (→)
     private int rotateKey = 38; // VK_UP (↑)
@@ -25,6 +28,30 @@ public class GameSettings {
     private int pauseKey = 80;  // VK_P
     private int holdKey = 16;   // VK_SHIFT
     private int exitKey = 81;   // VK_Q
+    
+    // ═══════════════════════════════════════════════════════════════
+    // 배틀 모드 - 1P 키 설정 (WASD + Space)
+    // ═══════════════════════════════════════════════════════════════
+    private int battleLeftKey1 = 65;   // VK_A
+    private int battleRightKey1 = 68;  // VK_D
+    private int battleRotateKey1 = 87; // VK_W
+    private int battleFallKey1 = 83;   // VK_S
+    private int battleDropKey1 = 32;   // VK_SPACE
+    private int battlePauseKey1 = 80;  // VK_P
+    private int battleHoldKey1 = 16;   // VK_SHIFT
+    private int battleExitKey1 = 81;   // VK_Q
+    
+    // ═══════════════════════════════════════════════════════════════
+    // 배틀 모드 - 2P 키 설정 (방향키 + Enter)
+    // ═══════════════════════════════════════════════════════════════
+    private int battleLeftKey2 = 37;   // VK_LEFT (←)
+    private int battleRightKey2 = 39;  // VK_RIGHT (→)
+    private int battleRotateKey2 = 38; // VK_UP (↑)
+    private int battleFallKey2 = 40;   // VK_DOWN (↓)
+    private int battleDropKey2 = 10;   // VK_ENTER
+    private int battlePauseKey2 = 80;  // VK_P
+    private int battleHoldKey2 = 16;   // VK_SHIFT
+    private int battleExitKey2 = 81;   // VK_Q
 
     // 음량 조절
     private int volume = 20;
@@ -140,7 +167,7 @@ public class GameSettings {
         return displayMode == 0 ? "창모드" : "전체화면";
     }
     
-    // 키 설정 getter 메서드들
+    // 키 설정 getter 메서드들 (싱글 플레이 모드)
     public int getLeftKey() { return leftKey; }
     public int getRightKey() { return rightKey; }
     public int getRotateKey() { return rotateKey; }
@@ -150,7 +177,42 @@ public class GameSettings {
     public int getHoldKey() { return holdKey; }
     public int getExitKey() { return exitKey; }
     
-    // 키 설정 setter 메서드들
+    // 배틀 모드 - 플레이어별 키 설정 가져오기
+    // player가 0이면 싱글 플레이 모드 키 반환, 1 or 2면 배틀 모드 키 반환
+    public int getLeftKey(int player) { 
+        if (player == 0) return leftKey; // 싱글 플레이 모드
+        return player == 1 ? battleLeftKey1 : battleLeftKey2; 
+    }
+    public int getRightKey(int player) { 
+        if (player == 0) return rightKey; // 싱글 플레이 모드
+        return player == 1 ? battleRightKey1 : battleRightKey2; 
+    }
+    public int getRotateKey(int player) { 
+        if (player == 0) return rotateKey; // 싱글 플레이 모드
+        return player == 1 ? battleRotateKey1 : battleRotateKey2; 
+    }
+    public int getFallKey(int player) { 
+        if (player == 0) return fallKey; // 싱글 플레이 모드
+        return player == 1 ? battleFallKey1 : battleFallKey2; 
+    }
+    public int getDropKey(int player) { 
+        if (player == 0) return dropKey; // 싱글 플레이 모드
+        return player == 1 ? battleDropKey1 : battleDropKey2; 
+    }
+    public int getPauseKey(int player) { 
+        if (player == 0) return pauseKey; // 싱글 플레이 모드
+        return player == 1 ? battlePauseKey1 : battlePauseKey2; 
+    }
+    public int getHoldKey(int player) { 
+        if (player == 0) return holdKey; // 싱글 플레이 모드
+        return player == 1 ? battleHoldKey1 : battleHoldKey2; 
+    }
+    public int getExitKey(int player) { 
+        if (player == 0) return exitKey; // 싱글 플레이 모드
+        return player == 1 ? battleExitKey1 : battleExitKey2; 
+    }
+    
+    // 키 설정 setter 메서드들 (싱글 플레이 모드)
     public void setLeftKey(int keyCode) { this.leftKey = keyCode; }
     public void setRightKey(int keyCode) { this.rightKey = keyCode; }
     public void setRotateKey(int keyCode) { this.rotateKey = keyCode; }
@@ -158,6 +220,24 @@ public class GameSettings {
     public void setDropKey(int keyCode) { this.dropKey = keyCode; }
     public void setPauseKey(int keyCode) { this.pauseKey = keyCode; }
     public void setHoldKey(int keyCode) { this.holdKey = keyCode; }
+    
+    // 배틀 모드 - 1P 키 설정 setter
+    public void setBattleLeftKey1(int keyCode) { this.battleLeftKey1 = keyCode; }
+    public void setBattleRightKey1(int keyCode) { this.battleRightKey1 = keyCode; }
+    public void setBattleRotateKey1(int keyCode) { this.battleRotateKey1 = keyCode; }
+    public void setBattleFallKey1(int keyCode) { this.battleFallKey1 = keyCode; }
+    public void setBattleDropKey1(int keyCode) { this.battleDropKey1 = keyCode; }
+    public void setBattlePauseKey1(int keyCode) { this.battlePauseKey1 = keyCode; }
+    public void setBattleHoldKey1(int keyCode) { this.battleHoldKey1 = keyCode; }
+    
+    // 배틀 모드 - 2P 키 설정 setter
+    public void setBattleLeftKey2(int keyCode) { this.battleLeftKey2 = keyCode; }
+    public void setBattleRightKey2(int keyCode) { this.battleRightKey2 = keyCode; }
+    public void setBattleRotateKey2(int keyCode) { this.battleRotateKey2 = keyCode; }
+    public void setBattleFallKey2(int keyCode) { this.battleFallKey2 = keyCode; }
+    public void setBattleDropKey2(int keyCode) { this.battleDropKey2 = keyCode; }
+    public void setBattlePauseKey2(int keyCode) { this.battlePauseKey2 = keyCode; }
+    public void setBattleHoldKey2(int keyCode) { this.battleHoldKey2 = keyCode; }
     
     // 키 코드를 문자열로 변환하는 메서드
     public static String getKeyName(int keyCode) {
@@ -302,6 +382,7 @@ public class GameSettings {
         difficulty = Difficulty.NORMAL; // 난이도 기본값으로 초기화
 
         // 키 설정도 기본값으로 초기화
+        // 싱글 플레이 모드
         leftKey = 37;   // VK_LEFT
         rightKey = 39;  // VK_RIGHT
         rotateKey = 38; // VK_UP
@@ -309,6 +390,24 @@ public class GameSettings {
         dropKey = 32;   // VK_SPACE
         pauseKey = 80;  // VK_P
         holdKey = 16;   // VK_SHIFT
+        
+        // 배틀 모드 - 1P (WASD + Space)
+        battleLeftKey1 = 65;   // VK_A
+        battleRightKey1 = 68;  // VK_D
+        battleRotateKey1 = 87; // VK_W
+        battleFallKey1 = 83;   // VK_S
+        battleDropKey1 = 32;   // VK_SPACE
+        battlePauseKey1 = 80;  // VK_P
+        battleHoldKey1 = 16;   // VK_SHIFT
+        
+        // 배틀 모드 - 2P (방향키 + Enter)
+        battleLeftKey2 = 37;   // VK_LEFT
+        battleRightKey2 = 39;  // VK_RIGHT
+        battleRotateKey2 = 38; // VK_UP
+        battleFallKey2 = 40;   // VK_DOWN
+        battleDropKey2 = 10;   // VK_ENTER
+        battlePauseKey2 = 80;  // VK_P
+        battleHoldKey2 = 16;   // VK_SHIFT
 
         volume = 20;
         isMuted = false;
@@ -355,6 +454,8 @@ public class GameSettings {
                 writer.println("resolution=" + resolution);
                 writer.println("colorBlindMode=" + colorBlindMode);
                 writer.println("difficulty=" + difficulty.ordinal());
+                
+                // 싱글 플레이 키 설정
                 writer.println("leftKey=" + leftKey);
                 writer.println("rightKey=" + rightKey);
                 writer.println("rotateKey=" + rotateKey);
@@ -363,6 +464,28 @@ public class GameSettings {
                 writer.println("pauseKey=" + pauseKey);
                 writer.println("holdKey=" + holdKey);
                 writer.println("exitKey=" + exitKey);
+                
+                // 배틀 모드 1P 키 설정
+                writer.println("battleLeftKey1=" + battleLeftKey1);
+                writer.println("battleRightKey1=" + battleRightKey1);
+                writer.println("battleRotateKey1=" + battleRotateKey1);
+                writer.println("battleFallKey1=" + battleFallKey1);
+                writer.println("battleDropKey1=" + battleDropKey1);
+                writer.println("battlePauseKey1=" + battlePauseKey1);
+                writer.println("battleHoldKey1=" + battleHoldKey1);
+                writer.println("battleExitKey1=" + battleExitKey1);
+                
+                // 배틀 모드 2P 키 설정
+                writer.println("battleLeftKey2=" + battleLeftKey2);
+                writer.println("battleRightKey2=" + battleRightKey2);
+                writer.println("battleRotateKey2=" + battleRotateKey2);
+                writer.println("battleFallKey2=" + battleFallKey2);
+                writer.println("battleDropKey2=" + battleDropKey2);
+                writer.println("battlePauseKey2=" + battlePauseKey2);
+                writer.println("battleHoldKey2=" + battleHoldKey2);
+                writer.println("battleExitKey2=" + battleExitKey2);
+                
+                // 기타 설정
                 writer.println("volume=" + volume);
                 writer.println("isMuted=" + isMuted);
             }
@@ -415,6 +538,8 @@ public class GameSettings {
                                 int diffIndex = Integer.parseInt(value);
                                 difficulty = Difficulty.values()[diffIndex];
                                 break;
+                            
+                            // 싱글 플레이 키 설정
                             case "leftKey":
                                 leftKey = Integer.parseInt(value);
                                 break;
@@ -439,6 +564,60 @@ public class GameSettings {
                             case "exitKey":
                                 exitKey = Integer.parseInt(value);
                                 break;
+                            
+                            // 배틀 모드 1P 키 설정
+                            case "battleLeftKey1":
+                                battleLeftKey1 = Integer.parseInt(value);
+                                break;
+                            case "battleRightKey1":
+                                battleRightKey1 = Integer.parseInt(value);
+                                break;
+                            case "battleRotateKey1":
+                                battleRotateKey1 = Integer.parseInt(value);
+                                break;
+                            case "battleFallKey1":
+                                battleFallKey1 = Integer.parseInt(value);
+                                break;
+                            case "battleDropKey1":
+                                battleDropKey1 = Integer.parseInt(value);
+                                break;
+                            case "battlePauseKey1":
+                                battlePauseKey1 = Integer.parseInt(value);
+                                break;
+                            case "battleHoldKey1":
+                                battleHoldKey1 = Integer.parseInt(value);
+                                break;
+                            case "battleExitKey1":
+                                battleExitKey1 = Integer.parseInt(value);
+                                break;
+                            
+                            // 배틀 모드 2P 키 설정
+                            case "battleLeftKey2":
+                                battleLeftKey2 = Integer.parseInt(value);
+                                break;
+                            case "battleRightKey2":
+                                battleRightKey2 = Integer.parseInt(value);
+                                break;
+                            case "battleRotateKey2":
+                                battleRotateKey2 = Integer.parseInt(value);
+                                break;
+                            case "battleFallKey2":
+                                battleFallKey2 = Integer.parseInt(value);
+                                break;
+                            case "battleDropKey2":
+                                battleDropKey2 = Integer.parseInt(value);
+                                break;
+                            case "battlePauseKey2":
+                                battlePauseKey2 = Integer.parseInt(value);
+                                break;
+                            case "battleHoldKey2":
+                                battleHoldKey2 = Integer.parseInt(value);
+                                break;
+                            case "battleExitKey2":
+                                battleExitKey2 = Integer.parseInt(value);
+                                break;
+                            
+                            // 기타 설정
                             case "volume":
                                 volume = Integer.parseInt(value);
                                 break;
