@@ -985,9 +985,9 @@ public class MainMenuScene extends Scene implements KeyListener {
         try {
             System.out.println("TwoPlayerBattleScene 생성 중...");
             
-            // 명확한 2P 레이아웃을 가진 TwoPlayerBattleScene 사용
-            tetris.scene.battle.TwoPlayerBattleScene battleScene = 
-                new tetris.scene.battle.TwoPlayerBattleScene(frame, gameMode);
+            // 새 BattleScene (UI-only, 두 개 보드) 사용
+            tetris.scene.battle.BattleScene battleScene = 
+                new tetris.scene.battle.BattleScene(frame, gameMode);
             
             System.out.println("생성된 Scene 타입: " + battleScene.getClass().getSimpleName());
             System.out.println("Scene 전환 중...");

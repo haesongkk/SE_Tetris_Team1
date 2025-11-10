@@ -47,17 +47,30 @@ public class InputHandler implements KeyListener {
     private final JFrame frame;
     private final InputCallback callback;
     private final GameSettings settings;
+    private final int playerNumber; // 0: 싱글 플레이, 1 or 2: 배틀 모드
     
     /**
-     * InputHandler 생성자
+     * InputHandler 생성자 (싱글 플레이어용)
      * 
      * @param frame 게임 메인 프레임
      * @param callback 게임 액션 처리를 위한 콜백
      */
     public InputHandler(JFrame frame, InputCallback callback) {
+        this(frame, callback, 0); // 싱글 플레이 모드는 0
+    }
+    
+    /**
+     * InputHandler 생성자 (멀티 플레이어용)
+     * 
+     * @param frame 게임 메인 프레임
+     * @param callback 게임 액션 처리를 위한 콜백
+     * @param playerNumber 플레이어 번호 (0: 싱글 플레이, 1 or 2: 배틀 모드)
+     */
+    public InputHandler(JFrame frame, InputCallback callback, int playerNumber) {
         this.frame = frame;
         this.callback = callback;
         this.settings = GameSettings.getInstance();
+        this.playerNumber = playerNumber;
     }
     
     @Override
@@ -83,13 +96,13 @@ public class InputHandler implements KeyListener {
         }
         
         // 일시정지 키 처리 (게임이 진행 중일 때만)
-        if (keyCode == settings.getPauseKey()) {
+        if (keyCode == settings.getPauseKey(playerNumber)) {
             handleGameAction(GameAction.PAUSE);
             return;
         }
         
         // Q 키는 일시정지 상태에서도 처리 (메뉴로 나가기)
-        if (keyCode == settings.getExitKey()) {
+        if (keyCode == settings.getExitKey(playerNumber)) {
             handleGameAction(GameAction.EXIT_TO_MENU);
             return;
         }
@@ -118,19 +131,19 @@ public class InputHandler implements KeyListener {
      * @return 대응되는 게임 액션, 매핑되지 않으면 null
      */
     private GameAction mapKeyToAction(int keyCode) {
-        if (keyCode == settings.getLeftKey()) {
+        if (keyCode == settings.getLeftKey(playerNumber)) {
             return GameAction.MOVE_LEFT;
-        } else if (keyCode == settings.getRightKey()) {
+        } else if (keyCode == settings.getRightKey(playerNumber)) {
             return GameAction.MOVE_RIGHT;
-        } else if (keyCode == settings.getFallKey()) {
+        } else if (keyCode == settings.getFallKey(playerNumber)) {
             return GameAction.MOVE_DOWN;
-        } else if (keyCode == settings.getRotateKey()) {
+        } else if (keyCode == settings.getRotateKey(playerNumber)) {
             return GameAction.ROTATE;
-        } else if (keyCode == settings.getDropKey()) {
+        } else if (keyCode == settings.getDropKey(playerNumber)) {
             return GameAction.HARD_DROP;
-        } else if (keyCode == settings.getHoldKey()) {
+        } else if (keyCode == settings.getHoldKey(playerNumber)) {
             return GameAction.HOLD;
-        } else if (keyCode == settings.getExitKey()) {
+        } else if (keyCode == settings.getExitKey(playerNumber)) {
             return GameAction.EXIT_TO_MENU;
         }
         
