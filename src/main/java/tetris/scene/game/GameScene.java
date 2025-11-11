@@ -803,4 +803,12 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
     public TimerManager getTimerManager() {
         return timerManager;
     }
+
+    /**
+     * UIManager를 반환합니다. 
+     * @return UIManager 인스턴스
+     */
+    public UIManager getUIManager() {
+        return uiManager;
+    }
 }

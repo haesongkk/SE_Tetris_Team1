@@ -633,7 +633,8 @@ public class MainMenuScene extends Scene implements KeyListener {
             //     "서버 " + serverIP + "에 접속을 시도합니다.\n\n(추후 네트워크 연결 기능으로 구현 예정)", 
             //     "클라이언트 모드", 
             //     JOptionPane.INFORMATION_MESSAGE);
-            new tetris.network.EchoClient(serverIP.trim());
+            // new tetris.network.EchoClient(serverIP.trim());
+            Game.setScene(new tetris.scene.p2p.P2PScene(frame, gameSettings.getDifficulty()));
         } else {
             System.out.println("Client connection cancelled.");
         }
