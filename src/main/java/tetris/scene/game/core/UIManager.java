@@ -130,8 +130,9 @@ public class UIManager {
     
     /**
      * 게임 패널의 크기를 계산합니다.
+     * P2PScene에서 사용하기 위해 public으로 변경합니다.
      */
-    private Dimension calculateGamePanelSize() {
+    public Dimension calculateGamePanelSize() {
         int previewWidth = PREVIEW_SIZE * previewCellSize + PREVIEW_MARGIN;
         return new Dimension(
             (GAME_WIDTH + 2) * cellSize + previewWidth,
