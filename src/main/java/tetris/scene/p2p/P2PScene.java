@@ -12,10 +12,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import tetris.ColorBlindHelper;
+import tetris.GameSettings;
 import tetris.GameSettings.Difficulty;
 import tetris.scene.Scene;
 import tetris.scene.game.GameScene;
 import tetris.scene.game.blocks.Block;
+import tetris.scene.game.blocks.TBlock;
 import tetris.util.LineBlinkEffect;
 import tetris.util.Theme;
 
@@ -66,6 +69,10 @@ class SidePanel extends JPanel {
     char[][] boardTypes;
     char[][] itemTypes;
     Block nextBlock;
+    int elapsedSeconds = 20;
+    float speedMultiplier = 1.2f;
+    float difficultyMultiplier = 1.0f;
+    int score = 100;
     
     // 이미지 캐시
     private final Map<Character, BufferedImage> imageCache = new HashMap<>();
@@ -92,6 +99,8 @@ class SidePanel extends JPanel {
             }
         }
 
+        nextBlock = new TBlock();
+
     }
 
     @Override
@@ -108,6 +117,10 @@ class SidePanel extends JPanel {
         
         // 고정된 블록들 렌더링 (점멸 중인 셀들은 제외) + 현재 블럭까지
         renderBlocks(g2d);
+
+        renderNextBlockPreview(g2d);
+
+        renderScoreBoard(g2d);
         
     }
     
@@ -261,6 +274,294 @@ class SidePanel extends JPanel {
                 }
             }
         }
+    }
+
+
+    private void renderNextBlockPreview(Graphics2D g2d) {
+        // 미리보기 영역 위치 계산 (게임 보드 오른쪽)
+        int previewX = (GAME_WIDTH + 2) * CELL_SIZE + 20;
+        int previewY = CELL_SIZE + 20;
+        int previewAreaSize = PREVIEW_SIZE * PREVIEW_CELL_SIZE;
+
+        // 미리보기 영역 배경
+        g2d.setColor(Color.DARK_GRAY);
+        g2d.fillRect(previewX, previewY, previewAreaSize, previewAreaSize);
+
+        // 미리보기 영역 테두리
+        g2d.setColor(Color.WHITE);
+        g2d.setStroke(new BasicStroke(2));
+        g2d.drawRect(previewX, previewY, previewAreaSize, previewAreaSize);
+
+        // "NEXT" 라벨
+        g2d.setColor(Color.WHITE);
+        g2d.setFont(new Font("Arial", Font.BOLD, 14));
+        FontMetrics fm = g2d.getFontMetrics();
+        String nextLabel = "NEXT";
+        int labelWidth = fm.stringWidth(nextLabel);
+        g2d.drawString(nextLabel, previewX + (previewAreaSize - labelWidth) / 2, previewY - 5);
+
+        // 다음 블록을 중앙에 배치하기 위한 오프셋 계산
+        int blockWidth = nextBlock.width();
+        int blockHeight = nextBlock.height();
+        int offsetX = (PREVIEW_SIZE - blockWidth) / 2;
+        int offsetY = (PREVIEW_SIZE - blockHeight) / 2;
+
+        // 다음 블록 그리기
+        boolean itemImageRendered = false; // 아이템 이미지가 첫 번째 셀에 렌더링되었는지 추적
+        
+        for (int blockRow = 0; blockRow < blockHeight; blockRow++) {
+            for (int blockCol = 0; blockCol < blockWidth; blockCol++) {
+                if (nextBlock.getShape(blockCol, blockRow) == 1) {
+                    int drawX = previewX + (offsetX + blockCol) * PREVIEW_CELL_SIZE + 2;
+                    int drawY = previewY + (offsetY + blockRow) * PREVIEW_CELL_SIZE + 2;
+                    
+                    // ItemBlock인지 확인하고 첫 번째 셀에만 아이템 이미지 렌더링
+                    boolean itemRenderedForThisCell = false;
+                    if (!itemImageRendered) {
+                        // 아이템 이미지가 렌더링되었는지 확인
+                        if (renderItemImageInPreview(g2d, nextBlock, drawX, drawY, PREVIEW_CELL_SIZE - 4)) {
+                            itemImageRendered = true; // 한 번만 렌더링하도록 플래그 설정
+                            itemRenderedForThisCell = true;
+                        }
+                    }
+                    
+                    // 아이템 이미지가 렌더링되지 않은 셀은 일반 블록으로 렌더링
+                    if (!itemRenderedForThisCell) {
+                        Color blockColor = nextBlock.getColor();
+                        g2d.setColor(blockColor);
+                        g2d.fillRect(drawX, drawY, PREVIEW_CELL_SIZE - 4, PREVIEW_CELL_SIZE - 4);
+                        
+                        // 색맹 모드에서 패턴 추가
+                        int colorBlindMode = GameSettings.getInstance().getColorBlindMode();
+                        if (colorBlindMode > 0) {
+                            int blockType = nextBlock.getType();
+                            ColorBlindHelper.drawBlockPattern(g2d, blockType, drawX, drawY, PREVIEW_CELL_SIZE - 4, colorBlindMode, blockColor);
+                        }
+                        
+                        // 블록 테두리
+                        g2d.setColor(Color.BLACK);
+                        g2d.setStroke(new BasicStroke(1));
+                        g2d.drawRect(drawX, drawY, PREVIEW_CELL_SIZE - 4, PREVIEW_CELL_SIZE - 4);
+                    }
+                }
+            }
+        }
+
+    }
+
+    private boolean renderItemImageInPreview(Graphics2D g2d, Block block, int x, int y, int cellSize) {
+        // ItemBlock인지 확인
+        if (!block.getClass().getSimpleName().equals("ItemBlock")) {
+            return false;
+        }
+        
+        try {
+            // ItemBlock의 getItemType 메서드 호출
+            Object itemType = block.getClass().getMethod("getItemType").invoke(block);
+            if (itemType == null) {
+                return false;
+            }
+            
+            // ItemEffectType별로 처리
+            String itemTypeName = itemType.toString();
+            
+            // 각 아이템 타입별로 처리
+            switch (itemTypeName) {
+                case "SPEED_UP":
+                    // 흰색 배경 그리기 (이미지 가시성을 위해)
+                    g2d.setColor(Color.WHITE);
+                    g2d.fillRect(x, y, cellSize, cellSize);
+                    renderItemImage(g2d, "running.png", x, y, cellSize);
+                    return true;
+                case "SPEED_DOWN":
+                    // 흰색 배경 그리기 (이미지 가시성을 위해)
+                    g2d.setColor(Color.WHITE);
+                    g2d.fillRect(x, y, cellSize, cellSize);
+                    renderItemImage(g2d, "snail.png", x, y, cellSize);
+                    return true;
+                case "VISION_BLOCK":
+                    // 흰색 배경 그리기 (이미지 가시성을 위해)
+                    g2d.setColor(Color.WHITE);
+                    g2d.fillRect(x, y, cellSize, cellSize);
+                    renderItemImage(g2d, "visionblock.png", x, y, cellSize);
+                    return true;
+                case "CLEANUP":
+                    // 흰색 배경 그리기 (이미지 가시성을 위해)
+                    g2d.setColor(Color.WHITE);
+                    g2d.fillRect(x, y, cellSize, cellSize);
+                    renderItemImage(g2d, "broom.png", x, y, cellSize);
+                    return true;
+                case "LINE_CLEAR":
+                    // 줄 삭제는 검정 배경에 흰색 'L' 글자 사용
+                    g2d.setColor(Color.BLACK);
+                    g2d.fillRect(x, y, cellSize, cellSize);
+                    renderLineClearSymbol(g2d, x, y, cellSize);
+                    return true;
+                default:
+                    return false; // 알 수 없는 타입은 이미지 없이 처리
+            }
+            
+        } catch (Exception e) {
+            // 아이템 이미지 렌더링 실패 시 조용히 무시 (일반 블록으로 표시)
+            System.out.println("Failed to render item image in preview: " + e.getMessage());
+            return false;
+        }
+    }
+
+        /**
+     * PNG 이미지를 렌더링합니다 (크기 확대).
+     */
+    private void renderItemImage(Graphics2D g2d, String imagePath, int x, int y, int cellSize) {
+        BufferedImage itemImage = loadImage(imagePath);
+        if (itemImage != null) {
+            // 이미지 크기를 더 크게 (여백을 2픽셀로 줄임)
+            int imageSize = cellSize - 2;
+            int imageX = x + (cellSize - imageSize) / 2;
+            int imageY = y + (cellSize - imageSize) / 2;
+            
+            g2d.drawImage(itemImage, imageX, imageY, imageSize, imageSize, null);
+            System.out.println("Rendered item image in preview: " + imagePath);
+        } else {
+            System.out.println("Failed to load image: " + imagePath);
+        }
+    }
+    
+    /**
+     * LINE_CLEAR 아이템용 흰색 'L' 글자를 렌더링합니다.
+     */
+    private void renderLineClearSymbol(Graphics2D g2d, int x, int y, int cellSize) {
+        Graphics2D g = (Graphics2D) g2d.create();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        
+        // 흰색 'L' 글자
+        g.setColor(Color.WHITE);
+        
+        // 폰트 크기를 셀 크기에 맞게 조정 (더 크게)
+        int fontSize = Math.max(cellSize * 3 / 4, 12); // 셀 크기의 75%로 더 크게
+        g.setFont(new Font("Arial", Font.BOLD, fontSize));
+        
+        // 'L' 글자 중앙 배치
+        FontMetrics fm = g.getFontMetrics();
+        String letter = "L";
+        int letterWidth = fm.stringWidth(letter);
+        int letterHeight = fm.getAscent();
+        
+        int letterX = x + (cellSize - letterWidth) / 2;
+        int letterY = y + (cellSize + letterHeight) / 2 - fm.getDescent();
+        
+        g.drawString(letter, letterX, letterY);
+        g.dispose();
+    }
+
+    /**
+     * 점수판을 렌더링합니다.
+     */
+    private void renderScoreBoard(Graphics2D g2d) {
+        // 점수판 위치 계산 (다음 블록 미리보기 아래)
+        int previewX = (GAME_WIDTH + 2) * CELL_SIZE + 20;
+        int previewY = CELL_SIZE + 20;
+        int previewAreaSize = PREVIEW_SIZE * PREVIEW_CELL_SIZE;
+        
+        int scoreBoardX = previewX;
+        int scoreBoardY = previewY + previewAreaSize + 30; // 미리보기 아래 30px 간격
+        int scoreBoardWidth = previewAreaSize;
+        int scoreBoardHeight = 120; // 점수판 높이
+
+        drawScoreBoard(g2d, scoreBoardX, scoreBoardY, scoreBoardWidth, scoreBoardHeight);
+        
+        // 시간 표시 (점수판 아래)
+        renderTimeBoard(g2d, scoreBoardX, scoreBoardY + scoreBoardHeight + 10, scoreBoardWidth, 50);
+    }
+     /**
+     * 시간 정보를 표시하는 보드를 렌더링합니다.
+     */
+    private void renderTimeBoard(Graphics2D g2d, int x, int y, int width, int height) {
+        // 시간 보드 배경
+        g2d.setColor(Color.DARK_GRAY);
+        g2d.fillRect(x, y, width, height);
+
+        // 시간 보드 테두리
+        g2d.setColor(Color.WHITE);
+        g2d.setStroke(new BasicStroke(2));
+        g2d.drawRect(x, y, width, height);
+
+        // "TIME" 라벨
+        g2d.setColor(Color.WHITE);
+        g2d.setFont(new Font("Arial", Font.BOLD, 12));
+        FontMetrics fm = g2d.getFontMetrics();
+        String timeLabel = "TIME";
+        int labelWidth = fm.stringWidth(timeLabel);
+        g2d.drawString(timeLabel, x + (width - labelWidth) / 2, y + 20);
+
+        // 현재 시간 표시
+        String timeText = formatTime(elapsedSeconds);
+        g2d.setFont(new Font("Arial", Font.BOLD, 16));
+        fm = g2d.getFontMetrics();
+        int timeWidth = fm.stringWidth(timeText);
+        g2d.drawString(timeText, x + (width - timeWidth) / 2, y + 40);
+    }
+
+    /**
+     * 점수판을 그립니다.
+     * @param g2d Graphics2D 객체
+     * @param scoreBoardX 점수판 x 좌표
+     * @param scoreBoardY 점수판 y 좌표
+     * @param scoreBoardWidth 점수판 너비
+     * @param scoreBoardHeight 점수판 높이
+     */
+    public void drawScoreBoard(Graphics2D g2d, int scoreBoardX, int scoreBoardY, 
+                              int scoreBoardWidth, int scoreBoardHeight) {
+        // 점수판 배경
+        g2d.setColor(Color.DARK_GRAY);
+        g2d.fillRect(scoreBoardX, scoreBoardY, scoreBoardWidth, scoreBoardHeight);
+
+        // 점수판 테두리
+        g2d.setColor(Color.WHITE);
+        g2d.setStroke(new BasicStroke(2));
+        g2d.drawRect(scoreBoardX, scoreBoardY, scoreBoardWidth, scoreBoardHeight);
+
+        // 점수 정보 표시
+        g2d.setColor(Color.WHITE);
+        g2d.setFont(new Font("Arial", Font.BOLD, 12));
+        FontMetrics fm = g2d.getFontMetrics();
+
+        // "SCORE" 라벨
+        String scoreLabel = "SCORE";
+        int labelWidth = fm.stringWidth(scoreLabel);
+        g2d.drawString(scoreLabel, scoreBoardX + (scoreBoardWidth - labelWidth) / 2, scoreBoardY + 20);
+
+        // 현재 점수
+        g2d.setFont(new Font("Arial", Font.BOLD, 16));
+        fm = g2d.getFontMetrics();
+        String scoreText = String.format("%,d", score);
+        int scoreWidth = fm.stringWidth(scoreText);
+        g2d.drawString(scoreText, scoreBoardX + (scoreBoardWidth - scoreWidth) / 2, scoreBoardY + 45);
+        
+        // 배율 정보 표시 (디버깅용)
+        g2d.setFont(new Font("Arial", Font.PLAIN, 10));
+        fm = g2d.getFontMetrics();
+        
+        // 속도 배율
+        String speedMultiplierText = String.format("Speed: %.1fx", speedMultiplier);
+        int speedMultiplierWidth = fm.stringWidth(speedMultiplierText);
+        g2d.drawString(speedMultiplierText, scoreBoardX + (scoreBoardWidth - speedMultiplierWidth) / 2, scoreBoardY + 65);
+        
+        // 난이도 배율
+        String difficultyMultiplierText = String.format("Difficulty: %.1fx", difficultyMultiplier);
+        int difficultyMultiplierWidth = fm.stringWidth(difficultyMultiplierText);
+        g2d.drawString(difficultyMultiplierText, scoreBoardX + (scoreBoardWidth - difficultyMultiplierWidth) / 2, scoreBoardY + 78);
+        
+    }
+
+        /**
+     * 시간을 MM:SS 형식으로 포맷팅합니다.
+     * @param seconds 초 단위 시간
+     * @return MM:SS 형식의 문자열
+     */
+    private String formatTime(int seconds) {
+        int minutes = seconds / 60;
+        int remainingSeconds = seconds % 60;
+        return String.format("%02d:%02d", minutes, remainingSeconds);
     }
 
     private BufferedImage loadImage(String imagePath) {
