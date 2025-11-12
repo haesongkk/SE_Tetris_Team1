@@ -2,11 +2,14 @@ package tetris.scene.menu;
 
 import tetris.Game;
 import tetris.GameSettings;
+import tetris.network.P2PClient;
+import tetris.network.P2PServer;
 import tetris.util.Sound;
 import tetris.util.Theme;
 import tetris.scene.Scene;
 import tetris.scene.game.GameScene;
 import tetris.scene.game.ItemGameScene;
+import tetris.scene.p2p.P2PScene;
 import tetris.scene.scorescene.ScoreScene;
 
 import javax.swing.*;
@@ -607,13 +610,18 @@ public class MainMenuScene extends Scene implements KeyListener {
      * 서버 모드를 시작합니다.
      */
     private void showServerMode() {
-        tetris.network.EchoServer echoServer = new tetris.network.EchoServer();
         System.out.println("Starting Server Mode...");
+        P2PServer server = new P2PServer();
+        server.onConnect = () -> {
+            // 우선 연결 성공 시 바로 P2P 씬으로 전환하도록 구현함
+            Game.setScene(new P2PScene(frame, server));
+        };
         // TODO: 서버 대기 화면 구현
         JOptionPane.showMessageDialog(this, 
-            "서버 모드를 시작합니다.\n클라이언트의 접속을 기다립니다.\n\n서버 IP 주소: " + echoServer.HOST, 
+            "서버 모드를 시작합니다.\n클라이언트의 접속을 기다립니다.\n\n서버 IP 주소: " + server.HOST, 
             "서버 모드", 
             JOptionPane.INFORMATION_MESSAGE);
+
     }
     
     /**
@@ -627,14 +635,12 @@ public class MainMenuScene extends Scene implements KeyListener {
             "클라이언트 모드", 
             JOptionPane.QUESTION_MESSAGE);
         
-        if (serverIP != null && !serverIP.trim().isEmpty()) {
-            // System.out.println("Attempting to connect to server: " + serverIP);
-            // JOptionPane.showMessageDialog(this, 
-            //     "서버 " + serverIP + "에 접속을 시도합니다.\n\n(추후 네트워크 연결 기능으로 구현 예정)", 
-            //     "클라이언트 모드", 
-            //     JOptionPane.INFORMATION_MESSAGE);
-            // new tetris.network.EchoClient(serverIP.trim());
-            Game.setScene(new tetris.scene.p2p.P2PScene(frame, gameSettings.getDifficulty()));
+        if(serverIP == null) return; // 취소 시 종료
+        
+        P2PClient client = new P2PClient();
+        if(client.connect(serverIP.trim())) {
+            // 우선 연결 성공 시 바로 P2P 씬으로 전환하도록 구현함
+            Game.setScene(new P2PScene(frame, client));
         } else {
             System.out.println("Client connection cancelled.");
         }

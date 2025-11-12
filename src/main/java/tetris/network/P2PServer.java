@@ -3,47 +3,42 @@ package tetris.network;
 import java.io.*;
 import java.net.*;
 
-public class EchoServer {
-    final int PORT = 5000;
-    public final String HOST;
+public class P2PServer extends P2PBase {
 
-    Thread serverThread;
     ServerSocket serverSocket;
-    Socket clientSocket;
+    public Runnable onConnect;
 
-    BufferedReader in;
-    BufferedWriter out;
-
-
-    public EchoServer() {
+    public P2PServer() {
         // 호스트 주소 얻기
         try { HOST = InetAddress.getLocalHost().getHostAddress(); }
         catch (UnknownHostException e) { throw new RuntimeException(e);}
-        
-        // 서버 스레드 시작
-        serverThread = new Thread(()-> runServer());
-        serverThread.start();
-    }
 
-    void runServer() {
         // 서버 소켓 생성
         try { serverSocket = new ServerSocket(PORT); }
         catch (IOException e) { e.printStackTrace(); }
-        
         System.out.println("서버 시작: " + HOST);
 
-        // 클라이언트 접속 대기
-        try { clientSocket = serverSocket.accept(); }
-        catch (IOException e) { e.printStackTrace(); }
+        // 서버 스레드 시작
+        Thread waitThread = new Thread(()-> waitForClient());
+        waitThread.start();
+    }
 
-        System.out.println("클라이언트 접속: " + clientSocket.getInetAddress());
+    void waitForClient() {
+
+        // 클라이언트 접속 대기
+        try { socket = serverSocket.accept(); }
+        catch (IOException e) { e.printStackTrace(); }
+        System.out.println("클라이언트 접속: " + socket.getInetAddress());
+
+        // 접속 콜백 호출
+        if (onConnect != null) onConnect.run();
 
         // 입출력 스트림 생성
         try {
             in = new BufferedReader(
-                new InputStreamReader(clientSocket.getInputStream(), "UTF-8"));
+                new InputStreamReader(socket.getInputStream(), "UTF-8"));
             out = new BufferedWriter(
-                new OutputStreamWriter(clientSocket.getOutputStream(), "UTF-8"));
+                new OutputStreamWriter(socket.getOutputStream(), "UTF-8"));
         } catch (IOException e) {
             e.printStackTrace();
         }
