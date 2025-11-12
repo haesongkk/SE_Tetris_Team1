@@ -20,6 +20,11 @@ public class BlockManager {
     private int y = 0; // 현재 블록의 y 위치
     private int lastBlockY = 0; // 마지막 블록 Y 위치
     
+    // 마지막 배치된 블록 정보 (배틀 모드용)
+    private Block lastPlacedBlock; // 마지막 배치된 블록
+    private int lastPlacedX = -1; // 마지막 배치된 블록 X 위치
+    private int lastPlacedY = -1; // 마지막 배치된 블록 Y 위치
+    
     // 게임 설정
     private final int gameWidth;
     private final int gameHeight;
@@ -356,6 +361,11 @@ public class BlockManager {
         // BoardManager를 사용하여 블록을 영구적으로 보드에 고정
         boardManager.placeBlock(currentBlock, x, y);
         
+        // 마지막 배치된 블록 정보 저장 (배틀 모드용)
+        lastPlacedBlock = currentBlock;
+        lastPlacedX = x;
+        lastPlacedY = y;
+        
         // 아이템 블록인 경우 보드 조작 효과는 배치 후에 활성화 (줄 삭제, 청소 등)
         if (currentBlock instanceof ItemBlock) {
             ItemBlock itemBlock = (ItemBlock) currentBlock;
@@ -503,6 +513,27 @@ public class BlockManager {
      */
     public boolean isGameOver() {
         return isGameOver;
+    }
+    
+    /**
+     * 마지막 배치된 블록을 반환합니다.
+     */
+    public Block getLastPlacedBlock() {
+        return lastPlacedBlock;
+    }
+    
+    /**
+     * 마지막 배치된 블록의 X 위치를 반환합니다.
+     */
+    public int getLastPlacedX() {
+        return lastPlacedX;
+    }
+    
+    /**
+     * 마지막 배치된 블록의 Y 위치를 반환합니다.
+     */
+    public int getLastPlacedY() {
+        return lastPlacedY;
     }
     
     /**

@@ -7,10 +7,13 @@ import tetris.scene.game.core.ScoreManager;
 import tetris.scene.game.core.RenderManager;
 import tetris.scene.game.core.GameStateManager;
 import tetris.scene.game.core.InputHandler;
+import tetris.scene.game.blocks.Block;
 import tetris.util.LineBlinkEffect;
 import tetris.GameSettings;
 import javax.swing.*;
 import java.awt.*;
+import java.util.Queue;
+import java.util.LinkedList;
 
 /**
  * Local Battle scene - GameScene × 2
@@ -60,8 +63,9 @@ public class BattleScene extends Scene {
     private static final int BLINK_INTERVAL_MS = 50; // 점멸 효과 업데이트 주기 (밀리초)
     
     // 공격 대기 블록 수 (상대가 삭제한 줄 수)
-    private int pendingAttackLines1 = 0; // 1P가 받을 공격 (2P가 삭제한 줄)
-    private int pendingAttackLines2 = 0; // 2P가 받을 공격 (1P가 삭제한 줄)
+    // 공격 블록 큐
+    private Queue<AttackBlock> attackQueue1 = new LinkedList<>(); // 1P가 받을 공격
+    private Queue<AttackBlock> attackQueue2 = new LinkedList<>(); // 2P가 받을 공격
     
     // 게임 오버 상태 (어느 한쪽이라도 게임 오버되면 양쪽 모두 종료)
     private boolean isGameOver = false;
@@ -248,6 +252,14 @@ public class BattleScene extends Scene {
             // 점멸 완료 후 줄 삭제 실행
             BoardManager boardMgr = boardManager1;
             
+            // 줄 삭제 전에 방해 블록을 위한 정보 수집
+            java.util.List<Integer> fullLines = new java.util.ArrayList<>();
+            for (int row = 0; row < GAME_HEIGHT; row++) {
+                if (boardMgr.isLineFull(row)) {
+                    fullLines.add(row);
+                }
+            }
+            
             // 줄 삭제
             int[] lineResults = boardMgr.clearCompletedAndBombLinesSeparately();
             int clearedLines = lineResults[0];
@@ -256,6 +268,11 @@ public class BattleScene extends Scene {
             if (clearedLines > 0) {
                 scoreManager1.addScore(clearedLines);
                 System.out.println("Player 1 cleared " + clearedLines + " lines!");
+                
+                // 2줄 이상 삭제 시 상대방에게 공격 블록 생성
+                if (clearedLines >= 2) {
+                    generateAttackBlocks(fullLines, 2); // Player 2가 공격받음
+                }
             }
             
             // 다음 블록 생성
@@ -278,6 +295,14 @@ public class BattleScene extends Scene {
             // 점멸 완료 후 줄 삭제 실행
             BoardManager boardMgr = boardManager2;
             
+            // 줄 삭제 전에 방해 블록을 위한 정보 수집
+            java.util.List<Integer> fullLines = new java.util.ArrayList<>();
+            for (int row = 0; row < GAME_HEIGHT; row++) {
+                if (boardMgr.isLineFull(row)) {
+                    fullLines.add(row);
+                }
+            }
+            
             // 줄 삭제
             int[] lineResults = boardMgr.clearCompletedAndBombLinesSeparately();
             int clearedLines = lineResults[0];
@@ -286,6 +311,11 @@ public class BattleScene extends Scene {
             if (clearedLines > 0) {
                 scoreManager2.addScore(clearedLines);
                 System.out.println("Player 2 cleared " + clearedLines + " lines!");
+                
+                // 2줄 이상 삭제 시 상대방에게 공격 블록 생성
+                if (clearedLines >= 2) {
+                    generateAttackBlocks(fullLines, 1); // Player 1이 공격받음
+                }
             }
             
             // 다음 블록 생성
@@ -299,6 +329,161 @@ public class BattleScene extends Scene {
         @Override
         public void onEffectUpdate() {
             repaint();
+        }
+    }
+    
+    // ═══════════════════════════════════════════════════════════════
+    // Attack Block Generation
+    // ═══════════════════════════════════════════════════════════════
+    
+    /**
+     * 공격 블록을 생성하고 상대방 큐에 추가
+     * @param clearedLines 삭제된 줄들의 행 번호
+     * @param targetPlayer 공격받을 플레이어 (1 또는 2)
+     */
+    private void generateAttackBlocks(java.util.List<Integer> clearedLines, int targetPlayer) {
+        Queue<AttackBlock> targetQueue = (targetPlayer == 1) ? attackQueue1 : attackQueue2;
+        
+        // 공격하는 플레이어의 BlockManager에서 마지막 배치된 블록 정보 가져오기
+        BlockManager attackingBlockMgr = (targetPlayer == 1) ? blockManager2 : blockManager1; // 상대방이 공격하는 것
+        
+        Block lastPlacedBlock = attackingBlockMgr.getLastPlacedBlock();
+        int lastPlacedX = attackingBlockMgr.getLastPlacedX();
+        int lastPlacedY = attackingBlockMgr.getLastPlacedY();
+        
+        System.out.println("=== Attack Block Generation Debug ===");
+        System.out.println("Last placed block: " + (lastPlacedBlock != null ? lastPlacedBlock.getClass().getSimpleName() : "null"));
+        System.out.println("Last placed position: (" + lastPlacedX + ", " + lastPlacedY + ")");
+        System.out.println("Cleared lines: " + clearedLines);
+        if (lastPlacedBlock != null) {
+            System.out.println("Block size: " + lastPlacedBlock.width() + "x" + lastPlacedBlock.height());
+            for (int j = 0; j < lastPlacedBlock.height(); j++) {
+                for (int i = 0; i < lastPlacedBlock.width(); i++) {
+                    if (lastPlacedBlock.getShape(i, j) == 1) {
+                        int blockBoardX = lastPlacedX + i;
+                        int blockBoardY = lastPlacedY + j;
+                        System.out.println("Block cell at board position: (" + blockBoardX + ", " + blockBoardY + ")");
+                    }
+                }
+            }
+        }
+        
+        for (int lineIndex : clearedLines) {
+            // 각 삭제된 줄에 대해 AttackBlock 생성
+            boolean[] pattern = new boolean[GAME_WIDTH];
+            Color[] colors = new Color[GAME_WIDTH];
+            int[] blockTypes = new int[GAME_WIDTH];
+            
+            System.out.println("Processing cleared line: " + lineIndex);
+            
+            // 해당 줄의 블록 정보를 복사하되, 마지막 배치된 블록 부분은 구멍으로 만들기
+            for (int col = 0; col < GAME_WIDTH; col++) {
+                boolean isLastPlacedBlockPosition = false;
+                
+                // 마지막 배치된 블록이 이 줄과 겹치는 부분인지 확인
+                if (lastPlacedBlock != null && lastPlacedY != -1) {
+                    for (int j = 0; j < lastPlacedBlock.height(); j++) {
+                        for (int i = 0; i < lastPlacedBlock.width(); i++) {
+                            if (lastPlacedBlock.getShape(i, j) == 1) {
+                                int blockBoardX = lastPlacedX + i;
+                                int blockBoardY = lastPlacedY + j;
+                                
+                                System.out.println("    Checking block cell (" + i + ", " + j + ") -> board (" + blockBoardX + ", " + blockBoardY + ") against line " + lineIndex + " col " + col);
+                                
+                                // 보드 범위 내에서만 검사하고, 이 줄(lineIndex)과 현재 열(col)이 마지막 배치된 블록 위치와 일치하는지 확인
+                                if (blockBoardX >= 0 && blockBoardX < GAME_WIDTH && 
+                                    blockBoardX == col && blockBoardY == lineIndex) {
+                                    isLastPlacedBlockPosition = true;
+                                    System.out.println("    MATCH! Block position found at col " + col + " line " + lineIndex);
+                                    break;
+                                }
+                            }
+                        }
+                        if (isLastPlacedBlockPosition) break;
+                    }
+                }
+                
+                if (isLastPlacedBlockPosition) {
+                    // 마지막 배치된 블록 부분은 구멍으로 만들기
+                    pattern[col] = false;
+                    colors[col] = Color.BLACK;
+                    blockTypes[col] = 0;
+                    System.out.println("  Hole at column " + col + " (last placed block position)");
+                } else {
+                    // 나머지 부분은 방해 블록으로 만들기
+                    pattern[col] = true;
+                    colors[col] = Color.GRAY;
+                    blockTypes[col] = 8; // 방해블록 타입
+                }
+            }
+            
+            // 구멍이 하나도 없다면 안전장치로 랜덤하게 하나 만들기
+            boolean hasHole = false;
+            for (boolean p : pattern) {
+                if (!p) {
+                    hasHole = true;
+                    break;
+                }
+            }
+            
+            if (!hasHole) {
+                System.out.println("  No holes found, creating random hole as fallback");
+                int randomCol = (int)(Math.random() * GAME_WIDTH);
+                pattern[randomCol] = false;
+                colors[randomCol] = Color.BLACK;
+                blockTypes[randomCol] = 0;
+                System.out.println("  Random hole created at column " + randomCol);
+            }
+            
+            targetQueue.offer(new AttackBlock(GAME_WIDTH, pattern, colors, blockTypes));
+        }
+        
+        System.out.println("Generated " + clearedLines.size() + " attack blocks for Player " + targetPlayer);
+    }
+    
+    /**
+     * 대기 중인 공격 블록을 게임 보드에 적용
+     * @param player 공격받는 플레이어 (1 또는 2)
+     */
+    private void applyAttackBlocks(int player) {
+        Queue<AttackBlock> attackQueue = (player == 1) ? attackQueue1 : attackQueue2;
+        BoardManager boardMgr = (player == 1) ? boardManager1 : boardManager2;
+        
+        if (attackQueue.isEmpty()) {
+            return;
+        }
+        
+        System.out.println("Applying " + attackQueue.size() + " attack blocks to Player " + player);
+        
+        // 모든 대기 중인 공격 블록을 보드 하단에 추가
+        while (!attackQueue.isEmpty()) {
+            AttackBlock attackBlock = attackQueue.poll();
+            
+            // 기존 블록들을 위로 한 줄씩 이동
+            int[][] board = boardMgr.getBoard();
+            Color[][] boardColors = boardMgr.getBoardColors();
+            int[][] boardTypes = boardMgr.getBoardTypes();
+            
+            for (int row = 0; row < GAME_HEIGHT - 1; row++) {
+                for (int col = 0; col < GAME_WIDTH; col++) {
+                    board[row][col] = board[row + 1][col];
+                    boardColors[row][col] = boardColors[row + 1][col];
+                    boardTypes[row][col] = boardTypes[row + 1][col];
+                }
+            }
+            
+            // 맨 아래줄(GAME_HEIGHT - 1)에 공격 블록 배치
+            for (int col = 0; col < GAME_WIDTH; col++) {
+                if (attackBlock.hasBlockAt(col)) {
+                    board[GAME_HEIGHT - 1][col] = 1;
+                    boardColors[GAME_HEIGHT - 1][col] = attackBlock.getColors()[col];
+                    boardTypes[GAME_HEIGHT - 1][col] = attackBlock.getBlockTypes()[col];
+                } else {
+                    board[GAME_HEIGHT - 1][col] = 0;
+                    boardColors[GAME_HEIGHT - 1][col] = Color.BLACK;
+                    boardTypes[GAME_HEIGHT - 1][col] = -1;
+                }
+            }
         }
     }
     
@@ -468,6 +653,9 @@ public class BattleScene extends Scene {
         BoardManager boardMgr = (player == 1) ? boardManager1 : boardManager2;
         GameStateManager gameStateMgr = (player == 1) ? gameStateManager1 : gameStateManager2;
         
+        // 대기 중인 공격 블록 적용
+        applyAttackBlocks(player);
+        
         // 게임 오버 체크
         if (blockMgr.isGameOver()) {
             gameStateMgr.triggerGameOver();
@@ -530,7 +718,7 @@ public class BattleScene extends Scene {
 
         center.add(Box.createHorizontalGlue());
         center.add(left);
-        center.add(Box.createHorizontalStrut(30));
+        center.add(Box.createHorizontalStrut(50)); // 두 보드 사이 간격을 30px에서 50px로 증가
         center.add(right);
         center.add(Box.createHorizontalGlue());
 
@@ -561,12 +749,12 @@ public class BattleScene extends Scene {
         int frameWidth = m_frame.getWidth();
         
         // 배틀 모드: 두 보드가 좌우로 배치되므로 너비를 절반으로 나눔
-        int availableWidth = (frameWidth - 100) / 2; // 간격 및 여백 고려
+        int availableWidth = (frameWidth - 150) / 2; // 간격과 여백을 더 크게 고려 (100 -> 150)
         int availableHeight = frameHeight - 100; // 상하 여백 고려
         
-        // 셀 크기 계산 (보드 크기 + 미리보기 영역 고려)
+        // 셀 크기 계산 (보드 크기 + 미리보기 영역 + 공격 블록 표시 영역 고려)
         int cellSizeByHeight = availableHeight / (GAME_HEIGHT + 2);
-        int cellSizeByWidth = availableWidth / (GAME_WIDTH + 2 + PREVIEW_SIZE + 2); // 보드 + 미리보기
+        int cellSizeByWidth = availableWidth / (GAME_WIDTH + 2 + PREVIEW_SIZE + 4); // 보드 + 미리보기 + 공격블록 여유공간
         int cellSize = Math.min(cellSizeByHeight, cellSizeByWidth);
         cellSize = Math.max(15, Math.min(cellSize, 35)); // 15~35 사이로 제한
         
@@ -584,12 +772,15 @@ public class BattleScene extends Scene {
             );
         }
 
-        // 패널 크기 설정
+        // 패널 크기 설정 (공격 블록 표시 영역도 고려)
         final int PREVIEW_MARGIN = 40;
+        final int ATTACK_DISPLAY_MARGIN = 60; // 공격 블록 표시 영역을 위한 추가 여백
         int previewWidth = PREVIEW_SIZE * previewCellSize + PREVIEW_MARGIN;
+        int attackDisplayWidth = ATTACK_DISPLAY_MARGIN; // 공격 표시 영역 너비
+        
         gamePanel.setPreferredSize(new Dimension(
-            (GAME_WIDTH + 2) * cellSize + previewWidth,
-            (GAME_HEIGHT + 2) * cellSize
+            (GAME_WIDTH + 2) * cellSize + previewWidth + attackDisplayWidth, // 공격 표시 영역 추가
+            (GAME_HEIGHT + 4) * cellSize // 높이도 조금 더 여유롭게 (2 -> 4)
         ));
         gamePanel.setBackground(Color.BLACK);
 
@@ -648,8 +839,8 @@ public class BattleScene extends Scene {
             // 공격 대기 블록 표시 영역 (1P/2P 라벨 아래)
             // ═══════════════════════════════════════════════════════════════
             int attackBoardY = labelY + 30; // 라벨 아래 30px 간격
-            int attackBoardWidth = PREVIEW_SIZE * previewCellSize + 20;
-            int attackBoardHeight = 200;
+            int attackBoardWidth = PREVIEW_SIZE * previewCellSize + 40; // 너비를 20px 더 증가
+            int attackBoardHeight = 250; // 높이를 50px 더 증가
             
             // 공격 대기 블록 프레임 그리기
             g2.setColor(new Color(60, 60, 60)); // 어두운 회색 배경
@@ -660,9 +851,54 @@ public class BattleScene extends Scene {
             g2.setStroke(new BasicStroke(2));
             g2.drawRect(previewX - 10, attackBoardY, attackBoardWidth, attackBoardHeight);
             
+            // 공격 블록 큐 내용 표시
+            Queue<AttackBlock> currentQueue = (playerNum == 1) ? attackQueue1 : attackQueue2;
+            drawAttackQueue(g2, currentQueue, previewX, attackBoardY + 10, previewCellSize, attackBoardWidth, attackBoardHeight);
+            
             g2.dispose();
         }
-    }    @Override
+    }
+    
+    /**
+     * 공격 블록 큐의 내용을 그립니다
+     */
+    private void drawAttackQueue(Graphics2D g2, Queue<AttackBlock> queue, int startX, int startY, int cellSize, int maxWidth, int maxHeight) {
+        // 사각형 영역 내에서만 그리도록 클리핑 설정
+        Shape originalClip = g2.getClip();
+        g2.setClip(startX, startY, maxWidth - 10, maxHeight - 20);
+        
+        // 셀 크기를 더 크게 조정 (원래 크기의 절반 사용)
+        int blockCellSize = Math.min(cellSize / 2, (maxWidth - 20) / 10); // 더 크게 표시
+        
+        // 대기 중인 공격 블록들을 미리보기로 표시
+        int y = startY + 10; // 텍스트가 없어진 만큼 위쪽에서 시작
+        int count = 0;
+        int maxBlocks = Math.min(4, (maxHeight - 20) / (blockCellSize + 3)); // 텍스트 영역이 줄어든만큼 조정
+        
+        for (AttackBlock attackBlock : queue) {
+            if (count >= maxBlocks) break;
+            
+            // 각 공격 블록 패턴을 한 줄로 표시
+            for (int col = 0; col < attackBlock.getWidth() && col < 10; col++) {
+                if (attackBlock.hasBlockAt(col)) {
+                    g2.setColor(attackBlock.getColors()[col]);
+                } else {
+                    g2.setColor(Color.BLACK);
+                }
+                
+                int x = startX + 5 + col * blockCellSize;
+                g2.fillRect(x, y, blockCellSize - 1, blockCellSize - 1);
+            }
+            
+            y += blockCellSize + 3; // 블록 간격을 3px로 증가
+            count++;
+        }
+        
+        // 클리핑 복원
+        g2.setClip(originalClip);
+    }
+    
+    @Override
     public void onEnter() {
         // Scene을 프레임의 ContentPane으로 설정
         m_frame.setContentPane(this);
