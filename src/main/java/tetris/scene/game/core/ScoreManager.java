@@ -168,6 +168,15 @@ public class ScoreManager {
     public double getSpeedMultiplier() {
         return speedMultiplier;
     }
+
+    /**
+     * 현재 난이도 배율을 반환합니다.
+     * @return 현재 난이도 배율
+     */
+    public double getDifficultyMultiplier() {
+        return difficultyMultiplier;
+    }
+    
     
     /**
      * 줄당 점수를 반환합니다.

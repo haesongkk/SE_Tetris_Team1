@@ -18,10 +18,12 @@ import tetris.GameSettings;
 import tetris.network.P2PBase;
 import tetris.scene.Scene;
 import tetris.scene.game.GameScene;
-import tetris.scene.game.blocks.Block;
-import tetris.scene.game.blocks.TBlock;
+import tetris.scene.game.blocks.*;
 import tetris.scene.game.core.BlockManager;
 import tetris.scene.game.core.BoardManager;
+import tetris.scene.game.core.GameStateManager;
+import tetris.scene.game.core.ScoreManager;
+import tetris.scene.game.core.GameStateManager.GameState;
 import tetris.util.LineBlinkEffect;
 import tetris.util.Theme;
 
@@ -32,11 +34,11 @@ class Message {
     //String state;
     char[][] boardTypes;
     char[][] itemTypes;
-    //char nextBlockType;
-    //int elapsedSeconds;
-    //float speedMultiplier;
-    //float difficultyMultiplier;
-    //int score;
+    char nextBlockType;
+    int elapsedSeconds;
+    double speedMultiplier;
+    double difficultyMultiplier;
+    int score;
 }
 
 public class P2PScene extends Scene {
@@ -121,6 +123,26 @@ public class P2PScene extends Scene {
         Message message = gson.fromJson(json, Message.class);
         sidePanel.boardTypes = message.boardTypes;
         sidePanel.itemTypes = message.itemTypes;
+        if(message.nextBlockType == 'I') 
+            sidePanel.nextBlock = new IBlock();
+        else if(message.nextBlockType == 'J') 
+            sidePanel.nextBlock = new JBlock();
+        else if(message.nextBlockType == 'L') 
+            sidePanel.nextBlock = new LBlock();
+        else if(message.nextBlockType == 'O') 
+            sidePanel.nextBlock = new OBlock();
+        else if(message.nextBlockType == 'S') 
+            sidePanel.nextBlock = new SBlock();
+        else if(message.nextBlockType == 'T') 
+            sidePanel.nextBlock = new TBlock();
+        else if(message.nextBlockType == 'Z') 
+            sidePanel.nextBlock = new ZBlock();
+        else sidePanel.nextBlock = new TBlock();
+
+        sidePanel.elapsedSeconds = message.elapsedSeconds;
+        sidePanel.speedMultiplier = message.speedMultiplier;
+        sidePanel.difficultyMultiplier = message.difficultyMultiplier;
+        sidePanel.score = message.score;
         sidePanel.repaint();
 
     }
@@ -183,10 +205,34 @@ public class P2PScene extends Scene {
             }
         }
 
+        Block nextBlock = blockManager.getNextBlock();
+        Color nextBlockColor = nextBlock.getColor();
+        char nextBlockType = ' ';
+        for(char blockType : blockTypes) {
+            if(nextBlockColor.equals(Theme.Block(blockType))) {
+                nextBlockType = blockType;
+                break;
+            }
+        }
+
+        GameStateManager gameStateManager = gamePanel.getGameStateManager();
+        int elapsedSeconds = gameStateManager.getElapsedTimeInSeconds();
+
+        ScoreManager scoreManager = gamePanel.getScoreManager();
+        double speedMultiplier = scoreManager.getSpeedMultiplier();
+        double difficultyMultiplier = scoreManager.getDifficultyMultiplier();
+        int score = scoreManager.getScore();
+
         Gson gson = new Gson();
         Message message = new Message();
         message.boardTypes = boardTypes;
         message.itemTypes = itemTypes;
+        message.nextBlockType = nextBlockType;
+        message.elapsedSeconds = elapsedSeconds;
+        message.speedMultiplier = speedMultiplier;
+        message.difficultyMultiplier = difficultyMultiplier;
+        message.score = score;
+        
         return gson.toJson(message);
     }
 }
@@ -204,8 +250,8 @@ class SidePanel extends JPanel {
     char[][] itemTypes;
     Block nextBlock;
     int elapsedSeconds = 20;
-    float speedMultiplier = 1.2f;
-    float difficultyMultiplier = 1.0f;
+    double speedMultiplier = 1.2f;
+    double difficultyMultiplier = 1.0f;
     int score = 100;
 
     // 추가 플래그: 게임 종료, 중단, 라인삭제 이펙트, 아이템 이펙트

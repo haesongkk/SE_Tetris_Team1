@@ -804,27 +804,23 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
         return timerManager;
     }
 
-    /**
-     * UIManager를 반환합니다. 
-     * @return UIManager 인스턴스
-     */
     public UIManager getUIManager() {
         return uiManager;
     }
 
-    /**
-     * BoardManager 를 반환합니다. 
-     * @return BoardManager 인스턴스
-     */
     public BoardManager getBoardManager() {
         return boardManager;
     }
 
-    /**
-     * BlockManager 를 반환합니다. 
-     * @return BlockManager 인스턴스
-     */
     public BlockManager getBlockManager() {
         return blockManager;
     }
+
+    public GameStateManager getGameStateManager() {
+        return gameStateManager;
+    }
+
+    public ScoreManager getScoreManager() {
+        return scoreManager;
+    }   
 }
