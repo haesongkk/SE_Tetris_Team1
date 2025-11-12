@@ -15,6 +15,7 @@ import java.util.Set;
 import tetris.ColorBlindHelper;
 import tetris.GameSettings;
 import tetris.GameSettings.Difficulty;
+import tetris.network.P2PBase;
 import tetris.scene.Scene;
 import tetris.scene.game.GameScene;
 import tetris.scene.game.blocks.Block;
@@ -25,14 +26,16 @@ import tetris.util.Theme;
 public class P2PScene extends Scene {
 
     boolean isPaused = false;
+    P2PBase p2p;
 
-    public P2PScene(JFrame frame, Difficulty diff) {
+    public P2PScene(JFrame frame, P2PBase p2p) {
         super(frame);
+        this.p2p = p2p;
         setOpaque(true);
         setBackground(Theme.BG());
         
         setLayout(new GridLayout(1,2));
-        GameScene gamePanel = new GameScene(frame, diff);
+        GameScene gamePanel = new GameScene(frame, GameSettings.getInstance().getDifficulty());
         gamePanel.onEnter();
         add(gamePanel);
 
@@ -73,6 +76,8 @@ class SidePanel extends JPanel {
     float speedMultiplier = 1.2f;
     float difficultyMultiplier = 1.0f;
     int score = 100;
+
+    // 추가 플래그: 게임 종료, 중단, 라인삭제 이펙트, 아이템 이펙트
     
     // 이미지 캐시
     private final Map<Character, BufferedImage> imageCache = new HashMap<>();
