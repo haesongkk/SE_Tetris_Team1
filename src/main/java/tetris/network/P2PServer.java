@@ -18,7 +18,6 @@ public class P2PServer extends P2PBase {
         catch (IOException e) { e.printStackTrace(); }
         System.out.println("서버 시작: " + HOST);
 
-        // 서버 스레드 시작
         Thread waitThread = new Thread(()-> waitForClient());
         waitThread.start();
     }
@@ -30,9 +29,6 @@ public class P2PServer extends P2PBase {
         catch (IOException e) { e.printStackTrace(); }
         System.out.println("클라이언트 접속: " + socket.getInetAddress());
 
-        // 접속 콜백 호출
-        if (onConnect != null) onConnect.run();
-
         // 입출력 스트림 생성
         try {
             in = new BufferedReader(
@@ -42,16 +38,9 @@ public class P2PServer extends P2PBase {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        // 클라이언트로부터 메시지 수신
-        try {
-            String line;
-            while ((line = in.readLine()) != null) {   // \n 올 때까지 블로킹
-                System.out.println("클라이언트 메세지: " + line);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
         
+        // 접속 콜백 호출
+        if (onConnect != null) onConnect.run();
+
     }
 }

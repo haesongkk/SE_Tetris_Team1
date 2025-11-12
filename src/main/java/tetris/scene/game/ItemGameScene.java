@@ -69,7 +69,8 @@ public class ItemGameScene extends GameScene {
     /**
      * BlockManager getter 메서드 (아이템 매니저 설정용)
      */
-    private BlockManager getBlockManager() {
+    @Override
+    public BlockManager getBlockManager() {
         // GameScene의 protected 필드에 접근 (리플렉션 사용)
         try {
             java.lang.reflect.Field field = GameScene.class.getDeclaredField("blockManager");
@@ -84,7 +85,8 @@ public class ItemGameScene extends GameScene {
     /**
      * BoardManager getter 메서드 (아이템 매니저 설정용)
      */
-    private BoardManager getBoardManager() {
+    @Override
+    public BoardManager getBoardManager() {
         // GameScene의 protected 필드에 접근 (리플렉션 사용)
         try {
             java.lang.reflect.Field field = GameScene.class.getDeclaredField("boardManager");
