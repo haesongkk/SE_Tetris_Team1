@@ -2,6 +2,7 @@ package tetris.network;
 
 import java.io.*;
 import java.net.*;
+import javax.swing.SwingUtilities;
 
 public class P2PServer extends P2PBase {
 
@@ -39,8 +40,10 @@ public class P2PServer extends P2PBase {
             e.printStackTrace();
         }
         
-        // 접속 콜백 호출
-        if (onConnect != null) onConnect.run();
+        // 접속 콜백 호출 (Swing UI 변경은 EDT에서 실행)
+        if (onConnect != null) {
+            SwingUtilities.invokeLater(onConnect);
+        }
 
     }
 }
