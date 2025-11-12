@@ -11,22 +11,49 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.Timer;
 
 import tetris.ColorBlindHelper;
 import tetris.GameSettings;
-import tetris.GameSettings.Difficulty;
 import tetris.network.P2PBase;
 import tetris.scene.Scene;
 import tetris.scene.game.GameScene;
 import tetris.scene.game.blocks.Block;
 import tetris.scene.game.blocks.TBlock;
+import tetris.scene.game.core.BlockManager;
+import tetris.scene.game.core.BoardManager;
 import tetris.util.LineBlinkEffect;
 import tetris.util.Theme;
 
+import com.google.gson.Gson;
+
+// 통신 메시지 포멧 
+class Message {
+    //String state;
+    char[][] boardTypes;
+    char[][] itemTypes;
+    //char nextBlockType;
+    //int elapsedSeconds;
+    //float speedMultiplier;
+    //float difficultyMultiplier;
+    //int score;
+}
+
 public class P2PScene extends Scene {
 
-    boolean isPaused = false;
     P2PBase p2p;
+
+    Timer writeTimer;
+    Thread readThread;
+    GameScene gamePanel;
+    SidePanel sidePanel;
+
+    // 렌더링 상수들
+    private final int GAME_WIDTH;
+    private final int GAME_HEIGHT;
+    private final int CELL_SIZE;
+    private final int PREVIEW_SIZE;
+    private final int PREVIEW_CELL_SIZE;
 
     public P2PScene(JFrame frame, P2PBase p2p) {
         super(frame);
@@ -34,21 +61,27 @@ public class P2PScene extends Scene {
         setOpaque(true);
         setBackground(Theme.BG());
         
+        // 레이아웃 설정
         setLayout(new GridLayout(1,2));
-        GameScene gamePanel = new GameScene(frame, GameSettings.getInstance().getDifficulty());
+        gamePanel = new GameScene(frame, GameSettings.getInstance().getDifficulty());
         gamePanel.onEnter();
         add(gamePanel);
+
+        GAME_WIDTH = 10;
+        GAME_HEIGHT = 20;
+        CELL_SIZE = gamePanel.getUIManager().getCellSize();
+        PREVIEW_SIZE = 4;
+        PREVIEW_CELL_SIZE = gamePanel.getUIManager().getPreviewCellSize();
 
         JPanel sideWrapper = new JPanel(new GridBagLayout());
         sideWrapper.setOpaque(false);
         add(sideWrapper);
 
-        JPanel sidePanel = new SidePanel(
-            10,20,  
-            gamePanel.getUIManager().getCellSize(),
-            4,  
-            gamePanel.getUIManager().getPreviewCellSize());
-        //sidePanel.setOpaque(false);
+        sidePanel = new SidePanel(
+            GAME_WIDTH, GAME_HEIGHT,  
+            CELL_SIZE,
+            PREVIEW_SIZE,  
+            PREVIEW_CELL_SIZE);
         sidePanel.setBackground(Theme.BLACK);
         sidePanel.setPreferredSize(gamePanel.getUIManager().calculateGamePanelSize());
         sideWrapper.add(sidePanel, new GridBagConstraints());
@@ -56,13 +89,111 @@ public class P2PScene extends Scene {
         frame.setContentPane(this);
         frame.revalidate();
         frame.repaint();
+
+        // 게임 상태 전송 타이머 시작
+        writeTimer = new Timer();
+        writeTimer.scheduleAtFixedRate(
+            new java.util.TimerTask() {
+                @Override
+                public void run() {
+                    String json = serializeGameState();
+                    p2p.send(json);
+                }
+            },
+            0, 100
+        );
+
+        // 게임 상태 수신 스레드 시작
+        readThread = new Thread(()-> {
+            while (true) {
+                String json = p2p.recieve();
+                if (json != null) {
+                    deserializeGameState(json);
+                }
+            }
+        });
+        readThread.start();
     }
 
-    
+    // 수신된 게임 상태를 역직렬화하여 적용
+    void deserializeGameState(String json) {
+        Gson gson = new Gson();
+        Message message = gson.fromJson(json, Message.class);
+        sidePanel.boardTypes = message.boardTypes;
+        sidePanel.itemTypes = message.itemTypes;
+        sidePanel.repaint();
+
+    }
+
+    // 현재 게임 상태를 직렬화하여 전송
+    String serializeGameState() {
+        BoardManager boardManager = gamePanel.getBoardManager();
+        int[][] board = boardManager.getBoard();
+        Color[][] boardColors = boardManager.getBoardColors();
+        char[][] boardTypes = new char[GAME_HEIGHT][GAME_WIDTH];
+        char[][] itemTypes = new char[GAME_HEIGHT][GAME_WIDTH];
+        final char[] blockTypes = { 'I','J','L','O','S','T','Z' };
+        // 보드 상태 변환
+        for (int row = 0; row < GAME_HEIGHT; row++) {
+            for (int col = 0; col < GAME_WIDTH; col++) {
+                if(board[row][col] != 1) {
+                    boardTypes[row][col] = ' ';
+                    itemTypes[row][col] = ' ';
+                    continue;
+                }
+                // 블록 색상에 따른 타입 결정
+                Color color = boardColors[row][col];
+
+                for(char blockType : blockTypes) {
+                    if(color.equals(Theme.Block(blockType))) {
+                        boardTypes[row][col] = blockType;
+                        break;
+                    }
+                }
+
+                if(!boardManager.isItemCell(col, row)) {
+                    continue;
+                }
+                // 아이템 셀 타입 결정
+                String symbol = boardManager.getItemBlockInfo(col, row).getItemSymbol();
+
+                if(symbol == null || symbol.isEmpty()) continue;
+                itemTypes[row][col] = symbol.charAt(0);
+            }
+        }
+
+        // 현재 낙하중인 블록 정보 추가
+        BlockManager blockManager = gamePanel.getBlockManager();
+        Block currentBlock = blockManager.getCurrentBlock();
+        int blockX = blockManager.getX();
+        int blockY = blockManager.getY();
+        Color blockColor = currentBlock.getColor();
+        char colorSymbol = ' ';
+        for(char blockType : blockTypes) {
+            if(blockColor.equals(Theme.Block(blockType))) {
+                colorSymbol = blockType;
+                break;
+            }
+        }
+        for (int r = 0; r < currentBlock.height(); r++) {
+            for (int c = 0; c < currentBlock.width(); c++) {
+                if(currentBlock.getShape(c, r) == 1) {
+                    boardTypes[blockY + r][blockX + c] = colorSymbol;
+                }
+            }
+        }
+
+        Gson gson = new Gson();
+        Message message = new Message();
+        message.boardTypes = boardTypes;
+        message.itemTypes = itemTypes;
+        return gson.toJson(message);
+    }
 }
 
+
+// 사이드 패널 클래스: RenderManager 참고
 class SidePanel extends JPanel {
-    // 렌더링 상수들
     private final int GAME_WIDTH;
     private final int GAME_HEIGHT;
     private final int CELL_SIZE;
@@ -558,11 +689,6 @@ class SidePanel extends JPanel {
         
     }
 
-        /**
-     * 시간을 MM:SS 형식으로 포맷팅합니다.
-     * @param seconds 초 단위 시간
-     * @return MM:SS 형식의 문자열
-     */
     private String formatTime(int seconds) {
         int minutes = seconds / 60;
         int remainingSeconds = seconds % 60;

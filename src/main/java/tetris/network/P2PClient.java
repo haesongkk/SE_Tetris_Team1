@@ -15,22 +15,6 @@ public class P2PClient extends P2PBase {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        networkThread = new Thread(()-> read());
-        networkThread.start();
         return true;
-    }
-
-    void read() {
-        try {
-            String line;
-            while ((line = in.readLine()) != null) { 
-                System.out.println(line);
-            }
-        } catch (IOException e) { e.printStackTrace(); }
-    }
-
-    void write(String message) {
-        try { out.write(message + "\n"); out.flush(); }
-        catch (IOException ex) { ex.printStackTrace(); }
     }
 }
