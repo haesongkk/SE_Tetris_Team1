@@ -43,19 +43,20 @@ class Message {
 
 public class P2PScene extends Scene {
 
-    P2PBase p2p;
-
-    Timer writeTimer;
-    Thread readThread;
-    GameScene gamePanel;
-    SidePanel sidePanel;
+    private P2PBase p2p;
+    private Timer writeTimer;
+    private Thread readThread;
+    
+    // 왼쪽: 자신의 게임 (조작 가능)
+    private GameScene myGamePanel;
+    
+    // 오른쪽: 상대방의 게임 (읽기 전용 표시)
+    private OpponentGamePanel opponentPanel;
 
     // 렌더링 상수들
-    private final int GAME_WIDTH;
-    private final int GAME_HEIGHT;
-    private final int CELL_SIZE;
-    private final int PREVIEW_SIZE;
-    private final int PREVIEW_CELL_SIZE;
+    private static final int GAME_WIDTH = 10;
+    private static final int GAME_HEIGHT = 20;
+    private static final int PREVIEW_SIZE = 4;
 
     public P2PScene(JFrame frame, P2PBase p2p) {
         super(frame);
@@ -63,30 +64,31 @@ public class P2PScene extends Scene {
         setOpaque(true);
         setBackground(Theme.BG());
         
-        // 레이아웃 설정
-        setLayout(new GridLayout(1,2));
-        gamePanel = new GameScene(frame, GameSettings.getInstance().getDifficulty());
-        gamePanel.onEnter();
-        add(gamePanel);
+        // 레이아웃 설정: 자신의 게임(왼쪽) + 상대방 게임(오른쪽)
+        setLayout(new GridLayout(1, 2, 10, 0)); // 10px 간격
+        
+        // 자신의 게임 패널 생성 및 초기화
+        myGamePanel = new GameScene(frame, GameSettings.getInstance().getDifficulty());
+        myGamePanel.onEnter();
+        add(myGamePanel);
+        
+        // 상대방 게임 패널 생성
+        int cellSize = myGamePanel.getUIManager().getCellSize();
+        int previewCellSize = myGamePanel.getUIManager().getPreviewCellSize();
+        
+        JPanel opponentWrapper = new JPanel(new GridBagLayout());
+        opponentWrapper.setOpaque(false);
+        opponentWrapper.setBackground(Theme.BG());
+        add(opponentWrapper);
 
-        GAME_WIDTH = 10;
-        GAME_HEIGHT = 20;
-        CELL_SIZE = gamePanel.getUIManager().getCellSize();
-        PREVIEW_SIZE = 4;
-        PREVIEW_CELL_SIZE = gamePanel.getUIManager().getPreviewCellSize();
-
-        JPanel sideWrapper = new JPanel(new GridBagLayout());
-        sideWrapper.setOpaque(false);
-        add(sideWrapper);
-
-        sidePanel = new SidePanel(
+        opponentPanel = new OpponentGamePanel(
             GAME_WIDTH, GAME_HEIGHT,  
-            CELL_SIZE,
+            cellSize,
             PREVIEW_SIZE,  
-            PREVIEW_CELL_SIZE);
-        sidePanel.setBackground(Theme.BLACK);
-        sidePanel.setPreferredSize(gamePanel.getUIManager().calculateGamePanelSize());
-        sideWrapper.add(sidePanel, new GridBagConstraints());
+            previewCellSize);
+        opponentPanel.setBackground(Theme.BG());
+        opponentPanel.setPreferredSize(myGamePanel.getUIManager().calculateGamePanelSize());
+        opponentWrapper.add(opponentPanel, new GridBagConstraints());
         
         frame.setContentPane(this);
         frame.revalidate();
@@ -121,35 +123,35 @@ public class P2PScene extends Scene {
     void deserializeGameState(String json) {
         Gson gson = new Gson();
         Message message = gson.fromJson(json, Message.class);
-        sidePanel.boardTypes = message.boardTypes;
-        sidePanel.itemTypes = message.itemTypes;
+        opponentPanel.boardTypes = message.boardTypes;
+        opponentPanel.itemTypes = message.itemTypes;
         if(message.nextBlockType == 'I') 
-            sidePanel.nextBlock = new IBlock();
+            opponentPanel.nextBlock = new IBlock();
         else if(message.nextBlockType == 'J') 
-            sidePanel.nextBlock = new JBlock();
+            opponentPanel.nextBlock = new JBlock();
         else if(message.nextBlockType == 'L') 
-            sidePanel.nextBlock = new LBlock();
+            opponentPanel.nextBlock = new LBlock();
         else if(message.nextBlockType == 'O') 
-            sidePanel.nextBlock = new OBlock();
+            opponentPanel.nextBlock = new OBlock();
         else if(message.nextBlockType == 'S') 
-            sidePanel.nextBlock = new SBlock();
+            opponentPanel.nextBlock = new SBlock();
         else if(message.nextBlockType == 'T') 
-            sidePanel.nextBlock = new TBlock();
+            opponentPanel.nextBlock = new TBlock();
         else if(message.nextBlockType == 'Z') 
-            sidePanel.nextBlock = new ZBlock();
-        else sidePanel.nextBlock = new TBlock();
+            opponentPanel.nextBlock = new ZBlock();
+        else opponentPanel.nextBlock = new TBlock();
 
-        sidePanel.elapsedSeconds = message.elapsedSeconds;
-        sidePanel.speedMultiplier = message.speedMultiplier;
-        sidePanel.difficultyMultiplier = message.difficultyMultiplier;
-        sidePanel.score = message.score;
-        sidePanel.repaint();
+        opponentPanel.elapsedSeconds = message.elapsedSeconds;
+        opponentPanel.speedMultiplier = message.speedMultiplier;
+        opponentPanel.difficultyMultiplier = message.difficultyMultiplier;
+        opponentPanel.score = message.score;
+        opponentPanel.repaint();
 
     }
 
     // 현재 게임 상태를 직렬화하여 전송
     String serializeGameState() {
-        BoardManager boardManager = gamePanel.getBoardManager();
+        BoardManager boardManager = myGamePanel.getBoardManager();
         int[][] board = boardManager.getBoard();
         Color[][] boardColors = boardManager.getBoardColors();
         char[][] boardTypes = new char[GAME_HEIGHT][GAME_WIDTH];
@@ -185,7 +187,7 @@ public class P2PScene extends Scene {
         }
 
         // 현재 낙하중인 블록 정보 추가
-        BlockManager blockManager = gamePanel.getBlockManager();
+        BlockManager blockManager = myGamePanel.getBlockManager();
         Block currentBlock = blockManager.getCurrentBlock();
         int blockX = blockManager.getX();
         int blockY = blockManager.getY();
@@ -215,10 +217,10 @@ public class P2PScene extends Scene {
             }
         }
 
-        GameStateManager gameStateManager = gamePanel.getGameStateManager();
+        GameStateManager gameStateManager = myGamePanel.getGameStateManager();
         int elapsedSeconds = gameStateManager.getElapsedTimeInSeconds();
 
-        ScoreManager scoreManager = gamePanel.getScoreManager();
+        ScoreManager scoreManager = myGamePanel.getScoreManager();
         double speedMultiplier = scoreManager.getSpeedMultiplier();
         double difficultyMultiplier = scoreManager.getDifficultyMultiplier();
         int score = scoreManager.getScore();
@@ -238,8 +240,11 @@ public class P2PScene extends Scene {
 }
 
 
-// 사이드 패널 클래스: RenderManager 참고
-class SidePanel extends JPanel {
+/**
+ * 상대방의 게임 화면을 표시하는 패널
+ * 네트워크를 통해 받은 상대방의 게임 상태를 실시간으로 렌더링합니다.
+ */
+class OpponentGamePanel extends JPanel {
     private final int GAME_WIDTH;
     private final int GAME_HEIGHT;
     private final int CELL_SIZE;
@@ -259,7 +264,7 @@ class SidePanel extends JPanel {
     // 이미지 캐시
     private final Map<Character, BufferedImage> imageCache = new HashMap<>();
     
-    public SidePanel(int gameWidth, int gameHeight, int cellSize, int previewSize, int previewCellSize) {
+    public OpponentGamePanel(int gameWidth, int gameHeight, int cellSize, int previewSize, int previewCellSize) {
         this.GAME_WIDTH = gameWidth;
         this.GAME_HEIGHT = gameHeight;
         this.CELL_SIZE = cellSize;
