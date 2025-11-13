@@ -803,4 +803,24 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
     public TimerManager getTimerManager() {
         return timerManager;
     }
+
+    public UIManager getUIManager() {
+        return uiManager;
+    }
+
+    public BoardManager getBoardManager() {
+        return boardManager;
+    }
+
+    public BlockManager getBlockManager() {
+        return blockManager;
+    }
+
+    public GameStateManager getGameStateManager() {
+        return gameStateManager;
+    }
+
+    public ScoreManager getScoreManager() {
+        return scoreManager;
+    }   
 }
