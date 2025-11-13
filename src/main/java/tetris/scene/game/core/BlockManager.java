@@ -767,4 +767,22 @@ public class BlockManager {
     public Block getRandomBlockForTest() {
         return getRandomBlock();
     }
+
+    public void resetBlock() {
+        currentBlock = null;
+        nextBlock = null;
+    }
+
+    public void setNextBlock(int type) {
+        switch (type) {
+            case 0: nextBlock = new IBlock(); break;
+            case 1: nextBlock = new JBlock(); break;
+            case 2: nextBlock = new LBlock(); break;
+            case 3: nextBlock = new ZBlock(); break;
+            case 4: nextBlock = new SBlock(); break;
+            case 5: nextBlock = new TBlock(); break;
+            case 6: nextBlock = new OBlock(); break;
+            default: nextBlock = new TBlock(); break;
+        }
+	}
 }

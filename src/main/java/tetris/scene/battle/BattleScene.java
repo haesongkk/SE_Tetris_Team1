@@ -33,26 +33,26 @@ public class BattleScene extends Scene {
     // ═══════════════════════════════════════════════════════════════
     // 1P (왼쪽) - 완전한 GameScene 복제
     // ═══════════════════════════════════════════════════════════════
-    private final BoardManager boardManager1;
-    private final BlockManager blockManager1;
-    private final ScoreManager scoreManager1;
-    private final tetris.scene.game.core.UIManager uiManager1;
-    private RenderManager renderManager1;
-    private final InputHandler inputHandler1;
-    private final GameStateManager gameStateManager1;
-    private final LineBlinkEffect lineBlinkEffect1;
+    protected final BoardManager boardManager1;
+    protected final BlockManager blockManager1;
+    protected final ScoreManager scoreManager1;
+    protected final tetris.scene.game.core.UIManager uiManager1;
+    protected RenderManager renderManager1;
+    protected InputHandler inputHandler1;
+    protected GameStateManager gameStateManager1;
+    protected final LineBlinkEffect lineBlinkEffect1;
     
     // ═══════════════════════════════════════════════════════════════
     // 2P (오른쪽) - 완전한 GameScene 복제
     // ═══════════════════════════════════════════════════════════════
-    private final BoardManager boardManager2;
-    private final BlockManager blockManager2;
-    private final ScoreManager scoreManager2;
-    private final tetris.scene.game.core.UIManager uiManager2;
-    private RenderManager renderManager2;
-    private final InputHandler inputHandler2;
-    private final GameStateManager gameStateManager2;
-    private final LineBlinkEffect lineBlinkEffect2;
+    protected final BoardManager boardManager2;
+    protected final BlockManager blockManager2;
+    protected final ScoreManager scoreManager2;
+    protected final tetris.scene.game.core.UIManager uiManager2;
+    protected RenderManager renderManager2;
+    protected InputHandler inputHandler2;
+    protected GameStateManager gameStateManager2;
+    protected final LineBlinkEffect lineBlinkEffect2;
     
     // 타이머 (블록 자동 낙하)
     private Timer fallTimer1;
@@ -239,6 +239,7 @@ public class BattleScene extends Scene {
         
         @Override
         public void onGameOver() {
+            System.out.println("Player 2 Game Over detected in Callback");
             handleGameOver(2);
         }
     }
