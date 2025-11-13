@@ -239,10 +239,7 @@ public class BattleScene extends Scene {
         
         @Override
         public void onGameOver() {
-<<<<<<< HEAD
             System.out.println("Player 2 Game Over detected in Callback");
-=======
->>>>>>> parent of aebf842 (중간 구현)
             handleGameOver(2);
         }
     }
