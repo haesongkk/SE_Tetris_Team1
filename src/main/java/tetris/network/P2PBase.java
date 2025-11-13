@@ -15,16 +15,18 @@ public class P2PBase {
     BufferedReader in;
     BufferedWriter out;
 
-    public String recieve() {
-        try {
-            return in.readLine();
-        } catch (IOException e) { e.printStackTrace(); }
-        return null;
+    public String receive() {
+        try { return in.readLine(); } 
+        catch (IOException e) { 
+            System.out.println("수신 실패"); return null; 
+        }
     }
 
     public void send(String message) {
         try { out.write(message + '\n'); out.flush(); } 
-        catch (IOException ex) { ex.printStackTrace(); }
+        catch (IOException ex) { 
+            System.out.println("전송 실패"); 
+        }
     }
 
 }

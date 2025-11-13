@@ -416,6 +416,26 @@ public class BoardManager {
     public boolean[][] getBombCells() { return bombCells; }
     public int getWidth() { return GAME_WIDTH; }
     public int getHeight() { return GAME_HEIGHT; }
+
+    // Setter 메서드들
+    public void setBoardTypes(int[][] boardTypes) {
+        this.boardTypes = boardTypes;
+    }
+    public void setBoard(int[][] board) {
+        this.board = board;
+    }
+    public void setBombCells(boolean[][] bombCells) {
+        this.bombCells = bombCells;
+    }
+    public void setItemCells(boolean[][] itemCells) {
+        this.itemCells = itemCells;
+    }
+    public void setItemBlockInfo(ItemBlock[][] itemBlockInfo) {
+        this.itemBlockInfo = itemBlockInfo;
+    }
+    public void setBoardColors(Color[][] boardColors) {
+        this.boardColors = boardColors;
+    }
     
     /**
      * 특정 위치가 폭탄 셀인지 확인합니다.

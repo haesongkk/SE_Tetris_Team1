@@ -185,6 +185,16 @@ public class ScoreManager {
     public int getPointsPerLine() {
         return POINTS_PER_LINE;
     }
+
+    public void setScore(int score) {
+        this.score = score;
+    }
+    public void setSpeedMultiplier(double speedMultiplier) {
+        this.speedMultiplier = speedMultiplier;
+    }
+    public void setDifficultyMultiplier(double difficultyMultiplier) {
+        this.difficultyMultiplier = difficultyMultiplier;
+    }
     
     /**
      * 점수판을 그립니다.
