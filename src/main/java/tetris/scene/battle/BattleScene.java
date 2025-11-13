@@ -69,11 +69,15 @@ public class BattleScene extends Scene {
     
     // 게임 오버 상태 (어느 한쪽이라도 게임 오버되면 양쪽 모두 종료)
     private boolean isGameOver = false;
+    
+    // P2P 모드 플래그 (P2P 모드에서는 2P 게임 오버 무시)
+    private boolean isP2PMode = false;
 
     public BattleScene(JFrame frame, String gameMode) {
         super(frame);
         this.m_frame = frame;
         this.gameMode = gameMode;
+        this.isP2PMode = "P2P".equals(gameMode);
         
         GameSettings.Difficulty difficulty = GameSettings.getInstance().getDifficulty();
         
@@ -239,7 +243,10 @@ public class BattleScene extends Scene {
         
         @Override
         public void onGameOver() {
-            handleGameOver(2);
+            // P2P 모드에서는 2P 게임 오버 무시 (네트워크 동기화 전용)
+            if (!isP2PMode) {
+                handleGameOver(2);
+            }
         }
     }
     
@@ -898,6 +905,66 @@ public class BattleScene extends Scene {
         g2.setClip(originalClip);
     }
     
+    // ═══════════════════════════════════════════════════════════════
+    // Public Accessors for P2P Network Synchronization
+    // ═══════════════════════════════════════════════════════════════
+    
+    /**
+     * 1P의 BoardManager를 반환합니다. (P2P 네트워크 동기화용)
+     */
+    public BoardManager getBoardManager1() {
+        return boardManager1;
+    }
+    
+    /**
+     * 2P의 BoardManager를 반환합니다. (P2P 네트워크 동기화용)
+     */
+    public BoardManager getBoardManager2() {
+        return boardManager2;
+    }
+    
+    /**
+     * 1P의 BlockManager를 반환합니다. (P2P 네트워크 동기화용)
+     */
+    public BlockManager getBlockManager1() {
+        return blockManager1;
+    }
+    
+    /**
+     * 2P의 BlockManager를 반환합니다. (P2P 네트워크 동기화용)
+     */
+    public BlockManager getBlockManager2() {
+        return blockManager2;
+    }
+    
+    /**
+     * 1P의 ScoreManager를 반환합니다. (P2P 네트워크 동기화용)
+     */
+    public ScoreManager getScoreManager1() {
+        return scoreManager1;
+    }
+    
+    /**
+     * 2P의 ScoreManager를 반환합니다. (P2P 네트워크 동기화용)
+     */
+    public ScoreManager getScoreManager2() {
+        return scoreManager2;
+    }
+    
+    /**
+     * 1P의 GameStateManager를 반환합니다. (P2P 네트워크 동기화용)
+     */
+    public GameStateManager getGameStateManager1() {
+        return gameStateManager1;
+    }
+    
+    /**
+     * 2P의 GameStateManager를 반환합니다. (P2P 네트워크 동기화용)
+     */
+    public GameStateManager getGameStateManager2() {
+        return gameStateManager2;
+    }
+    
     @Override
     public void onEnter() {
         // Scene을 프레임의 ContentPane으로 설정
@@ -913,10 +980,42 @@ public class BattleScene extends Scene {
         // 타이머 시작
         if (fallTimer1 != null) fallTimer1.start();
         if (fallTimer2 != null) fallTimer2.start();
-        if (blinkTimer != null) blinkTimer.start(); // 점멸 효과 타이머 시작
+        if (blinkTimer != null) blinkTimer.start();
         
         revalidate();
         repaint();
+    }
+    
+    /**
+     * P2P 모드: 1P의 자동 진행을 중지 (네트워크 동기화용)
+     */
+    public void disablePlayer1AutoPlay() {
+        // 1P 타이머 중지
+        if (fallTimer1 != null && fallTimer1.isRunning()) {
+            fallTimer1.stop();
+        }
+        
+        // 1P 입력 비활성화
+        m_frame.removeKeyListener(inputHandler1);
+        
+        // 1P 보드를 완전히 비움 (네트워크 데이터만 표시)
+        boardManager1.reset();
+    }
+    
+    /**
+     * P2P 모드: 2P의 자동 진행을 중지 (네트워크 동기화용)
+     */
+    public void disablePlayer2AutoPlay() {
+        // 2P 타이머 중지
+        if (fallTimer2 != null && fallTimer2.isRunning()) {
+            fallTimer2.stop();
+        }
+        
+        // 2P 입력 비활성화
+        m_frame.removeKeyListener(inputHandler2);
+        
+        // 2P 보드를 완전히 비움 (네트워크 데이터만 표시)
+        boardManager2.reset();
     }
 
     @Override
