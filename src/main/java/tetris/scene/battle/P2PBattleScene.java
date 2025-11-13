@@ -140,7 +140,7 @@ public class P2PBattleScene extends BattleScene {
                         break;
                     }
                     if(bc[r][c].equals(Theme.Block(blockType))) {
-                        state.boardTypes[r][c] = blockType;
+                        state.boardColors[r][c] = blockType;
                         break;
                     }
                 }
