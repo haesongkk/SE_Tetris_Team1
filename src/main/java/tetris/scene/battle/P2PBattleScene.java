@@ -70,9 +70,9 @@ public class P2PBattleScene extends BattleScene {
         // 게임 상태 수신 스레드 시작
         readThread = new Thread(()-> {
             while (true) {
-                String recieve = p2p.recieve();
-                if (recieve != null) {
-                    deserializeGameState(recieve);
+                String receive = p2p.receive();
+                if (receive != null) {
+                    deserializeGameState(receive);
                 }
             }
         });

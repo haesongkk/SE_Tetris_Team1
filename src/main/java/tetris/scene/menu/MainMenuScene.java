@@ -2,6 +2,7 @@ package tetris.scene.menu;
 
 import tetris.Game;
 import tetris.GameSettings;
+import tetris.network.P2PBase;
 import tetris.network.P2PClient;
 import tetris.network.P2PServer;
 import tetris.util.Sound;
@@ -606,46 +607,7 @@ public class MainMenuScene extends Scene implements KeyListener {
         p2pDialog.requestFocus();
     }
     
-    /**
-     * 서버 모드를 시작합니다.
-     */
-    private void showServerMode() {
-        System.out.println("Starting Server Mode...");
-        P2PServer server = new P2PServer();
-        server.onConnect = () -> {
-            // 우선 연결 성공 시 바로 P2P 씬으로 전환하도록 구현함
-            Game.setScene(new P2PBattleScene(frame, "normal", server));
-        };
-        // TODO: 서버 대기 화면 구현
-        JOptionPane.showMessageDialog(this, 
-            "서버 모드를 시작합니다.\n클라이언트의 접속을 기다립니다.\n\n서버 IP 주소: " + server.HOST, 
-            "서버 모드", 
-            JOptionPane.INFORMATION_MESSAGE);
-
-    }
-    
-    /**
-     * 클라이언트 모드를 시작합니다.
-     */
-    private void showClientMode() {
-        System.out.println("Starting Client Mode...");
-        // TODO: IP 입력 및 연결 화면 구현
-        String serverIP = JOptionPane.showInputDialog(this, 
-            "접속할 서버의 IP 주소를 입력해주세요:\n\n예: 192.168.1.100", 
-            "클라이언트 모드", 
-            JOptionPane.QUESTION_MESSAGE);
-        
-        if(serverIP == null) return; // 취소 시 종료
-        
-        P2PClient client = new P2PClient();
-        if(client.connect(serverIP.trim())) {
-            // 우선 연결 성공 시 바로 P2P 씬으로 전환하도록 구현함
-            Game.setScene(new P2PBattleScene(frame, "normal", client));
-        } else {
-            System.out.println("Client connection cancelled.");
-        }
-    }
-
+   
     
     // 설정 메뉴를 표시하는 메서드
     private void showSettings() {
@@ -922,4 +884,293 @@ public class MainMenuScene extends Scene implements KeyListener {
                 JOptionPane.ERROR_MESSAGE);
         }
     }
+
+    //==============
+    // P2P 모드 관련 
+    //==============
+
+
+     /**
+     * 서버 모드를 시작합니다.
+     */
+    private void showServerMode() {
+        System.out.println("Starting Server Mode...");
+        P2PServer server = new P2PServer();
+        server.onConnect = () -> {
+            //Game.setScene(new P2PBattleScene(frame, "normal", server));
+            showP2PBattleModeSelection(server);
+        };
+        JOptionPane.showMessageDialog(this, 
+            "서버 모드를 시작합니다.\n클라이언트의 접속을 기다립니다.\n\n서버 IP 주소: " + server.HOST, 
+            "서버 모드", 
+            JOptionPane.INFORMATION_MESSAGE);
+
+    }
+    
+    /**
+     * 클라이언트 모드를 시작합니다.
+     */
+    private void showClientMode() {
+        System.out.println("Starting Client Mode...");
+        // TODO: IP 입력 및 연결 화면 구현
+        String serverIP = JOptionPane.showInputDialog(this, 
+            "접속할 서버의 IP 주소를 입력해주세요:\n\n예: 192.168.1.100", 
+            "클라이언트 모드", 
+            JOptionPane.QUESTION_MESSAGE);
+        
+        if(serverIP == null) return; // 취소 시 종료
+        
+        P2PClient client = new P2PClient();
+        if(client.connect(serverIP.trim())) {
+            showP2PBattleWaitingScreen(client);
+        } else {
+            System.out.println("Client connection cancelled.");
+        }
+    }
+
+    // 클라이언트 대기 화면
+    private void showP2PBattleWaitingScreen(P2PClient client) { 
+        
+
+        // 해상도에 따른 다이얼로그 크기 조정
+        int[] resolution = gameSettings.getResolutionSize();
+        int screenWidth = resolution[0];
+        int screenHeight = resolution[1];
+        
+        int dialogWidth = Math.max(350, Math.min(450, screenWidth / 2));
+        int dialogHeight = Math.max(280, Math.min(380, screenHeight / 2));
+        
+        // 다이얼로그 생성
+        JDialog battleModeDialog = createBaseDialog(dialogWidth, dialogHeight);
+        JPanel dialogPanel = createDialogPanel();
+        
+        // 제목 라벨
+        JLabel titleLabel = createDialogTitle("준비 중...");
+        titleLabel.setFont(new Font("Malgun Gothic", Font.BOLD, Math.max(18, screenWidth / 45)));
+        
+        // 설명 라벨
+        JLabel descLabel = new JLabel("<html><center>상대가 모드를 선택하고 있습니다.</center></html>", SwingConstants.CENTER);
+        descLabel.setFont(new Font("Malgun Gothic", Font.PLAIN, 12));
+        descLabel.setForeground(getTextColor());
+        descLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 20, 0));
+        
+        // 상단 패널 (제목 + 설명)
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setOpaque(false);
+        topPanel.add(titleLabel, BorderLayout.NORTH);
+        topPanel.add(descLabel, BorderLayout.CENTER);
+        
+        // 버튼 패널
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setOpaque(false);
+        buttonPanel.setLayout(new GridLayout(4, 1, 0, 12));
+        
+        // 취소 버튼
+        JButton cancelButton = createCancelButton(battleModeDialog);
+        
+        buttonPanel.add(cancelButton);
+        
+        // 버튼 배열 (키보드 네비게이션용)
+        JButton[] buttons = { cancelButton };
+        
+        // 컴포넌트 배치
+        dialogPanel.add(topPanel, BorderLayout.NORTH);
+        dialogPanel.add(buttonPanel, BorderLayout.CENTER);
+        
+        battleModeDialog.add(dialogPanel);
+        
+        // 키보드 네비게이션 추가
+        addDialogKeyNavigation(battleModeDialog, buttons, cancelButton);
+        
+        
+        Thread waitThread = new Thread(() -> {
+            System.out.println("Waiting for mode selection...");
+            String mode = client.receive();
+            SwingUtilities.invokeLater(() -> {
+                battleModeDialog.dispose();
+                showP2PBattleStartScreen(mode, client);
+            });
+        });
+        waitThread.start();
+
+        // 다이얼로그 표시
+        battleModeDialog.setVisible(true);
+        battleModeDialog.requestFocus();
+    }
+
+
+
+    /**
+     * P2P 배틀 모드 선택 다이얼로그
+     */
+    private void showP2PBattleModeSelection(P2PBase p2pBase) {
+        // 해상도에 따른 다이얼로그 크기 조정
+        int[] resolution = gameSettings.getResolutionSize();
+        int screenWidth = resolution[0];
+        int screenHeight = resolution[1];
+        
+        int dialogWidth = Math.max(350, Math.min(450, screenWidth / 2));
+        int dialogHeight = Math.max(280, Math.min(380, screenHeight / 2));
+        
+        // 다이얼로그 생성
+        JDialog battleModeDialog = createBaseDialog(dialogWidth, dialogHeight);
+        JPanel dialogPanel = createDialogPanel();
+        
+        // 제목 라벨
+        JLabel titleLabel = createDialogTitle("P2P 배틀 모드 선택");
+        titleLabel.setFont(new Font("Malgun Gothic", Font.BOLD, Math.max(18, screenWidth / 45)));
+        
+        // 설명 라벨
+        JLabel descLabel = new JLabel("<html><center>게임 모드를 선택해주세요</center></html>", SwingConstants.CENTER);
+        descLabel.setFont(new Font("Malgun Gothic", Font.PLAIN, 12));
+        descLabel.setForeground(getTextColor());
+        descLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 20, 0));
+        
+        // 상단 패널 (제목 + 설명)
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setOpaque(false);
+        topPanel.add(titleLabel, BorderLayout.NORTH);
+        topPanel.add(descLabel, BorderLayout.CENTER);
+        
+        // 버튼 패널
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setOpaque(false);
+        buttonPanel.setLayout(new GridLayout(4, 1, 0, 12));
+        
+        // 일반 모드 버튼
+        JButton normalModeButton = createDialogButton("일반 모드");
+        normalModeButton.setToolTipText("기본 테트리스 룰로 대전합니다");
+        normalModeButton.addActionListener(e -> {
+            System.out.println("Normal mode selected for P2P battle.");
+            
+            p2pBase.send("normal");
+            battleModeDialog.dispose();
+            showP2PBattleStartScreen("normal", p2pBase);
+        });
+        
+        // 아이템 모드 버튼
+        JButton itemModeButton = createDialogButton("아이템 모드");
+        itemModeButton.setToolTipText("폭탄 아이템과 함께 대전합니다");
+        itemModeButton.addActionListener(e -> {
+            p2pBase.send("item");
+            battleModeDialog.dispose();
+            showP2PBattleStartScreen("item", p2pBase);
+        });
+        
+        // 시간 제한 모드 버튼
+        JButton timeLimitButton = createDialogButton("시간 제한 모드");
+        timeLimitButton.setToolTipText("제한 시간 내에 승부를 결정합니다");
+        timeLimitButton.addActionListener(e -> {
+            p2pBase.send("time_limit");
+            battleModeDialog.dispose();
+            showP2PBattleStartScreen("time_limit", p2pBase);
+        });
+        
+        // 취소 버튼
+        JButton cancelButton = createCancelButton(battleModeDialog);
+        
+        buttonPanel.add(normalModeButton);
+        buttonPanel.add(itemModeButton);
+        buttonPanel.add(timeLimitButton);
+        buttonPanel.add(cancelButton);
+        
+        // 버튼 배열 (키보드 네비게이션용)
+        JButton[] buttons = {normalModeButton, itemModeButton, timeLimitButton, cancelButton};
+        
+        // 컴포넌트 배치
+        dialogPanel.add(topPanel, BorderLayout.NORTH);
+        dialogPanel.add(buttonPanel, BorderLayout.CENTER);
+        
+        battleModeDialog.add(dialogPanel);
+        
+        // 키보드 네비게이션 추가
+        addDialogKeyNavigation(battleModeDialog, buttons, cancelButton);
+        
+        // 다이얼로그 표시
+        battleModeDialog.setVisible(true);
+        battleModeDialog.requestFocus();
+    }
+
+    private void showP2PBattleStartScreen(String mode, P2PBase p2pBase) {
+        // 해상도에 따른 다이얼로그 크기 조정
+        int[] resolution = gameSettings.getResolutionSize();
+        int screenWidth = resolution[0];
+        int screenHeight = resolution[1];
+        
+        int dialogWidth = Math.max(350, Math.min(450, screenWidth / 2));
+        int dialogHeight = Math.max(280, Math.min(380, screenHeight / 2));
+        
+        // 다이얼로그 생성
+        JDialog battleModeDialog = createBaseDialog(dialogWidth, dialogHeight);
+        JPanel dialogPanel = createDialogPanel();
+        
+        // 제목 라벨
+        JLabel titleLabel = createDialogTitle("게임 시작");
+        titleLabel.setFont(new Font("Malgun Gothic", Font.BOLD, Math.max(18, screenWidth / 45)));
+        
+        // 설명 라벨
+        JLabel descLabel = new JLabel("<html><center>" + mode + "모드"+ "</center></html>", SwingConstants.CENTER);
+        descLabel.setFont(new Font("Malgun Gothic", Font.PLAIN, 12));
+        descLabel.setForeground(getTextColor());
+        descLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 20, 0));
+        
+        // 상단 패널 (제목 + 설명)
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setOpaque(false);
+        topPanel.add(titleLabel, BorderLayout.NORTH);
+        topPanel.add(descLabel, BorderLayout.CENTER);
+        
+        // 버튼 패널
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setOpaque(false);
+        buttonPanel.setLayout(new GridLayout(4, 1, 0, 12));
+        
+
+        Thread waitThread = new Thread(() -> {
+            String msg = p2pBase.receive();
+            if(msg.equals("start")) {
+                SwingUtilities.invokeLater(() -> {
+                    Game.setScene(new P2PBattleScene(frame, mode, p2pBase));
+                    battleModeDialog.dispose();
+                });
+            }
+        });
+
+        JButton starButton = createDialogButton("게임 시작");
+        starButton.setToolTipText("게임을 시작합니다!");
+        starButton.addActionListener(e -> {
+            SwingUtilities.invokeLater(() -> {
+                p2pBase.send("start");
+                waitThread.start();
+            });
+        });
+
+
+
+        JButton cancelButton = createCancelButton(battleModeDialog);
+
+        buttonPanel.add(starButton);
+        buttonPanel.add(cancelButton);
+        
+        // 버튼 배열 (키보드 네비게이션용)
+        JButton[] buttons = { starButton, cancelButton };
+        
+        // 컴포넌트 배치
+        dialogPanel.add(topPanel, BorderLayout.NORTH);
+        dialogPanel.add(buttonPanel, BorderLayout.CENTER);
+        
+        battleModeDialog.add(dialogPanel);
+        
+        // 키보드 네비게이션 추가
+        addDialogKeyNavigation(battleModeDialog, buttons, cancelButton);
+        
+        // 다이얼로그 표시
+        battleModeDialog.setVisible(true);
+        battleModeDialog.requestFocus();
+        
+    }
+
+
+
+
 }

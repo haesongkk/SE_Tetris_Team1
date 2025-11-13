@@ -15,7 +15,7 @@ public class P2PBase {
     BufferedReader in;
     BufferedWriter out;
 
-    public String recieve() {
+    public String receive() {
         try { return in.readLine(); } 
         catch (IOException e) { 
             System.out.println("수신 실패"); return null; 
