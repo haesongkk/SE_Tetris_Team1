@@ -896,15 +896,32 @@ public class MainMenuScene extends Scene implements KeyListener {
     private void showServerMode() {
         System.out.println("Starting Server Mode...");
         P2PServer server = new P2PServer();
-        server.onConnect = () -> {
-            //Game.setScene(new P2PBattleScene(frame, "normal", server));
-            showP2PBattleModeSelection(server);
-        };
-        JOptionPane.showMessageDialog(this, 
-            "서버 모드를 시작합니다.\n클라이언트의 접속을 기다립니다.\n\n서버 IP 주소: " + server.HOST, 
-            "서버 모드", 
-            JOptionPane.INFORMATION_MESSAGE);
 
+        // 1) 먼저 안내 메시지용 JOptionPane 생성
+        String message = "서버 모드를 시작합니다.\n"
+                    + "클라이언트의 접속을 기다립니다.\n\n"
+                    + "서버 IP 주소: " + server.HOST;
+
+        JOptionPane optionPane = new JOptionPane(
+            message,
+            JOptionPane.INFORMATION_MESSAGE,
+            JOptionPane.DEFAULT_OPTION
+        );
+
+        // 2) 여기서 실제 다이얼로그 객체를 만들어서 레퍼런스를 잡음
+        JDialog waitDialog = optionPane.createDialog(this, "서버 모드");
+
+        // 3) onConnect에서 이 다이얼로그를 닫고, 모드 선택창 열기
+        server.onConnect = () -> {
+            // P2PServer.waitForClient()에서 이미 SwingUtilities.invokeLater로 들어오기 때문에
+            // 여기 코드는 EDT에서 안전하게 실행됨
+            waitDialog.dispose();                // "대기 중..." 창 닫기
+            showP2PBattleModeSelection(server);  // 모드 선택 다이얼로그 열기
+        };
+
+        // 4) 다이얼로그 표시 (모달, 사용자가 직접 닫을 수도 있음)
+        waitDialog.setModal(true);  // 기본값이기도 함
+        waitDialog.setVisible(true);
     }
     
     /**
