@@ -187,10 +187,10 @@ public class P2PBattleScene extends BattleScene {
         public void onGameAction(InputHandler.GameAction action) { }
         
         @Override
-        public boolean isGameOver() { return false; }       
+        public boolean isGameOver() { return gameStateManager2.isGameOver(); }       
         
         @Override
-        public boolean isPaused() { return false; }
+        public boolean isPaused() { return gameStateManager2.isPaused(); }
         
         @Override
         public void repaintGame() { repaint(); }
@@ -235,6 +235,127 @@ public class P2PBattleScene extends BattleScene {
             dst[i] = src[i].clone();    // Color는 객체지만, 어차피 여기서는 읽기만 하니까 ok
         }
         return dst;
+    }
+    
+    /**
+     * BattleScene의 게임 오버 다이얼로그를 P2P 전용으로 오버라이드
+     */
+    @Override
+    protected void showBattleGameOverDialog(int winner) {
+        javax.swing.SwingUtilities.invokeLater(() -> {
+            javax.swing.JDialog dialog = new javax.swing.JDialog(m_frame, "Game Over", true);
+            dialog.setDefaultCloseOperation(javax.swing.JDialog.DO_NOTHING_ON_CLOSE);
+            dialog.setLayout(new java.awt.GridBagLayout());
+            dialog.setSize(350, 280);
+            dialog.setLocationRelativeTo(m_frame);
+            
+            java.awt.GridBagConstraints gbc = new java.awt.GridBagConstraints();
+            gbc.insets = new java.awt.Insets(10, 10, 10, 10);
+            
+            // 승자 표시
+            javax.swing.JLabel winnerLabel = new javax.swing.JLabel();
+            winnerLabel.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 18));
+            
+            String winnerText;
+            if (winner == 1) {
+                winnerText = "SERVER WINS!";
+                winnerLabel.setForeground(new java.awt.Color(255, 215, 0)); // Gold color
+            } else {
+                winnerText = "CLIENT WINS!";
+                winnerLabel.setForeground(new java.awt.Color(255, 215, 0)); // Gold color
+            }
+            winnerLabel.setText(winnerText);
+            winnerLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+            
+            gbc.gridx = 0;
+            gbc.gridy = 0;
+            gbc.gridwidth = 2;
+            gbc.fill = java.awt.GridBagConstraints.HORIZONTAL;
+            dialog.add(winnerLabel, gbc);
+            
+            // 플레이어 점수 표시
+            int player1Score = scoreManager1.getScore();
+            int player2Score = scoreManager2.getScore();
+            
+            // Server (Player 1) 점수
+            javax.swing.JLabel serverScoreLabel = new javax.swing.JLabel("Server");
+            serverScoreLabel.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 14));
+            serverScoreLabel.setForeground(winner == 1 ? new java.awt.Color(255, 215, 0) : java.awt.Color.WHITE);
+            serverScoreLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+            
+            gbc.gridx = 0;
+            gbc.gridy = 1;
+            gbc.gridwidth = 1;
+            gbc.fill = java.awt.GridBagConstraints.HORIZONTAL;
+            dialog.add(serverScoreLabel, gbc);
+            
+            javax.swing.JLabel serverScoreValue = new javax.swing.JLabel(String.format("%,d", player1Score));
+            serverScoreValue.setFont(new java.awt.Font("Arial", java.awt.Font.PLAIN, 16));
+            serverScoreValue.setForeground(winner == 1 ? new java.awt.Color(255, 215, 0) : java.awt.Color.LIGHT_GRAY);
+            serverScoreValue.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+            
+            gbc.gridy = 2;
+            dialog.add(serverScoreValue, gbc);
+            
+            // Client (Player 2) 점수
+            javax.swing.JLabel clientScoreLabel = new javax.swing.JLabel("Client");
+            clientScoreLabel.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 14));
+            clientScoreLabel.setForeground(winner == 2 ? new java.awt.Color(255, 215, 0) : java.awt.Color.WHITE);
+            clientScoreLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+            
+            gbc.gridx = 1;
+            gbc.gridy = 1;
+            dialog.add(clientScoreLabel, gbc);
+            
+            javax.swing.JLabel clientScoreValue = new javax.swing.JLabel(String.format("%,d", player2Score));
+            clientScoreValue.setFont(new java.awt.Font("Arial", java.awt.Font.PLAIN, 16));
+            clientScoreValue.setForeground(winner == 2 ? new java.awt.Color(255, 215, 0) : java.awt.Color.LIGHT_GRAY);
+            clientScoreValue.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+            
+            gbc.gridy = 2;
+            dialog.add(clientScoreValue, gbc);
+            
+            // 메인 메뉴로 돌아가기 버튼
+            javax.swing.JButton mainMenuButton = new javax.swing.JButton("Main Menu");
+            mainMenuButton.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 14));
+            mainMenuButton.setPreferredSize(new java.awt.Dimension(120, 40));
+            mainMenuButton.addActionListener(e -> {
+                dialog.dispose();
+                returnToMainMenu();
+            });
+            
+            gbc.gridx = 0;
+            gbc.gridy = 3;
+            gbc.gridwidth = 2;
+            gbc.fill = java.awt.GridBagConstraints.NONE;
+            gbc.anchor = java.awt.GridBagConstraints.CENTER;
+            dialog.add(mainMenuButton, gbc);
+            
+            // 다이얼로그 배경색 설정
+            dialog.getContentPane().setBackground(new java.awt.Color(40, 40, 40));
+            
+            dialog.setVisible(true);
+        });
+    }
+    
+    /**
+     * P2P 전용 메인 메뉴 복귀 처리 (네트워크 리소스 정리 후 메인 메뉴로 복귀)
+     */
+    @Override
+    protected void returnToMainMenu() {
+        // P2P 네트워크 리소스 정리
+        if (writeTimer != null) {
+            writeTimer.cancel();
+            writeTimer = null;
+        }
+        
+        if (readThread != null) {
+            readThread.interrupt();
+            readThread = null;
+        }
+        
+        // 부모 클래스의 메인 메뉴 복귀 로직 호출
+        super.returnToMainMenu();
     }
 
 }
