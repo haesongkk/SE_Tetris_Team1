@@ -29,8 +29,7 @@ public class BattleScene extends Scene {
     protected final JFrame m_frame;
     
     // 선택된 게임 모드
-    @SuppressWarnings("unused")
-    private final String gameMode;
+    protected final String gameMode;
     
     // ═══════════════════════════════════════════════════════════════
     // 1P (왼쪽) - 완전한 GameScene 복제
@@ -698,13 +697,21 @@ public class BattleScene extends Scene {
             int player2Score = scoreManager2.getScore();
             int actualWinner;
             
-            if (player1Score > player2Score) {
-                actualWinner = 1;
-            } else if (player2Score > player1Score) {
+
+            if (loser == 1){
                 actualWinner = 2;
-            } else {
-                // 점수가 같으면 게임 오버되지 않은 플레이어가 승자 (게임 오버된 플레이어가 패자)
-                actualWinner = (loser == 1) ? 2 : 1;
+            }
+            else if (loser == 2){
+                actualWinner = 1;
+            }
+            else if (player1Score > player2Score) {
+                actualWinner = 1;
+            } 
+            else if (player2Score > player1Score) {
+                actualWinner = 2;
+            }
+            else {
+                actualWinner = 0; // 무승부 처리 (필요시)
             }
             
             // 승자 표시 다이얼로그 실행
@@ -718,102 +725,174 @@ public class BattleScene extends Scene {
      */
     protected void showBattleGameOverDialog(int winner) {
         SwingUtilities.invokeLater(() -> {
-            JDialog dialog = new JDialog(m_frame, "Game Over", true);
-            dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
-            dialog.setLayout(new GridBagLayout());
-            dialog.setSize(350, 280);
-            dialog.setLocationRelativeTo(m_frame);
+            // 메인메뉴 스타일의 다이얼로그 생성
+            JDialog dialog = createBaseDialog();
+            JPanel dialogPanel = createDialogPanel();
             
-            GridBagConstraints gbc = new GridBagConstraints();
-            gbc.insets = new Insets(10, 10, 10, 10);
-            
-            // 승자 표시
-            JLabel winnerLabel = new JLabel();
-            winnerLabel.setFont(new Font("Arial", Font.BOLD, 18));
-            
-            String winnerText;
-            if (winner == 1) {
-                winnerText = "Player 1 Wins!";
-                winnerLabel.setForeground(new Color(255, 215, 0)); // Gold color
+            // 게임 모드에 따른 다이얼로그 구성
+            if ("time_limit".equals(gameMode)) {
+                // 시간제한 모드: 점수 표시 포함
+                setupTimeLimitModeDialog(dialogPanel, winner);
             } else {
-                winnerText = "Player 2 Wins!";
-                winnerLabel.setForeground(new Color(255, 215, 0)); // Gold color
+                // 일반 모드, 아이템 모드: 승자만 표시
+                setupNormalModeDialog(dialogPanel, winner);
             }
-            winnerLabel.setText(winnerText);
-            winnerLabel.setHorizontalAlignment(SwingConstants.CENTER);
             
-            gbc.gridx = 0;
-            gbc.gridy = 0;
-            gbc.gridwidth = 2;
-            gbc.fill = GridBagConstraints.HORIZONTAL;
-            dialog.add(winnerLabel, gbc);
-            
-            // 플레이어 점수 표시
-            int player1Score = scoreManager1.getScore();
-            int player2Score = scoreManager2.getScore();
-            
-            // Player 1 점수
-            JLabel player1ScoreLabel = new JLabel("Player 1");
-            player1ScoreLabel.setFont(new Font("Arial", Font.BOLD, 14));
-            player1ScoreLabel.setForeground(winner == 1 ? new Color(255, 215, 0) : Color.WHITE);
-            player1ScoreLabel.setHorizontalAlignment(SwingConstants.CENTER);
-            
-            gbc.gridx = 0;
-            gbc.gridy = 1;
-            gbc.gridwidth = 1;
-            gbc.fill = GridBagConstraints.HORIZONTAL;
-            dialog.add(player1ScoreLabel, gbc);
-            
-            JLabel player1ScoreValue = new JLabel(String.format("%,d", player1Score));
-            player1ScoreValue.setFont(new Font("Arial", Font.PLAIN, 16));
-            player1ScoreValue.setForeground(winner == 1 ? new Color(255, 215, 0) : Color.LIGHT_GRAY);
-            player1ScoreValue.setHorizontalAlignment(SwingConstants.CENTER);
-            
-            gbc.gridy = 2;
-            dialog.add(player1ScoreValue, gbc);
-            
-            // Player 2 점수
-            JLabel player2ScoreLabel = new JLabel("Player 2");
-            player2ScoreLabel.setFont(new Font("Arial", Font.BOLD, 14));
-            player2ScoreLabel.setForeground(winner == 2 ? new Color(255, 215, 0) : Color.WHITE);
-            player2ScoreLabel.setHorizontalAlignment(SwingConstants.CENTER);
-            
-            gbc.gridx = 1;
-            gbc.gridy = 1;
-            dialog.add(player2ScoreLabel, gbc);
-            
-            JLabel player2ScoreValue = new JLabel(String.format("%,d", player2Score));
-            player2ScoreValue.setFont(new Font("Arial", Font.PLAIN, 16));
-            player2ScoreValue.setForeground(winner == 2 ? new Color(255, 215, 0) : Color.LIGHT_GRAY);
-            player2ScoreValue.setHorizontalAlignment(SwingConstants.CENTER);
-            
-            gbc.gridy = 2;
-            dialog.add(player2ScoreValue, gbc);
-            
-            // 메인 메뉴로 돌아가기 버튼
-            JButton mainMenuButton = new JButton("Main Menu");
-            mainMenuButton.setFont(new Font("Arial", Font.BOLD, 14));
-            mainMenuButton.setPreferredSize(new Dimension(120, 40));
-            mainMenuButton.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    dialog.dispose();
-                    returnToMainMenu();
-                }
-            });
-            
-            gbc.gridx = 0;
-            gbc.gridy = 3;
-            gbc.gridwidth = 2;
-            gbc.fill = GridBagConstraints.NONE;
-            gbc.anchor = GridBagConstraints.CENTER;
-            dialog.add(mainMenuButton, gbc);
-            
-            // 다이얼로그 배경색 설정
-            dialog.getContentPane().setBackground(new Color(40, 40, 40));
-            
+            dialog.add(dialogPanel);
             dialog.setVisible(true);
+            dialog.requestFocus();
         });
+    }
+    
+    /**
+     * 일반 모드와 아이템 모드용 다이얼로그 구성
+     */
+    private void setupNormalModeDialog(JPanel dialogPanel, int winner) {
+        // 제목 라벨
+        JLabel titleLabel = new JLabel("게임 종료", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Malgun Gothic", Font.BOLD, 20));
+        titleLabel.setForeground(tetris.util.Theme.MenuTitle());
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0));
+        
+        // 중앙 패널 (승자 정보 + 설명)
+        JPanel centerPanel = new JPanel();
+        centerPanel.setOpaque(false);
+        centerPanel.setLayout(new GridLayout(3, 1, 0, 10));
+        
+        // 승자 표시
+        JLabel winnerLabel = new JLabel();
+        winnerLabel.setFont(new Font("Malgun Gothic", Font.BOLD, 18));
+        
+        String winnerText;
+        String modeDescription = "";
+        
+        if ("item".equals(gameMode)) {
+            modeDescription = "아이템 모드: ";
+        } else {
+            modeDescription = "일반 모드: ";
+        }
+        
+        if (winner == 1) {
+            winnerText = modeDescription + "플레이어 1 승리!";
+        } else if (winner == 2) {
+            winnerText = modeDescription + "플레이어 2 승리!";
+        } else {
+            winnerText = modeDescription + "무승부!";
+        }
+
+        winnerLabel.setForeground(new Color(255, 215, 0)); // Gold color
+        winnerLabel.setText(winnerText);
+        winnerLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        
+        // 게임 종료 사유 표시
+        JLabel reasonLabel = new JLabel("게임종료조건: 블록이 먼저 천장에 닿으면 패배");
+        reasonLabel.setFont(new Font("Malgun Gothic", Font.PLAIN, 12));
+        reasonLabel.setForeground(Color.WHITE);
+        reasonLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        
+        centerPanel.add(winnerLabel);
+        centerPanel.add(reasonLabel);
+        centerPanel.add(new JLabel()); // 빈 공간
+        
+        // 버튼 패널
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setOpaque(false);
+        buttonPanel.setLayout(new GridLayout(1, 1, 0, 10));
+        
+        // 메인 메뉴로 돌아가기 버튼
+        JButton mainMenuButton = createDialogButton("메인 메뉴로 돌아가기");
+        mainMenuButton.addActionListener(e -> {
+            ((JDialog)dialogPanel.getTopLevelAncestor()).dispose();
+            returnToMainMenu();
+        });
+        
+        buttonPanel.add(mainMenuButton);
+        
+        // 컴포넌트 배치
+        dialogPanel.add(titleLabel, BorderLayout.NORTH);
+        dialogPanel.add(centerPanel, BorderLayout.CENTER);
+        dialogPanel.add(buttonPanel, BorderLayout.SOUTH);
+    }
+    
+    /**
+     * 시간제한 모드용 다이얼로그 구성
+     */
+    private void setupTimeLimitModeDialog(JPanel dialogPanel, int winner) {
+        // 제목 라벨
+        JLabel titleLabel = new JLabel("게임 종료", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Malgun Gothic", Font.BOLD, 20));
+        titleLabel.setForeground(tetris.util.Theme.MenuTitle());
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0));
+        
+        // 중앙 패널 (승자 정보 + 점수 + 설명)
+        JPanel centerPanel = new JPanel();
+        centerPanel.setOpaque(false);
+        centerPanel.setLayout(new GridLayout(4, 1, 0, 8));
+        
+        // 승자 표시
+        JLabel winnerLabel = new JLabel();
+        winnerLabel.setFont(new Font("Malgun Gothic", Font.BOLD, 18));
+        
+        String winnerText = "시간제한 모드: ";
+        if (winner == 1) {
+            winnerText += "플레이어 1 승리!";
+        } else {
+            winnerText += "플레이어 2 승리!";
+        }
+        winnerLabel.setForeground(new Color(255, 215, 0)); // Gold color
+        winnerLabel.setText(winnerText);
+        winnerLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        
+        // 게임 종료 사유 표시
+        JLabel reasonLabel = new JLabel("<html><center>게임종료조건: 블록이 먼저 천장에 닿으면 패배<br>또는 시간 종료 후 점수가 더 높은 쪽이 승리</center></html>");
+        reasonLabel.setFont(new Font("Malgun Gothic", Font.PLAIN, 11));
+        reasonLabel.setForeground(Color.WHITE);
+        reasonLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        
+        // 플레이어 점수 표시 패널
+        JPanel scorePanel = new JPanel();
+        scorePanel.setOpaque(false);
+        scorePanel.setLayout(new GridLayout(1, 2, 20, 0));
+        
+        int player1Score = scoreManager1.getScore();
+        int player2Score = scoreManager2.getScore();
+        
+        JLabel player1ScoreLabel = new JLabel("플레이어 1: " + String.format("%,d", player1Score));
+        player1ScoreLabel.setFont(new Font("Malgun Gothic", Font.BOLD, 14));
+        player1ScoreLabel.setForeground(winner == 1 ? new Color(255, 215, 0) : Color.WHITE);
+        player1ScoreLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        
+        JLabel player2ScoreLabel = new JLabel("플레이어 2: " + String.format("%,d", player2Score));
+        player2ScoreLabel.setFont(new Font("Malgun Gothic", Font.BOLD, 14));
+        player2ScoreLabel.setForeground(winner == 2 ? new Color(255, 215, 0) : Color.WHITE);
+        player2ScoreLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        
+        scorePanel.add(player1ScoreLabel);
+        scorePanel.add(player2ScoreLabel);
+        
+        centerPanel.add(winnerLabel);
+        centerPanel.add(reasonLabel);
+        centerPanel.add(scorePanel);
+        centerPanel.add(new JLabel()); // 빈 공간
+        
+        // 버튼 패널
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setOpaque(false);
+        buttonPanel.setLayout(new GridLayout(1, 1, 0, 10));
+        
+        // 메인 메뉴로 돌아가기 버튼
+        JButton mainMenuButton = createDialogButton("메인 메뉴로 돌아가기");
+        mainMenuButton.addActionListener(e -> {
+            ((JDialog)dialogPanel.getTopLevelAncestor()).dispose();
+            returnToMainMenu();
+        });
+        
+        buttonPanel.add(mainMenuButton);
+        
+        // 컴포넌트 배치
+        dialogPanel.add(titleLabel, BorderLayout.NORTH);
+        dialogPanel.add(centerPanel, BorderLayout.CENTER);
+        dialogPanel.add(buttonPanel, BorderLayout.SOUTH);
     }
     
     /**
@@ -1071,5 +1150,66 @@ public class BattleScene extends Scene {
         if (fallTimer1 != null) fallTimer1.stop();
         if (fallTimer2 != null) fallTimer2.stop();
         if (blinkTimer != null) blinkTimer.stop(); // 점멸 효과 타이머 정지
+    }
+    
+    /**
+     * 메인메뉴 스타일의 기본 다이얼로그를 생성합니다
+     */
+    private JDialog createBaseDialog() {
+        JDialog dialog = new JDialog(m_frame, true);
+        dialog.setUndecorated(true);
+        dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        dialog.setResizable(false);
+        dialog.setSize(400, 300);
+        dialog.setLocationRelativeTo(m_frame);
+        dialog.setFocusable(true);
+        return dialog;
+    }
+    
+    /**
+     * 메인메뉴 스타일의 다이얼로그 패널을 생성합니다
+     */
+    private JPanel createDialogPanel() {
+        JPanel dialogPanel = new JPanel();
+        dialogPanel.setBackground(tetris.util.Theme.MenuBG());
+        dialogPanel.setLayout(new BorderLayout());
+        dialogPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(tetris.util.Theme.MenuTitle(), 2),
+            BorderFactory.createEmptyBorder(20, 20, 20, 20)
+        ));
+        return dialogPanel;
+    }
+    
+    /**
+     * 메인메뉴 스타일의 버튼을 생성합니다
+     */
+    private JButton createDialogButton(String text) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("Malgun Gothic", Font.BOLD, 14));
+        button.setPreferredSize(new Dimension(250, 35));
+        button.setBackground(tetris.util.Theme.MenuButton());
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.setBorderPainted(true);
+        button.setBorder(BorderFactory.createRaisedBevelBorder());
+        
+        // 호버 효과
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                if (button.isEnabled()) {
+                    button.setBackground(new Color(120, 120, 200));
+                }
+            }
+            
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                if (button.isEnabled()) {
+                    button.setBackground(tetris.util.Theme.MenuButton());
+                }
+            }
+        });
+        
+        return button;
     }
 }
