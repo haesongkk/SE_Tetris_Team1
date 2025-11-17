@@ -33,6 +33,28 @@ public class DifficultyTest {
         scoreManager = new ScoreManager();
     }
 
+    @AfterEach
+    void tearDown() {
+        if (boardManager != null) {
+            boardManager.reset();
+            boardManager = null;
+        }
+        if (scoreManager != null) {
+            scoreManager.reset();
+            scoreManager = null;
+        }
+    }
+
+    @AfterAll
+    static void cleanup() {
+        try {
+            TestCleanupHelper.forceCompleteSystemCleanup("DifficultyTest");
+            System.out.println("✅ DifficultyTest 전체 테스트 환경 정리 완료");
+        } catch (Exception e) {
+            System.out.println("DifficultyTest 정리 중 오류 (무시): " + e.getMessage());
+        }
+    }
+
     /**
      * 난이도 설정이 제대로 저장되는지 테스트
      */

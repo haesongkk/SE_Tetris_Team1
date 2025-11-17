@@ -746,7 +746,9 @@ public class MainMenuScene extends Scene implements KeyListener {
 
     @Override
     public void onExit() {
-        bgm.release();
+        if (bgm != null) {
+            bgm.release();
+        }
     }
     
     /**
