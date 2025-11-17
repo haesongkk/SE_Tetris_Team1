@@ -1,5 +1,7 @@
 package tetris;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
@@ -31,6 +33,28 @@ public class DifficultyTest {
         gameSettings = GameSettings.getInstance();
         boardManager = new BoardManager();
         scoreManager = new ScoreManager();
+    }
+
+    @AfterEach
+    void tearDown() {
+        if (boardManager != null) {
+            boardManager.reset();
+            boardManager = null;
+        }
+        if (scoreManager != null) {
+            scoreManager.reset();
+            scoreManager = null;
+        }
+    }
+
+    @AfterAll
+    static void cleanup() {
+        try {
+            TestCleanupHelper.forceCompleteSystemCleanup("DifficultyTest");
+            System.out.println("✅ DifficultyTest 전체 테스트 환경 정리 완료");
+        } catch (Exception e) {
+            System.out.println("DifficultyTest 정리 중 오류 (무시): " + e.getMessage());
+        }
     }
 
     /**

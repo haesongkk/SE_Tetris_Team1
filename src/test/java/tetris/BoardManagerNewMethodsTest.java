@@ -32,8 +32,20 @@ public class BoardManagerNewMethodsTest {
     void tearDown() {
         if (boardManager != null) {
             boardManager.reset();
+            boardManager = null;
         }
         System.out.println("🧹 BoardManager 새 메서드 테스트 환경 정리 완료");
+    }
+
+    @AfterAll
+    @DisplayName("전체 테스트 환경 정리")
+    static void cleanup() {
+        try {
+            TestCleanupHelper.forceCompleteSystemCleanup("BoardManagerNewMethodsTest");
+            System.out.println("✅ BoardManagerNewMethodsTest 전체 테스트 환경 정리 완료");
+        } catch (Exception e) {
+            System.out.println("BoardManagerNewMethodsTest 정리 중 오류 (무시): " + e.getMessage());
+        }
     }
 
     @Test

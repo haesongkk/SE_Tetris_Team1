@@ -60,8 +60,15 @@ public class GameControlTest {
             testFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
             testFrame.setSize(800, 600);
 
-            // Game 인스턴스 초기화
-            Game.getInstance();
+            // Game 인스턴스 초기화 및 frame 설정
+            Game gameInstance = Game.getInstance();
+            try {
+                Field frameField = Game.class.getDeclaredField("frame");
+                frameField.setAccessible(true);
+                frameField.set(gameInstance, testFrame);
+            } catch (Exception e) {
+                System.err.println("Game frame 설정 실패: " + e.getMessage());
+            }
 
             // GameScene 생성
             gameScene = new GameScene(testFrame, GameSettings.Difficulty.NORMAL);

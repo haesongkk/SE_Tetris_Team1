@@ -9,7 +9,6 @@ rotateKey=38
 fallKey=40
 dropKey=32
 pauseKey=80
-holdKey=16
 exitKey=81
 volume=20
 isMuted=false

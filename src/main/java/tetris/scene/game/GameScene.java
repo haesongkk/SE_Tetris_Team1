@@ -303,10 +303,6 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
             case PAUSE:
                 gameStateManager.togglePause(); // GameStateManager 사용
                 break;
-            case HOLD:
-                // Hold 기능이 구현되어 있다면 여기에 연결
-                // holdBlock(); // 예시 - 실제 구현에 따라 달라질 수 있음
-                break;
             case EXIT_TO_MENU:
                 handleExitToMenu();
                 break;

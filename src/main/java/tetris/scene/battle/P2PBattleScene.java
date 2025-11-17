@@ -187,10 +187,10 @@ public class P2PBattleScene extends BattleScene {
         public void onGameAction(InputHandler.GameAction action) { }
         
         @Override
-        public boolean isGameOver() { return false; }       
+        public boolean isGameOver() { return gameStateManager2.isGameOver(); }       
         
         @Override
-        public boolean isPaused() { return false; }
+        public boolean isPaused() { return gameStateManager2.isPaused(); }
         
         @Override
         public void repaintGame() { repaint(); }
@@ -235,6 +235,225 @@ public class P2PBattleScene extends BattleScene {
             dst[i] = src[i].clone();    // Color는 객체지만, 어차피 여기서는 읽기만 하니까 ok
         }
         return dst;
+    }
+    
+    /**
+     * BattleScene의 게임 오버 다이얼로그를 P2P 전용으로 오버라이드
+     */
+    @Override
+    protected void showBattleGameOverDialog(int winner) {
+        javax.swing.SwingUtilities.invokeLater(() -> {
+            // 메인메뉴 스타일의 다이얼로그 생성
+            javax.swing.JDialog dialog = new javax.swing.JDialog(m_frame, true);
+            dialog.setUndecorated(true);
+            dialog.setDefaultCloseOperation(javax.swing.JDialog.DISPOSE_ON_CLOSE);
+            dialog.setResizable(false);
+            dialog.setSize(400, 300);
+            dialog.setLocationRelativeTo(m_frame);
+            dialog.setFocusable(true);
+            
+            javax.swing.JPanel dialogPanel = new javax.swing.JPanel();
+            dialogPanel.setBackground(tetris.util.Theme.MenuBG());
+            dialogPanel.setLayout(new java.awt.BorderLayout());
+            dialogPanel.setBorder(javax.swing.BorderFactory.createCompoundBorder(
+                javax.swing.BorderFactory.createLineBorder(tetris.util.Theme.MenuTitle(), 2),
+                javax.swing.BorderFactory.createEmptyBorder(20, 20, 20, 20)
+            ));
+            
+            // 게임 모드에 따른 다이얼로그 구성
+            if ("time_limit".equals(gameMode)) {
+                // 시간제한 모드: 점수 표시 포함
+                setupP2PTimeLimitModeDialog(dialogPanel, winner);
+            } else {
+                // 일반 모드, 아이템 모드: 승자만 표시
+                setupP2PNormalModeDialog(dialogPanel, winner);
+            }
+            
+            dialog.add(dialogPanel);
+            dialog.setVisible(true);
+            dialog.requestFocus();
+        });
+    }
+    
+    private void setupP2PNormalModeDialog(javax.swing.JPanel dialogPanel, int winner) {
+        // 제목 라벨
+        javax.swing.JLabel titleLabel = new javax.swing.JLabel("게임 종료", javax.swing.SwingConstants.CENTER);
+        titleLabel.setFont(new java.awt.Font("Malgun Gothic", java.awt.Font.BOLD, 20));
+        titleLabel.setForeground(tetris.util.Theme.MenuTitle());
+        titleLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 15, 0));
+        
+        // 중앙 패널 (승자 정보 + 설명)
+        javax.swing.JPanel centerPanel = new javax.swing.JPanel();
+        centerPanel.setOpaque(false);
+        centerPanel.setLayout(new java.awt.GridLayout(3, 1, 0, 10));
+        
+        // 승자 표시
+        javax.swing.JLabel winnerLabel = new javax.swing.JLabel();
+        winnerLabel.setFont(new java.awt.Font("Malgun Gothic", java.awt.Font.BOLD, 18));
+        
+        String winnerText;
+        String modeDescription = "";
+        
+        if ("item".equals(gameMode)) {
+            modeDescription = "아이템 모드: ";
+        } else {
+            modeDescription = "일반 모드: ";
+        }
+        
+        if (winner == 1) {
+            winnerText = modeDescription + "서버 승리!";
+        } else if (winner == 2) {
+            winnerText = modeDescription + "클라이언트 승리!";
+        } else {
+            winnerText = modeDescription + "무승부!";
+        }
+        winnerLabel.setForeground(new java.awt.Color(255, 215, 0)); // Gold color
+        winnerLabel.setText(winnerText);
+        winnerLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        
+        // 게임 종료 사유 표시
+        javax.swing.JLabel reasonLabel = new javax.swing.JLabel("게임종료조건: 블록이 먼저 천장에 닿으면 패배");
+        reasonLabel.setFont(new java.awt.Font("Malgun Gothic", java.awt.Font.PLAIN, 12));
+        reasonLabel.setForeground(java.awt.Color.WHITE);
+        reasonLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        
+        centerPanel.add(winnerLabel);
+        centerPanel.add(reasonLabel);
+        centerPanel.add(new javax.swing.JLabel()); // 빈 공간
+        
+        // 버튼 패널
+        javax.swing.JPanel buttonPanel = new javax.swing.JPanel();
+        buttonPanel.setOpaque(false);
+        buttonPanel.setLayout(new java.awt.GridLayout(1, 1, 0, 10));
+        
+        // 메인 메뉴로 돌아가기 버튼
+        javax.swing.JButton mainMenuButton = new javax.swing.JButton("메인 메뉴로 돌아가기");
+        mainMenuButton.setFont(new java.awt.Font("Malgun Gothic", java.awt.Font.BOLD, 14));
+        mainMenuButton.setPreferredSize(new java.awt.Dimension(250, 35));
+        mainMenuButton.setBackground(tetris.util.Theme.MenuButton());
+        mainMenuButton.setForeground(java.awt.Color.WHITE);
+        mainMenuButton.setFocusPainted(false);
+        mainMenuButton.setBorderPainted(true);
+        mainMenuButton.setBorder(javax.swing.BorderFactory.createRaisedBevelBorder());
+        mainMenuButton.addActionListener(e -> {
+            ((javax.swing.JDialog)dialogPanel.getTopLevelAncestor()).dispose();
+            returnToMainMenu();
+        });
+        
+        buttonPanel.add(mainMenuButton);
+        
+        // 컴포넌트 배치
+        dialogPanel.add(titleLabel, java.awt.BorderLayout.NORTH);
+        dialogPanel.add(centerPanel, java.awt.BorderLayout.CENTER);
+        dialogPanel.add(buttonPanel, java.awt.BorderLayout.SOUTH);
+    }
+    
+    private void setupP2PTimeLimitModeDialog(javax.swing.JPanel dialogPanel, int winner) {
+        // 제목 라벨
+        javax.swing.JLabel titleLabel = new javax.swing.JLabel("게임 종료", javax.swing.SwingConstants.CENTER);
+        titleLabel.setFont(new java.awt.Font("Malgun Gothic", java.awt.Font.BOLD, 20));
+        titleLabel.setForeground(tetris.util.Theme.MenuTitle());
+        titleLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 15, 0));
+        
+        // 중앙 패널 (승자 정보 + 점수 + 설명)
+        javax.swing.JPanel centerPanel = new javax.swing.JPanel();
+        centerPanel.setOpaque(false);
+        centerPanel.setLayout(new java.awt.GridLayout(4, 1, 0, 8));
+        
+        // 승자 표시
+        javax.swing.JLabel winnerLabel = new javax.swing.JLabel();
+        winnerLabel.setFont(new java.awt.Font("Malgun Gothic", java.awt.Font.BOLD, 18));
+        
+        String winnerText = "시간제한 모드: ";
+        if (winner == 1) {
+            winnerText += "서버 승리!";
+        } else if (winner == 2) {
+            winnerText += "클라이언트 승리!";
+        } else {
+            winnerText += "무승부!";
+        }
+        
+        winnerLabel.setForeground(new java.awt.Color(255, 215, 0)); // Gold color
+        winnerLabel.setText(winnerText);
+        winnerLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        
+        // 게임 종료 사유 표시
+        javax.swing.JLabel reasonLabel = new javax.swing.JLabel("<html><center>게임종료조건: 블록이 먼저 천장에 닿으면 패배<br>또는 시간 종료 후 점수가 더 높은 쪽이 승리</center></html>");
+        reasonLabel.setFont(new java.awt.Font("Malgun Gothic", java.awt.Font.PLAIN, 11));
+        reasonLabel.setForeground(java.awt.Color.WHITE);
+        reasonLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        
+        // 플레이어 점수 표시 패널
+        javax.swing.JPanel scorePanel = new javax.swing.JPanel();
+        scorePanel.setOpaque(false);
+        scorePanel.setLayout(new java.awt.GridLayout(1, 2, 20, 0));
+        
+        int player1Score = scoreManager1.getScore();
+        int player2Score = scoreManager2.getScore();
+        
+        javax.swing.JLabel player1ScoreLabel = new javax.swing.JLabel("서버: " + String.format("%,d", player1Score));
+        player1ScoreLabel.setFont(new java.awt.Font("Malgun Gothic", java.awt.Font.BOLD, 14));
+        player1ScoreLabel.setForeground(winner == 1 ? new java.awt.Color(255, 215, 0) : java.awt.Color.WHITE);
+        player1ScoreLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        
+        javax.swing.JLabel player2ScoreLabel = new javax.swing.JLabel("클라이언트: " + String.format("%,d", player2Score));
+        player2ScoreLabel.setFont(new java.awt.Font("Malgun Gothic", java.awt.Font.BOLD, 14));
+        player2ScoreLabel.setForeground(winner == 2 ? new java.awt.Color(255, 215, 0) : java.awt.Color.WHITE);
+        player2ScoreLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        
+        scorePanel.add(player1ScoreLabel);
+        scorePanel.add(player2ScoreLabel);
+        
+        centerPanel.add(winnerLabel);
+        centerPanel.add(reasonLabel);
+        centerPanel.add(scorePanel);
+        centerPanel.add(new javax.swing.JLabel()); // 빈 공간
+        
+        // 버튼 패널
+        javax.swing.JPanel buttonPanel = new javax.swing.JPanel();
+        buttonPanel.setOpaque(false);
+        buttonPanel.setLayout(new java.awt.GridLayout(1, 1, 0, 10));
+        
+        // 메인 메뉴로 돌아가기 버튼
+        javax.swing.JButton mainMenuButton = new javax.swing.JButton("메인 메뉴로 돌아가기");
+        mainMenuButton.setFont(new java.awt.Font("Malgun Gothic", java.awt.Font.BOLD, 14));
+        mainMenuButton.setPreferredSize(new java.awt.Dimension(250, 35));
+        mainMenuButton.setBackground(tetris.util.Theme.MenuButton());
+        mainMenuButton.setForeground(java.awt.Color.WHITE);
+        mainMenuButton.setFocusPainted(false);
+        mainMenuButton.setBorderPainted(true);
+        mainMenuButton.setBorder(javax.swing.BorderFactory.createRaisedBevelBorder());
+        mainMenuButton.addActionListener(e -> {
+            ((javax.swing.JDialog)dialogPanel.getTopLevelAncestor()).dispose();
+            returnToMainMenu();
+        });
+        
+        buttonPanel.add(mainMenuButton);
+        
+        // 컴포넌트 배치
+        dialogPanel.add(titleLabel, java.awt.BorderLayout.NORTH);
+        dialogPanel.add(centerPanel, java.awt.BorderLayout.CENTER);
+        dialogPanel.add(buttonPanel, java.awt.BorderLayout.SOUTH);
+    }
+    
+    /**
+     * P2P 전용 메인 메뉴 복귀 처리 (네트워크 리소스 정리 후 메인 메뉴로 복귀)
+     */
+    @Override
+    protected void returnToMainMenu() {
+        // P2P 네트워크 리소스 정리
+        if (writeTimer != null) {
+            writeTimer.cancel();
+            writeTimer = null;
+        }
+        
+        if (readThread != null) {
+            readThread.interrupt();
+            readThread = null;
+        }
+        
+        // 부모 클래스의 메인 메뉴 복귀 로직 호출
+        super.returnToMainMenu();
     }
 
 }
