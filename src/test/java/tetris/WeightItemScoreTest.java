@@ -1,5 +1,7 @@
 package tetris;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
@@ -35,6 +37,23 @@ public class WeightItemScoreTest {
                 testBoard[row][col] = 1;
                 testBoardColors[row][col] = Color.BLUE;
             }
+        }
+    }
+
+    @AfterEach
+    void tearDown() {
+        weightBlock = null;
+        testBoard = null;
+        testBoardColors = null;
+    }
+
+    @AfterAll
+    static void cleanup() {
+        try {
+            TestCleanupHelper.forceCompleteSystemCleanup("WeightItemScoreTest");
+            System.out.println("✅ WeightItemScoreTest 전체 테스트 환경 정리 완료");
+        } catch (Exception e) {
+            System.out.println("WeightItemScoreTest 정리 중 오류 (무시): " + e.getMessage());
         }
     }
 

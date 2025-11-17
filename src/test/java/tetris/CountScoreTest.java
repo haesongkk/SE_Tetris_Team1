@@ -1,5 +1,7 @@
 package tetris;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
@@ -31,6 +33,24 @@ public class CountScoreTest {
     public void setupScoreManager() {
         scoreManager = new ScoreManager();
         scoreManager.reset();
+    }
+
+    @AfterEach
+    public void tearDownScoreManager() {
+        if (scoreManager != null) {
+            scoreManager.reset();
+            scoreManager = null;
+        }
+    }
+
+    @AfterAll
+    static void cleanup() {
+        try {
+            TestCleanupHelper.forceCompleteSystemCleanup("CountScoreTest");
+            System.out.println("✅ CountScoreTest 전체 테스트 환경 정리 완료");
+        } catch (Exception e) {
+            System.out.println("CountScoreTest 정리 중 오류 (무시): " + e.getMessage());
+        }
     }
 
     /**

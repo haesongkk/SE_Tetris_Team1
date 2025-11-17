@@ -32,7 +32,6 @@ public class InputHandler implements KeyListener {
         ROTATE,
         HARD_DROP,
         PAUSE,
-        HOLD,
         EXIT_TO_MENU
     }
     
@@ -141,8 +140,6 @@ public class InputHandler implements KeyListener {
             return GameAction.ROTATE;
         } else if (keyCode == settings.getDropKey(playerNumber)) {
             return GameAction.HARD_DROP;
-        } else if (keyCode == settings.getHoldKey(playerNumber)) {
-            return GameAction.HOLD;
         } else if (keyCode == settings.getExitKey(playerNumber)) {
             return GameAction.EXIT_TO_MENU;
         }
@@ -171,26 +168,5 @@ public class InputHandler implements KeyListener {
         Game.setScene(new MainMenuScene(frame));
     }
 
-    // ===== 중복 및 미사용 코드 주석처리, 25.10.24 =====
-    /*
-    public void printKeyMappings() {
-        System.out.println("=== Current Key Mappings ===");
-        System.out.println("Left: " + GameSettings.getKeyName(settings.getLeftKey()) + " (" + settings.getLeftKey() + ")");
-        System.out.println("Right: " + GameSettings.getKeyName(settings.getRightKey()) + " (" + settings.getRightKey() + ")");
-        System.out.println("Down: " + GameSettings.getKeyName(settings.getFallKey()) + " (" + settings.getFallKey() + ")");
-        System.out.println("Rotate: " + GameSettings.getKeyName(settings.getRotateKey()) + " (" + settings.getRotateKey() + ")");
-        System.out.println("Hard Drop: " + GameSettings.getKeyName(settings.getDropKey()) + " (" + settings.getDropKey() + ")");
-        System.out.println("Pause: " + GameSettings.getKeyName(settings.getPauseKey()) + " (" + settings.getPauseKey() + ")");
-        System.out.println("Hold: " + GameSettings.getKeyName(settings.getHoldKey()) + " (" + settings.getHoldKey() + ")");
-        System.out.println("Exit to Menu: " + GameSettings.getKeyName(settings.getExitKey()) + " (" + settings.getExitKey() + ")");
-        System.out.println("===============================");
-    }
-
-    public void refreshSettings() {
-        // GameSettings는 싱글톤이므로 자동으로 최신 설정을 반영
-        // 필요시 추가 로직 구현
-        System.out.println("InputHandler: Key settings refreshed");
-    }
-    */
-    // ===== 중복 및 미사용 코드 주석처리 끝 =====
+    
 }
