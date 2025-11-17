@@ -26,7 +26,6 @@ public class GameSettings {
     private int fallKey = 40;   // VK_DOWN (↓)
     private int dropKey = 32;   // VK_SPACE
     private int pauseKey = 80;  // VK_P
-    private int holdKey = 16;   // VK_SHIFT
     private int exitKey = 81;   // VK_Q
     
     // ═══════════════════════════════════════════════════════════════
@@ -38,7 +37,6 @@ public class GameSettings {
     private int battleFallKey1 = 83;   // VK_S
     private int battleDropKey1 = 32;   // VK_SPACE
     private int battlePauseKey1 = 80;  // VK_P
-    private int battleHoldKey1 = 16;   // VK_SHIFT
     private int battleExitKey1 = 81;   // VK_Q
     
     // ═══════════════════════════════════════════════════════════════
@@ -50,7 +48,6 @@ public class GameSettings {
     private int battleFallKey2 = 40;   // VK_DOWN (↓)
     private int battleDropKey2 = 10;   // VK_ENTER
     private int battlePauseKey2 = 80;  // VK_P
-    private int battleHoldKey2 = 16;   // VK_SHIFT
     private int battleExitKey2 = 81;   // VK_Q
 
     // 음량 조절
@@ -174,7 +171,6 @@ public class GameSettings {
     public int getFallKey() { return fallKey; }
     public int getDropKey() { return dropKey; }
     public int getPauseKey() { return pauseKey; }
-    public int getHoldKey() { return holdKey; }
     public int getExitKey() { return exitKey; }
     
     // 배틀 모드 - 플레이어별 키 설정 가져오기
@@ -203,10 +199,6 @@ public class GameSettings {
         if (player == 0) return pauseKey; // 싱글 플레이 모드
         return player == 1 ? battlePauseKey1 : battlePauseKey2; 
     }
-    public int getHoldKey(int player) { 
-        if (player == 0) return holdKey; // 싱글 플레이 모드
-        return player == 1 ? battleHoldKey1 : battleHoldKey2; 
-    }
     public int getExitKey(int player) { 
         if (player == 0) return exitKey; // 싱글 플레이 모드
         return player == 1 ? battleExitKey1 : battleExitKey2; 
@@ -219,7 +211,6 @@ public class GameSettings {
     public void setFallKey(int keyCode) { this.fallKey = keyCode; }
     public void setDropKey(int keyCode) { this.dropKey = keyCode; }
     public void setPauseKey(int keyCode) { this.pauseKey = keyCode; }
-    public void setHoldKey(int keyCode) { this.holdKey = keyCode; }
     
     // 배틀 모드 - 1P 키 설정 setter
     public void setBattleLeftKey1(int keyCode) { this.battleLeftKey1 = keyCode; }
@@ -228,7 +219,6 @@ public class GameSettings {
     public void setBattleFallKey1(int keyCode) { this.battleFallKey1 = keyCode; }
     public void setBattleDropKey1(int keyCode) { this.battleDropKey1 = keyCode; }
     public void setBattlePauseKey1(int keyCode) { this.battlePauseKey1 = keyCode; }
-    public void setBattleHoldKey1(int keyCode) { this.battleHoldKey1 = keyCode; }
     public void setBattleExitKey1(int keyCode) { this.battleExitKey1 = keyCode; }
     
     // 배틀 모드 - 2P 키 설정 setter
@@ -238,7 +228,6 @@ public class GameSettings {
     public void setBattleFallKey2(int keyCode) { this.battleFallKey2 = keyCode; }
     public void setBattleDropKey2(int keyCode) { this.battleDropKey2 = keyCode; }
     public void setBattlePauseKey2(int keyCode) { this.battlePauseKey2 = keyCode; }
-    public void setBattleHoldKey2(int keyCode) { this.battleHoldKey2 = keyCode; }
     public void setBattleExitKey2(int keyCode) { this.battleExitKey2 = keyCode; }
     
     // 키 코드를 문자열로 변환하는 메서드
@@ -391,7 +380,6 @@ public class GameSettings {
         fallKey = 40;   // VK_DOWN
         dropKey = 32;   // VK_SPACE
         pauseKey = 80;  // VK_P
-        holdKey = 16;   // VK_SHIFT
         
         // 배틀 모드 - 1P (WASD + Space)
         battleLeftKey1 = 65;   // VK_A
@@ -400,7 +388,6 @@ public class GameSettings {
         battleFallKey1 = 83;   // VK_S
         battleDropKey1 = 32;   // VK_SPACE
         battlePauseKey1 = 80;  // VK_P
-        battleHoldKey1 = 16;   // VK_SHIFT
         
         // 배틀 모드 - 2P (방향키 + Enter)
         battleLeftKey2 = 37;   // VK_LEFT
@@ -409,7 +396,6 @@ public class GameSettings {
         battleFallKey2 = 40;   // VK_DOWN
         battleDropKey2 = 10;   // VK_ENTER
         battlePauseKey2 = 80;  // VK_P
-        battleHoldKey2 = 16;   // VK_SHIFT
 
         volume = 20;
         isMuted = false;
@@ -464,7 +450,6 @@ public class GameSettings {
                 writer.println("fallKey=" + fallKey);
                 writer.println("dropKey=" + dropKey);
                 writer.println("pauseKey=" + pauseKey);
-                writer.println("holdKey=" + holdKey);
                 writer.println("exitKey=" + exitKey);
                 
                 // 배틀 모드 1P 키 설정
@@ -474,7 +459,6 @@ public class GameSettings {
                 writer.println("battleFallKey1=" + battleFallKey1);
                 writer.println("battleDropKey1=" + battleDropKey1);
                 writer.println("battlePauseKey1=" + battlePauseKey1);
-                writer.println("battleHoldKey1=" + battleHoldKey1);
                 writer.println("battleExitKey1=" + battleExitKey1);
                 
                 // 배틀 모드 2P 키 설정
@@ -484,7 +468,6 @@ public class GameSettings {
                 writer.println("battleFallKey2=" + battleFallKey2);
                 writer.println("battleDropKey2=" + battleDropKey2);
                 writer.println("battlePauseKey2=" + battlePauseKey2);
-                writer.println("battleHoldKey2=" + battleHoldKey2);
                 writer.println("battleExitKey2=" + battleExitKey2);
                 
                 // 기타 설정
@@ -560,9 +543,6 @@ public class GameSettings {
                             case "pauseKey":
                                 pauseKey = Integer.parseInt(value);
                                 break;
-                            case "holdKey":
-                                holdKey = Integer.parseInt(value);
-                                break;
                             case "exitKey":
                                 exitKey = Integer.parseInt(value);
                                 break;
@@ -586,9 +566,6 @@ public class GameSettings {
                             case "battlePauseKey1":
                                 battlePauseKey1 = Integer.parseInt(value);
                                 break;
-                            case "battleHoldKey1":
-                                battleHoldKey1 = Integer.parseInt(value);
-                                break;
                             case "battleExitKey1":
                                 battleExitKey1 = Integer.parseInt(value);
                                 break;
@@ -611,9 +588,6 @@ public class GameSettings {
                                 break;
                             case "battlePauseKey2":
                                 battlePauseKey2 = Integer.parseInt(value);
-                                break;
-                            case "battleHoldKey2":
-                                battleHoldKey2 = Integer.parseInt(value);
                                 break;
                             case "battleExitKey2":
                                 battleExitKey2 = Integer.parseInt(value);

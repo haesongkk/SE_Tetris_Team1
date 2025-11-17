@@ -139,9 +139,6 @@ public class BattleScene extends Scene {
                 case PAUSE:
                     gameStateManager1.togglePause();
                     break;
-                case HOLD:
-                    // TODO: Hold 기능
-                    break;
                 case EXIT_TO_MENU:
                     BattleScene.this.exitToMenu();
                     break;
@@ -205,9 +202,6 @@ public class BattleScene extends Scene {
                     break;
                 case PAUSE:
                     gameStateManager2.togglePause();
-                    break;
-                case HOLD:
-                    // TODO: Hold 기능
                     break;
                 case EXIT_TO_MENU:
                     BattleScene.this.exitToMenu();

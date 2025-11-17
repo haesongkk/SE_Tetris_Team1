@@ -380,10 +380,10 @@ public class SettingsScene extends Scene implements KeyListener {
         
         // 키 설정 버튼들
         JButton[] keyButtons = new JButton[7];
-        String[] keyLabels = {"좌로 이동:", "우로 이동:", "회전:", "아래로 이동:", "한번에 떨어뜨리기:", "일시정지:", "홀드:"};
+        String[] keyLabels = {"좌로 이동:", "우로 이동:", "회전:", "아래로 이동:", "한번에 떨어뜨리기:", "일시정지:"};
         int[] currentKeys = {
             settings.getLeftKey(), settings.getRightKey(), settings.getRotateKey(),
-            settings.getFallKey(), settings.getDropKey(), settings.getPauseKey(), settings.getHoldKey()
+            settings.getFallKey(), settings.getDropKey(), settings.getPauseKey()
         };
         
         for (int i = 0; i < keyLabels.length; i++) {
@@ -428,7 +428,7 @@ public class SettingsScene extends Scene implements KeyListener {
             for (int i = 0; i < keyButtons.length; i++) {
                 int[] defaultKeys = {
                     settings.getLeftKey(), settings.getRightKey(), settings.getRotateKey(),
-                    settings.getFallKey(), settings.getDropKey(), settings.getPauseKey(), settings.getHoldKey()
+                    settings.getFallKey(), settings.getDropKey(), settings.getPauseKey()
                 };
                 keyButtons[i].setText(GameSettings.getKeyName(defaultKeys[i]));
             }
@@ -508,7 +508,6 @@ public class SettingsScene extends Scene implements KeyListener {
                     case 3: settings.setFallKey(keyCode); break;
                     case 4: settings.setDropKey(keyCode); break;
                     case 5: settings.setPauseKey(keyCode); break;
-                    case 6: settings.setHoldKey(keyCode); break;
                 }
                 
                 // 버튼 텍스트 업데이트
@@ -578,7 +577,7 @@ public class SettingsScene extends Scene implements KeyListener {
         
         // 키 설정 버튼들
         JButton[] keyButtons = new JButton[8];
-        String[] keyLabels = {"좌로 이동:", "우로 이동:", "회전:", "아래로 이동:", "한번에 떨어뜨리기:", "일시정지:", "홀드:", "메뉴로 나가기:"};
+        String[] keyLabels = {"좌로 이동:", "우로 이동:", "회전:", "아래로 이동:", "한번에 떨어뜨리기:", "일시정지:", "메뉴로 나가기:"};
         int[] currentKeys = new int[8];
         
         // 플레이어별 현재 키 설정 가져오기
@@ -590,8 +589,7 @@ public class SettingsScene extends Scene implements KeyListener {
                 case 3: currentKeys[i] = settings.getFallKey(playerNumber); break;
                 case 4: currentKeys[i] = settings.getDropKey(playerNumber); break;
                 case 5: currentKeys[i] = settings.getPauseKey(playerNumber); break;
-                case 6: currentKeys[i] = settings.getHoldKey(playerNumber); break;
-                case 7: currentKeys[i] = settings.getExitKey(playerNumber); break;
+                case 6: currentKeys[i] = settings.getExitKey(playerNumber); break;
             }
         }
         
@@ -640,7 +638,6 @@ public class SettingsScene extends Scene implements KeyListener {
                 settings.setBattleFallKey1(KeyEvent.VK_S);
                 settings.setBattleDropKey1(KeyEvent.VK_SPACE);
                 settings.setBattlePauseKey1(KeyEvent.VK_P);
-                settings.setBattleHoldKey1(KeyEvent.VK_C);
                 settings.setBattleExitKey1(KeyEvent.VK_Q);
             } else {
                 settings.setBattleLeftKey2(KeyEvent.VK_LEFT);
@@ -649,7 +646,6 @@ public class SettingsScene extends Scene implements KeyListener {
                 settings.setBattleFallKey2(KeyEvent.VK_DOWN);
                 settings.setBattleDropKey2(KeyEvent.VK_ENTER);
                 settings.setBattlePauseKey2(KeyEvent.VK_P);
-                settings.setBattleHoldKey2(KeyEvent.VK_SHIFT);
                 settings.setBattleExitKey2(KeyEvent.VK_ESCAPE);
             }
             
@@ -663,8 +659,7 @@ public class SettingsScene extends Scene implements KeyListener {
                     case 3: key = settings.getFallKey(playerNumber); break;
                     case 4: key = settings.getDropKey(playerNumber); break;
                     case 5: key = settings.getPauseKey(playerNumber); break;
-                    case 6: key = settings.getHoldKey(playerNumber); break;
-                    case 7: key = settings.getExitKey(playerNumber); break;
+                    case 6: key = settings.getExitKey(playerNumber); break;
                 }
                 keyButtons[i].setText(GameSettings.getKeyName(key));
             }
@@ -745,8 +740,7 @@ public class SettingsScene extends Scene implements KeyListener {
                         case 3: settings.setBattleFallKey1(keyCode); break;
                         case 4: settings.setBattleDropKey1(keyCode); break;
                         case 5: settings.setBattlePauseKey1(keyCode); break;
-                        case 6: settings.setBattleHoldKey1(keyCode); break;
-                        case 7: settings.setBattleExitKey1(keyCode); break;
+                        case 6: settings.setBattleExitKey1(keyCode); break;
                     }
                 } else {
                     switch (keyIndex) {
@@ -756,8 +750,7 @@ public class SettingsScene extends Scene implements KeyListener {
                         case 3: settings.setBattleFallKey2(keyCode); break;
                         case 4: settings.setBattleDropKey2(keyCode); break;
                         case 5: settings.setBattlePauseKey2(keyCode); break;
-                        case 6: settings.setBattleHoldKey2(keyCode); break;
-                        case 7: settings.setBattleExitKey2(keyCode); break;
+                        case 6: settings.setBattleExitKey2(keyCode); break;
                     }
                 }
                 

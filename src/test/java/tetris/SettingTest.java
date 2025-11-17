@@ -189,10 +189,9 @@ public class SettingTest {
                 gameSettings.getFallKey(),    // 하강 (40: VK_DOWN)
                 gameSettings.getDropKey(),    // 즉시 낙하 (32: VK_SPACE)
                 gameSettings.getPauseKey(),   // 일시정지 (80: VK_P)
-                gameSettings.getHoldKey()     // 홀드 (16: VK_SHIFT)
             };
             
-            String[] keyNames = {"좌", "우", "회전", "하강", "즉시낙하", "일시정지", "홀드"};
+            String[] keyNames = {"좌", "우", "회전", "하강", "즉시낙하", "일시정지"};
             
             // 기본 키 설정 검증
             assert defaultKeys[0] == 37 : "기본 좌 키가 올바르지 않습니다.";
@@ -201,7 +200,6 @@ public class SettingTest {
             assert defaultKeys[3] == 40 : "기본 하강 키가 올바르지 않습니다.";
             assert defaultKeys[4] == 32 : "기본 즉시낙하 키가 올바르지 않습니다.";
             assert defaultKeys[5] == 80 : "기본 일시정지 키가 올바르지 않습니다.";
-            assert defaultKeys[6] == 16 : "기본 홀드 키가 올바르지 않습니다.";
             
             for (int i = 0; i < defaultKeys.length; i++) {
                 String keyName = GameSettings.getKeyName(defaultKeys[i]);
@@ -217,7 +215,6 @@ public class SettingTest {
             gameSettings.setFallKey(newKeys[3]);
             gameSettings.setDropKey(newKeys[4]);
             gameSettings.setPauseKey(newKeys[5]);
-            gameSettings.setHoldKey(newKeys[6]);
             
             // 변경된 키 설정 확인
             assert gameSettings.getLeftKey() == newKeys[0] : "좌 키 변경이 반영되지 않았습니다.";
@@ -226,7 +223,6 @@ public class SettingTest {
             assert gameSettings.getFallKey() == newKeys[3] : "하강 키 변경이 반영되지 않았습니다.";
             assert gameSettings.getDropKey() == newKeys[4] : "즉시낙하 키 변경이 반영되지 않았습니다.";
             assert gameSettings.getPauseKey() == newKeys[5] : "일시정지 키 변경이 반영되지 않았습니다.";
-            assert gameSettings.getHoldKey() == newKeys[6] : "홀드 키 변경이 반영되지 않았습니다.";
             
             System.out.println("변경된 키 설정:");
             for (int i = 0; i < newKeys.length; i++) {
@@ -394,7 +390,6 @@ public class SettingTest {
             assert gameSettings.getFallKey() == 40 : "하강 키가 기본값으로 되돌아가지 않았습니다.";
             assert gameSettings.getDropKey() == 32 : "즉시낙하 키가 기본값으로 되돌아가지 않았습니다.";
             assert gameSettings.getPauseKey() == 80 : "일시정지 키가 기본값으로 되돌아가지 않았습니다.";
-            assert gameSettings.getHoldKey() == 16 : "홀드 키가 기본값으로 되돌아가지 않았습니다.";
             
             System.out.println("기본값으로 되돌린 설정:");
             System.out.println("• 화면 모드: " + gameSettings.getDisplayModeString());
