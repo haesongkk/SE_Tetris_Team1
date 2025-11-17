@@ -100,6 +100,18 @@ public class BattleScene extends Scene {
         boardManager1.reset();
         blockManager1.initializeBlocks();
         
+        // 아이템 모드일 때 ItemManager를 BlockManager와 BoardManager에 설정
+        if (itemManager1 != null) {
+            blockManager1.setItemManager(itemManager1);
+            boardManager1.setItemManager(itemManager1);
+            // BoardManager에 BlockManager와 GameScene 참조 설정 (아이템 효과용)
+            boardManager1.setBlockManager(blockManager1);
+            boardManager1.setGameScene(this);
+            // BlockManager에도 GameScene 참조 설정
+            blockManager1.setGameScene(this);
+            System.out.println("Player 1: Item mode initialized with BlockManager and BoardManager!");
+        }
+        
         // ═══════════════════════════════════════════════════════════════
         // 2P 초기화 (GameScene과 동일)
         // ═══════════════════════════════════════════════════════════════
@@ -114,6 +126,18 @@ public class BattleScene extends Scene {
         
         boardManager2.reset();
         blockManager2.initializeBlocks();
+        
+        // 아이템 모드일 때 ItemManager를 BlockManager와 BoardManager에 설정
+        if (itemManager2 != null) {
+            blockManager2.setItemManager(itemManager2);
+            boardManager2.setItemManager(itemManager2);
+            // BoardManager에 BlockManager와 GameScene 참조 설정 (아이템 효과용)
+            boardManager2.setBlockManager(blockManager2);
+            boardManager2.setGameScene(this);
+            // BlockManager에도 GameScene 참조 설정
+            blockManager2.setGameScene(this);
+            System.out.println("Player 2: Item mode initialized with BlockManager and BoardManager!");
+        }
         
         setupLayout(frame);
         setupTimers();
@@ -655,7 +679,15 @@ public class BattleScene extends Scene {
                 moveBlockDown(1);
                 // 무게추 아이템 블록 업데이트 (아이템 모드일 때만)
                 if ("item".equals(gameMode)) {
-                    blockManager1.updateWeightBlock();
+                    boolean shouldGenerateNext = blockManager1.updateWeightBlock();
+                    if (shouldGenerateNext) {
+                        // 무게추 블록이 사라졌으므로 다음 블록 생성
+                        if (!blockManager1.isGameOver()) {
+                            blockManager1.generateNextBlock();
+                            System.out.println("Player 1 (fallTimer): Generated next block after WeightItemBlock disappeared");
+                        }
+                        return;
+                    }
                 }
             }
         });
@@ -666,7 +698,15 @@ public class BattleScene extends Scene {
                 moveBlockDown(2);
                 // 무게추 아이템 블록 업데이트 (아이템 모드일 때만)
                 if ("item".equals(gameMode)) {
-                    blockManager2.updateWeightBlock();
+                    boolean shouldGenerateNext = blockManager2.updateWeightBlock();
+                    if (shouldGenerateNext) {
+                        // 무게추 블록이 사라졌으므로 다음 블록 생성
+                        if (!blockManager2.isGameOver()) {
+                            blockManager2.generateNextBlock();
+                            System.out.println("Player 2 (fallTimer): Generated next block after WeightItemBlock disappeared");
+                        }
+                        return;
+                    }
                 }
             }
         });
@@ -681,7 +721,13 @@ public class BattleScene extends Scene {
                     if ("item".equals(gameMode)) {
                         boolean shouldUpdateP1 = blockManager1.updateWeightBlock();
                         if (shouldUpdateP1) {
+                            // 무게추 블록이 사라졌으므로 다음 블록 생성
+                            if (!blockManager1.isGameOver()) {
+                                blockManager1.generateNextBlock();
+                                System.out.println("Player 1: Generated next block after WeightItemBlock disappeared");
+                            }
                             repaint();
+                            return;
                         }
                     }
                 }
@@ -691,7 +737,13 @@ public class BattleScene extends Scene {
                     if ("item".equals(gameMode)) {
                         boolean shouldUpdateP2 = blockManager2.updateWeightBlock();
                         if (shouldUpdateP2) {
+                            // 무게추 블록이 사라졌으므로 다음 블록 생성
+                            if (!blockManager2.isGameOver()) {
+                                blockManager2.generateNextBlock();
+                                System.out.println("Player 2: Generated next block after WeightItemBlock disappeared");
+                            }
                             repaint();
+                            return;
                         }
                     }
                 }
@@ -822,7 +874,9 @@ public class BattleScene extends Scene {
             // 완성된 줄이 없으면 즉시 다음 블록 생성
             BlockManager blockMgr = (player == 1) ? blockManager1 : blockManager2;
             if (!blockMgr.isGameOver()) {
+                // 무게추 아이템 블록이 사라진 경우도 여기서 처리됨
                 blockMgr.generateNextBlock();
+                System.out.println("Player " + player + ": Generated next block (no completed lines)");
             }
         }
         
@@ -862,8 +916,9 @@ public class BattleScene extends Scene {
             if (currentBlock instanceof tetris.scene.game.blocks.WeightItemBlock) {
                 tetris.scene.game.blocks.WeightItemBlock weightBlock = (tetris.scene.game.blocks.WeightItemBlock) currentBlock;
                 if (weightBlock.shouldDisappear()) {
-                    System.out.println("Player " + player + ": WeightItemBlock should disappear, generating next block");
-                    blockMgr.generateNextBlock();
+                    System.out.println("Player " + player + ": WeightItemBlock should disappear, will generate next block after line check");
+                    // 무게추 블록이 사라질 때는 바로 다음 블록을 생성하지 않고, 
+                    // checkAndClearLines에서 처리되도록 함
                 }
             }
         }
