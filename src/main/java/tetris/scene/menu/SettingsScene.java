@@ -110,19 +110,31 @@ public class SettingsScene extends Scene implements KeyListener {
         gbc.gridx = 0; gbc.gridy = 2;
         gbc.gridwidth = 2;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        JButton keySettingsButton = createStyledButton("게임 조작 키 설정");
+        JButton keySettingsButton = createStyledButton("싱글 모드 키 설정");
         keySettingsButton.addActionListener(e -> showKeySettings());
         panel.add(keySettingsButton, gbc);
         
-        // 4. 스코어 보드 기록 초기화 버튼
+        // 4. 배틀 모드 1P 키 설정 버튼
         gbc.gridy = 3;
+        JButton battleKey1Button = createStyledButton("배틀 모드 1P 키 설정");
+        battleKey1Button.addActionListener(e -> showBattleKeySettings(1));
+        panel.add(battleKey1Button, gbc);
+        
+        // 5. 배틀 모드 2P 키 설정 버튼
+        gbc.gridy = 4;
+        JButton battleKey2Button = createStyledButton("배틀 모드 2P 키 설정");
+        battleKey2Button.addActionListener(e -> showBattleKeySettings(2));
+        panel.add(battleKey2Button, gbc);
+        
+        // 6. 스코어 보드 기록 초기화 버튼
+        gbc.gridy = 5;
         JButton scoreResetButton = createStyledButton("스코어 보드 기록 초기화");
         scoreResetButton.addActionListener(e -> clearScoreBoard());
         scoreResetButton.setBackground(new Color(120, 50, 50)); // 삭제 버튼은 빨간색 유지
         panel.add(scoreResetButton, gbc);
         
-        // 5. 색맹 모드 설정
-        gbc.gridx = 0; gbc.gridy = 4;
+        // 7. 색맹 모드 설정
+        gbc.gridx = 0; gbc.gridy = 6;
         gbc.gridwidth = 1;
         gbc.fill = GridBagConstraints.NONE;
         panel.add(createLabel("색맹 모드:"), gbc);
@@ -134,8 +146,8 @@ public class SettingsScene extends Scene implements KeyListener {
         styleComboBox(colorBlindModeCombo);
         panel.add(colorBlindModeCombo, gbc);
         
-        // 6. 난이도 설정
-        gbc.gridx = 0; gbc.gridy = 5;
+        // 8. 난이도 설정
+        gbc.gridx = 0; gbc.gridy = 7;
         panel.add(createLabel("난이도:"), gbc);
         
         gbc.gridx = 1;
@@ -145,8 +157,8 @@ public class SettingsScene extends Scene implements KeyListener {
         styleComboBox(difficultyCombo);
         panel.add(difficultyCombo, gbc);
 
-        // 7. 음량 설정
-        gbc.gridx = 0; gbc.gridy = 6;
+        // 9. 음량 설정
+        gbc.gridx = 0; gbc.gridy = 8;
         panel.add(createLabel("음량:"), gbc);
         
         gbc.gridx = 1;
@@ -531,6 +543,240 @@ public class SettingsScene extends Scene implements KeyListener {
                 "초기화 완료",
                 JOptionPane.INFORMATION_MESSAGE);
         }
+    }
+    
+    private void showBattleKeySettings(int playerNumber) {
+        String playerName = playerNumber == 1 ? "1P" : "2P";
+        JDialog keyDialog = new JDialog(frame, "배틀 모드 " + playerName + " 조작키 설정", true);
+        keyDialog.setSize(600, 800);
+        keyDialog.setLocationRelativeTo(frame);
+        keyDialog.setLayout(new BorderLayout());
+        keyDialog.getContentPane().setBackground(getBackgroundColor());
+        
+        // 타이틀 패널
+        JPanel titlePanel = new JPanel();
+        titlePanel.setBackground(getBackgroundColor());
+        titlePanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        JLabel titleLabel = new JLabel("배틀 모드 " + playerName + " 조작키 설정", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Malgun Gothic", Font.BOLD, 28));
+        titleLabel.setForeground(getTitleColor());
+        titlePanel.add(titleLabel);
+        
+        // 메인 패널 (스타일링 적용)
+        JPanel mainPanel = new JPanel(new GridBagLayout());
+        mainPanel.setBackground(getPanelColor());
+        mainPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createEmptyBorder(20, 30, 20, 30),
+            BorderFactory.createRaisedBevelBorder()
+        ));
+        
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(12, 15, 12, 15);
+        gbc.anchor = GridBagConstraints.WEST;
+        
+        GameSettings settings = GameSettings.getInstance();
+        
+        // 키 설정 버튼들
+        JButton[] keyButtons = new JButton[8];
+        String[] keyLabels = {"좌로 이동:", "우로 이동:", "회전:", "아래로 이동:", "한번에 떨어뜨리기:", "일시정지:", "홀드:", "메뉴로 나가기:"};
+        int[] currentKeys = new int[8];
+        
+        // 플레이어별 현재 키 설정 가져오기
+        for (int i = 0; i < 8; i++) {
+            switch (i) {
+                case 0: currentKeys[i] = settings.getLeftKey(playerNumber); break;
+                case 1: currentKeys[i] = settings.getRightKey(playerNumber); break;
+                case 2: currentKeys[i] = settings.getRotateKey(playerNumber); break;
+                case 3: currentKeys[i] = settings.getFallKey(playerNumber); break;
+                case 4: currentKeys[i] = settings.getDropKey(playerNumber); break;
+                case 5: currentKeys[i] = settings.getPauseKey(playerNumber); break;
+                case 6: currentKeys[i] = settings.getHoldKey(playerNumber); break;
+                case 7: currentKeys[i] = settings.getExitKey(playerNumber); break;
+            }
+        }
+        
+        for (int i = 0; i < keyLabels.length; i++) {
+            gbc.gridx = 0;
+            gbc.gridy = i;
+            gbc.weightx = 0.4;
+            gbc.fill = GridBagConstraints.NONE;
+            
+            JLabel label = createLabel(keyLabels[i]);
+            mainPanel.add(label, gbc);
+            
+            gbc.gridx = 1;
+            gbc.weightx = 0.6;
+            gbc.fill = GridBagConstraints.HORIZONTAL;
+            
+            keyButtons[i] = createKeyButton(GameSettings.getKeyName(currentKeys[i]));
+            final int index = i;
+            keyButtons[i].addActionListener(e -> changeBattleKey(keyButtons[index], index, playerNumber));
+            mainPanel.add(keyButtons[i], gbc);
+        }
+        
+        // 설명 패널
+        JPanel descPanel = new JPanel();
+        descPanel.setBackground(getPanelColor());
+        descPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
+        JLabel descLabel = new JLabel("<html><center>키를 변경하려면 해당 버튼을 클릭하세요<br>ESC 키로 취소할 수 있습니다</center></html>");
+        descLabel.setFont(new Font("Malgun Gothic", Font.PLAIN, 12));
+        descLabel.setForeground(getTextColor());
+        descLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        descPanel.add(descLabel);
+        
+        // 버튼 패널 (스타일링 적용)
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 20));
+        buttonPanel.setBackground(getBackgroundColor());
+        buttonPanel.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
+        
+        JButton resetButton = createStyledButton("기본값으로 초기화");
+        resetButton.setBackground(new Color(100, 60, 60)); // 리셋 버튼은 빨간색 유지
+        resetButton.addActionListener(e -> {
+            // 배틀 모드 키를 기본값으로 리셋
+            if (playerNumber == 1) {
+                settings.setBattleLeftKey1(KeyEvent.VK_A);
+                settings.setBattleRightKey1(KeyEvent.VK_D);
+                settings.setBattleRotateKey1(KeyEvent.VK_W);
+                settings.setBattleFallKey1(KeyEvent.VK_S);
+                settings.setBattleDropKey1(KeyEvent.VK_SPACE);
+                settings.setBattlePauseKey1(KeyEvent.VK_P);
+                settings.setBattleHoldKey1(KeyEvent.VK_C);
+                settings.setBattleExitKey1(KeyEvent.VK_Q);
+            } else {
+                settings.setBattleLeftKey2(KeyEvent.VK_LEFT);
+                settings.setBattleRightKey2(KeyEvent.VK_RIGHT);
+                settings.setBattleRotateKey2(KeyEvent.VK_UP);
+                settings.setBattleFallKey2(KeyEvent.VK_DOWN);
+                settings.setBattleDropKey2(KeyEvent.VK_ENTER);
+                settings.setBattlePauseKey2(KeyEvent.VK_P);
+                settings.setBattleHoldKey2(KeyEvent.VK_SHIFT);
+                settings.setBattleExitKey2(KeyEvent.VK_ESCAPE);
+            }
+            
+            // 버튼 텍스트 업데이트
+            for (int i = 0; i < keyButtons.length; i++) {
+                int key = 0;
+                switch (i) {
+                    case 0: key = settings.getLeftKey(playerNumber); break;
+                    case 1: key = settings.getRightKey(playerNumber); break;
+                    case 2: key = settings.getRotateKey(playerNumber); break;
+                    case 3: key = settings.getFallKey(playerNumber); break;
+                    case 4: key = settings.getDropKey(playerNumber); break;
+                    case 5: key = settings.getPauseKey(playerNumber); break;
+                    case 6: key = settings.getHoldKey(playerNumber); break;
+                    case 7: key = settings.getExitKey(playerNumber); break;
+                }
+                keyButtons[i].setText(GameSettings.getKeyName(key));
+            }
+        });
+        
+        JButton closeButton = createStyledButton("닫기");
+        closeButton.setBackground(new Color(60, 120, 60)); // 확인 버튼은 녹색 유지
+        closeButton.addActionListener(e -> keyDialog.dispose());
+        
+        buttonPanel.add(resetButton);
+        buttonPanel.add(closeButton);
+        
+        // 메인 컨테이너 패널
+        JPanel contentPanel = new JPanel(new BorderLayout());
+        contentPanel.setBackground(getPanelColor());
+        contentPanel.add(mainPanel, BorderLayout.CENTER);
+        contentPanel.add(descPanel, BorderLayout.SOUTH);
+        
+        keyDialog.add(titlePanel, BorderLayout.NORTH);
+        keyDialog.add(contentPanel, BorderLayout.CENTER);
+        keyDialog.add(buttonPanel, BorderLayout.SOUTH);
+        
+        keyDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        keyDialog.setVisible(true);
+    }
+    
+    private void changeBattleKey(JButton button, int keyIndex, int playerNumber) {
+        // 키 입력 대화상자 (스타일링 적용)
+        JDialog keyInputDialog = new JDialog(frame, "키 입력", true);
+        keyInputDialog.setSize(400, 200);
+        keyInputDialog.setLocationRelativeTo(frame);
+        keyInputDialog.setLayout(new BorderLayout());
+        keyInputDialog.getContentPane().setBackground(getBackgroundColor());
+        
+        // 타이틀 패널
+        JPanel titlePanel = new JPanel();
+        titlePanel.setBackground(getBackgroundColor());
+        titlePanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 10, 20));
+        JLabel titleLabel = new JLabel("키 입력", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Malgun Gothic", Font.BOLD, 20));
+        titleLabel.setForeground(getTitleColor());
+        titlePanel.add(titleLabel);
+        
+        // 메인 패널
+        JPanel mainPanel = new JPanel();
+        mainPanel.setBackground(getPanelColor());
+        mainPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createEmptyBorder(20, 30, 20, 30),
+            BorderFactory.createRaisedBevelBorder()
+        ));
+        
+        JLabel instructionLabel = new JLabel("<html><center>사용할 키를 눌러주세요<br><br><font color='#CCCCCC'>ESC를 누르면 취소됩니다</font></center></html>");
+        instructionLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        instructionLabel.setFont(new Font("Malgun Gothic", Font.PLAIN, 16));
+        instructionLabel.setForeground(getTextColor());
+        mainPanel.add(instructionLabel);
+        
+        keyInputDialog.add(titlePanel, BorderLayout.NORTH);
+        keyInputDialog.add(mainPanel, BorderLayout.CENTER);
+        
+        keyInputDialog.addKeyListener(new KeyListener() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                int keyCode = e.getKeyCode();
+                
+                if (keyCode == KeyEvent.VK_ESCAPE) {
+                    keyInputDialog.dispose();
+                    return;
+                }
+                
+                // 키 설정 저장
+                GameSettings settings = GameSettings.getInstance();
+                if (playerNumber == 1) {
+                    switch (keyIndex) {
+                        case 0: settings.setBattleLeftKey1(keyCode); break;
+                        case 1: settings.setBattleRightKey1(keyCode); break;
+                        case 2: settings.setBattleRotateKey1(keyCode); break;
+                        case 3: settings.setBattleFallKey1(keyCode); break;
+                        case 4: settings.setBattleDropKey1(keyCode); break;
+                        case 5: settings.setBattlePauseKey1(keyCode); break;
+                        case 6: settings.setBattleHoldKey1(keyCode); break;
+                        case 7: settings.setBattleExitKey1(keyCode); break;
+                    }
+                } else {
+                    switch (keyIndex) {
+                        case 0: settings.setBattleLeftKey2(keyCode); break;
+                        case 1: settings.setBattleRightKey2(keyCode); break;
+                        case 2: settings.setBattleRotateKey2(keyCode); break;
+                        case 3: settings.setBattleFallKey2(keyCode); break;
+                        case 4: settings.setBattleDropKey2(keyCode); break;
+                        case 5: settings.setBattlePauseKey2(keyCode); break;
+                        case 6: settings.setBattleHoldKey2(keyCode); break;
+                        case 7: settings.setBattleExitKey2(keyCode); break;
+                    }
+                }
+                
+                // 버튼 텍스트 업데이트
+                button.setText(GameSettings.getKeyName(keyCode));
+                keyInputDialog.dispose();
+            }
+            
+            @Override
+            public void keyReleased(KeyEvent e) {}
+            
+            @Override
+            public void keyTyped(KeyEvent e) {}
+        });
+        
+        keyInputDialog.setFocusable(true);
+        keyInputDialog.requestFocus();
+        keyInputDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        keyInputDialog.setVisible(true);
     }
 
     @Override
