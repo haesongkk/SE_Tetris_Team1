@@ -1,6 +1,8 @@
 package tetris.scene.battle;
 
+import tetris.Game;
 import tetris.scene.Scene;
+import tetris.scene.menu.MainMenuScene;
 import tetris.scene.game.core.BoardManager;
 import tetris.scene.game.core.BlockManager;
 import tetris.scene.game.core.ScoreManager;
@@ -141,7 +143,7 @@ public class BattleScene extends Scene {
                     // TODO: Hold 기능
                     break;
                 case EXIT_TO_MENU:
-                    // InputHandler가 자동 처리
+                    BattleScene.this.exitToMenu();
                     break;
             }
         }
@@ -208,7 +210,7 @@ public class BattleScene extends Scene {
                     // TODO: Hold 기능
                     break;
                 case EXIT_TO_MENU:
-                    // InputHandler가 자동 처리
+                    BattleScene.this.exitToMenu();
                     break;
             }
         }
@@ -498,14 +500,14 @@ public class BattleScene extends Scene {
         
         // 1P 타이머
         fallTimer1 = new Timer(delay, e -> {
-            if (!isGameOver) {
+            if (!isGameOver && !gameStateManager1.isPaused()) {
                 moveBlockDown(1);
             }
         });
         
         // 2P 타이머
         fallTimer2 = new Timer(delay, e -> {
-            if (!isGameOver) {
+            if (!isGameOver && !gameStateManager2.isPaused()) {
                 moveBlockDown(2);
             }
         });
@@ -513,9 +515,13 @@ public class BattleScene extends Scene {
         // 점멸 효과 전용 타이머 (GameScene의 blinkTimer와 동일하게 50ms마다 실행)
         blinkTimer = new Timer(BLINK_INTERVAL_MS, e -> {
             if (!isGameOver) {
-                // 1P, 2P 모두 점멸 효과 업데이트
-                lineBlinkEffect1.update();
-                lineBlinkEffect2.update();
+                // 일시정지되지 않은 플레이어만 점멸 효과 업데이트
+                if (!gameStateManager1.isPaused()) {
+                    lineBlinkEffect1.update();
+                }
+                if (!gameStateManager2.isPaused()) {
+                    lineBlinkEffect2.update();
+                }
                 repaint();
             }
         });
@@ -537,7 +543,8 @@ public class BattleScene extends Scene {
      * 블록을 왼쪽으로 이동 (GameScene의 moveBlockLeft와 동일)
      */
     private void moveBlockLeft(int player) {
-        if (isGameOver) return;
+        GameStateManager gameStateMgr = (player == 1) ? gameStateManager1 : gameStateManager2;
+        if (isGameOver || gameStateMgr.isPaused()) return;
         
         LineBlinkEffect lineBlinkEffect = (player == 1) ? lineBlinkEffect1 : lineBlinkEffect2;
         if (lineBlinkEffect.isActive()) return; // 점멸 중에는 조작 불가
@@ -551,7 +558,8 @@ public class BattleScene extends Scene {
      * 블록을 오른쪽으로 이동 (GameScene의 moveBlockRight와 동일)
      */
     private void moveBlockRight(int player) {
-        if (isGameOver) return;
+        GameStateManager gameStateMgr = (player == 1) ? gameStateManager1 : gameStateManager2;
+        if (isGameOver || gameStateMgr.isPaused()) return;
         
         LineBlinkEffect lineBlinkEffect = (player == 1) ? lineBlinkEffect1 : lineBlinkEffect2;
         if (lineBlinkEffect.isActive()) return; // 점멸 중에는 조작 불가
@@ -565,7 +573,8 @@ public class BattleScene extends Scene {
      * 블록을 회전 (GameScene의 rotateBlock과 동일)
      */
     private void rotateBlock(int player) {
-        if (isGameOver) return;
+        GameStateManager gameStateMgr = (player == 1) ? gameStateManager1 : gameStateManager2;
+        if (isGameOver || gameStateMgr.isPaused()) return;
         
         LineBlinkEffect lineBlinkEffect = (player == 1) ? lineBlinkEffect1 : lineBlinkEffect2;
         if (lineBlinkEffect.isActive()) return; // 점멸 중에는 조작 불가
@@ -581,6 +590,9 @@ public class BattleScene extends Scene {
      * 블록을 아래로 이동
      */
     private void moveBlockDown(int player) {
+        GameStateManager gameStateMgr = (player == 1) ? gameStateManager1 : gameStateManager2;
+        if (gameStateMgr.isPaused()) return;
+        
         LineBlinkEffect lineBlinkEffect = (player == 1) ? lineBlinkEffect1 : lineBlinkEffect2;
         
         // 점멸 효과가 진행 중이면 블록 이동 중지
@@ -1138,6 +1150,18 @@ public class BattleScene extends Scene {
         
         revalidate();
         repaint();
+    }
+
+    /**
+     * 메인 메뉴로 나가기
+     */
+    private void exitToMenu() {
+        try {
+            Game.setScene(new MainMenuScene(m_frame));
+        } catch (Exception e) {
+            System.err.println("메뉴로 나가기 실패: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     @Override
