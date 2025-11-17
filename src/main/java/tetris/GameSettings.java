@@ -229,6 +229,7 @@ public class GameSettings {
     public void setBattleDropKey1(int keyCode) { this.battleDropKey1 = keyCode; }
     public void setBattlePauseKey1(int keyCode) { this.battlePauseKey1 = keyCode; }
     public void setBattleHoldKey1(int keyCode) { this.battleHoldKey1 = keyCode; }
+    public void setBattleExitKey1(int keyCode) { this.battleExitKey1 = keyCode; }
     
     // 배틀 모드 - 2P 키 설정 setter
     public void setBattleLeftKey2(int keyCode) { this.battleLeftKey2 = keyCode; }
@@ -238,6 +239,7 @@ public class GameSettings {
     public void setBattleDropKey2(int keyCode) { this.battleDropKey2 = keyCode; }
     public void setBattlePauseKey2(int keyCode) { this.battlePauseKey2 = keyCode; }
     public void setBattleHoldKey2(int keyCode) { this.battleHoldKey2 = keyCode; }
+    public void setBattleExitKey2(int keyCode) { this.battleExitKey2 = keyCode; }
     
     // 키 코드를 문자열로 변환하는 메서드
     public static String getKeyName(int keyCode) {
