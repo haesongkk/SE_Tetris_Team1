@@ -366,10 +366,13 @@ public class BlockManager {
         lastPlacedX = x;
         lastPlacedY = y;
         
-        // 아이템 블록인 경우 보드 조작 효과는 배치 후에 활성화 (줄 삭제, 청소 등)
+        // 아이템 블록인 경우 효과 활성화
         if (currentBlock instanceof ItemBlock) {
             ItemBlock itemBlock = (ItemBlock) currentBlock;
+            // 보드 조작 효과 (LINE_CLEAR, CLEANUP)
             activateBoardManipulationEffects(itemBlock);
+            // 시각적 효과 (SPEED_UP, SPEED_DOWN, VISION_BLOCK)
+            activateVisualItemEffects(itemBlock);
         }
         
         // 블록이 떨어질 때 점수 추가
@@ -675,9 +678,11 @@ public class BlockManager {
             return;
         }
         
-        // 바닥 착지 시에만 처리하는 아이템 타입들 (시야 차단만)
+        // 바닥 착지 시에 처리하는 아이템 타입들
         ItemEffectType itemType = itemBlock.getItemType();
-        if (itemType == ItemEffectType.VISION_BLOCK) {
+        if (itemType == ItemEffectType.VISION_BLOCK ||
+            itemType == ItemEffectType.SPEED_UP ||
+            itemType == ItemEffectType.SPEED_DOWN) {
             
             System.out.println("🎯 Activating Visual ItemBlock with " + itemBlock.getItemType().getDisplayName() + " (before placement)");
             
