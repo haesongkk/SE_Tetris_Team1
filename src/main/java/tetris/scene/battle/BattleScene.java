@@ -67,8 +67,8 @@ public class BattleScene extends Scene {
     
     // 공격 대기 블록 수 (상대가 삭제한 줄 수)
     // 공격 블록 큐
-    private Queue<AttackBlock> attackQueue1 = new LinkedList<>(); // 1P가 받을 공격
-    private Queue<AttackBlock> attackQueue2 = new LinkedList<>(); // 2P가 받을 공격
+    protected Queue<AttackBlock> attackQueue1 = new LinkedList<>(); // 1P가 받을 공격
+    protected Queue<AttackBlock> attackQueue2 = new LinkedList<>(); // 2P가 받을 공격
     
     // 게임 오버 상태 (어느 한쪽이라도 게임 오버되면 양쪽 모두 종료)
     protected boolean isGameOver = false;
