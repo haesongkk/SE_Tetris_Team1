@@ -49,6 +49,7 @@ public class P2PBattleScene extends BattleScene {
     public P2PBattleScene(JFrame frame, String gameMode, P2PBase p2p) {
         super(frame, gameMode);
 
+        this.inputHandler1 = new InputHandler(frame, new Player1Callback(), 0);
 
         this.gameStateManager2 = new GameStateManager(new EmptyCallback());
         this.inputHandler2 = new InputHandler(frame, new EmptyCallback(), 2); 

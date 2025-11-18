@@ -115,7 +115,7 @@ public class BattleScene extends Scene {
     // ═══════════════════════════════════════════════════════════════
     // 1P InputCallback 구현
     // ═══════════════════════════════════════════════════════════════
-    private class Player1Callback implements InputHandler.InputCallback, GameStateManager.StateChangeCallback {
+    protected class Player1Callback implements InputHandler.InputCallback, GameStateManager.StateChangeCallback {
         @Override
         public void onGameAction(InputHandler.GameAction action) {
             if (gameStateManager1.isGameOver()) return;
