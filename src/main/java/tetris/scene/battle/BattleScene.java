@@ -9,15 +9,13 @@ import tetris.scene.game.core.ScoreManager;
 import tetris.scene.game.core.RenderManager;
 import tetris.scene.game.core.GameStateManager;
 import tetris.scene.game.core.InputHandler;
+import tetris.scene.game.core.ItemManager;
 import tetris.scene.game.blocks.Block;
 import tetris.util.LineBlinkEffect;
 import tetris.GameSettings;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.Queue;
-import java.util.LinkedList;
+import java.util.Stack;
 
 /**
  * Local Battle scene - GameScene × 2
@@ -44,6 +42,7 @@ public class BattleScene extends Scene {
     protected InputHandler inputHandler1;
     protected GameStateManager gameStateManager1;
     protected final LineBlinkEffect lineBlinkEffect1;
+    protected ItemManager itemManager1; // 아이템 모드를 위한 ItemManager
     
     // ═══════════════════════════════════════════════════════════════
     // 2P (오른쪽) - 완전한 GameScene 복제
@@ -56,6 +55,7 @@ public class BattleScene extends Scene {
     protected InputHandler inputHandler2;
     protected GameStateManager gameStateManager2;
     protected final LineBlinkEffect lineBlinkEffect2;
+    protected ItemManager itemManager2; // 아이템 모드를 위한 ItemManager
     
     // 타이머 (블록 자동 낙하)
     private Timer fallTimer1;
@@ -65,8 +65,13 @@ public class BattleScene extends Scene {
     private Timer blinkTimer;
     private static final int BLINK_INTERVAL_MS = 50; // 점멸 효과 업데이트 주기 (밀리초)
     
+    // 시간제한 모드용 타이머 (3분)
+    private Timer timeLimitTimer;
+    private int remainingTimeSeconds = 180; // 3분 = 180초
+    private static final int TIME_LIMIT_SECONDS = 180; // 3분
+    
     // 공격 대기 블록 수 (상대가 삭제한 줄 수)
-    // 공격 블록 큐
+    // 공격 블록 스택 (LIFO - 최근 생성된 것이 먼저 적용)
     protected Queue<AttackBlock> attackQueue1 = new LinkedList<>(); // 1P가 받을 공격
     protected Queue<AttackBlock> attackQueue2 = new LinkedList<>(); // 2P가 받을 공격
     
@@ -90,9 +95,22 @@ public class BattleScene extends Scene {
         this.gameStateManager1 = new GameStateManager(new Player1Callback());
         this.inputHandler1 = new InputHandler(frame, new Player1Callback(), 1); // 1P 키 설정 사용
         this.lineBlinkEffect1 = new LineBlinkEffect(new BlinkCallback1());
+        this.itemManager1 = "item".equals(gameMode) ? new ItemManager() : null; // 아이템 모드일 때만 생성
         
         boardManager1.reset();
         blockManager1.initializeBlocks();
+        
+        // 아이템 모드일 때 ItemManager를 BlockManager와 BoardManager에 설정
+        if (itemManager1 != null) {
+            blockManager1.setItemManager(itemManager1);
+            boardManager1.setItemManager(itemManager1);
+            // BoardManager에 BlockManager와 GameScene 참조 설정 (아이템 효과용)
+            boardManager1.setBlockManager(blockManager1);
+            boardManager1.setGameScene(this);
+            // BlockManager에도 GameScene 참조 설정
+            blockManager1.setGameScene(this);
+            System.out.println("Player 1: Item mode initialized with BlockManager and BoardManager!");
+        }
         
         // ═══════════════════════════════════════════════════════════════
         // 2P 초기화 (GameScene과 동일)
@@ -104,9 +122,22 @@ public class BattleScene extends Scene {
         this.gameStateManager2 = new GameStateManager(new Player2Callback());
         this.inputHandler2 = new InputHandler(frame, new Player2Callback(), 2); // 2P 키 설정 사용
         this.lineBlinkEffect2 = new LineBlinkEffect(new BlinkCallback2());
+        this.itemManager2 = "item".equals(gameMode) ? new ItemManager() : null; // 아이템 모드일 때만 생성
         
         boardManager2.reset();
         blockManager2.initializeBlocks();
+        
+        // 아이템 모드일 때 ItemManager를 BlockManager와 BoardManager에 설정
+        if (itemManager2 != null) {
+            blockManager2.setItemManager(itemManager2);
+            boardManager2.setItemManager(itemManager2);
+            // BoardManager에 BlockManager와 GameScene 참조 설정 (아이템 효과용)
+            boardManager2.setBlockManager(blockManager2);
+            boardManager2.setGameScene(this);
+            // BlockManager에도 GameScene 참조 설정
+            blockManager2.setGameScene(this);
+            System.out.println("Player 2: Item mode initialized with BlockManager and BoardManager!");
+        }
         
         setupLayout(frame);
         setupTimers();
@@ -167,7 +198,16 @@ public class BattleScene extends Scene {
         
         @Override
         public void onPauseToggled(boolean isPaused) {
-            // 일시정지 토글 시 처리
+            // 일시정지 토글 시 시간제한 타이머도 함께 제어
+            if ("time_limit".equals(gameMode) && timeLimitTimer != null) {
+                if (isPaused) {
+                    timeLimitTimer.stop();
+                    System.out.println("Time limit timer paused");
+                } else {
+                    timeLimitTimer.start();
+                    System.out.println("Time limit timer resumed");
+                }
+            }
         }
         
         @Override
@@ -231,7 +271,16 @@ public class BattleScene extends Scene {
         
         @Override
         public void onPauseToggled(boolean isPaused) {
-            // 일시정지 토글 시 처리
+            // 일시정지 토글 시 시간제한 타이머도 함께 제어
+            if ("time_limit".equals(gameMode) && timeLimitTimer != null) {
+                if (isPaused) {
+                    timeLimitTimer.stop();
+                    System.out.println("Time limit timer paused");
+                } else {
+                    timeLimitTimer.start();
+                    System.out.println("Time limit timer resumed");
+                }
+            }
         }
         
         @Override
@@ -260,22 +309,54 @@ public class BattleScene extends Scene {
             
             // 줄 삭제
             int[] lineResults = boardMgr.clearCompletedAndBombLinesSeparately();
-            int clearedLines = lineResults[0];
+            int completedLines = lineResults[0]; // 일반 완성된 줄 수
+            int bombLines = lineResults[1]; // 아이템(폭탄)으로 삭제된 줄 수
+            int totalClearedLines = completedLines + bombLines; // 총 삭제된 줄 수
             
-            // 점수 추가
-            if (clearedLines > 0) {
-                scoreManager1.addScore(clearedLines);
-                System.out.println("Player 1 cleared " + clearedLines + " lines!");
+            // 점수 추가 (총 삭제된 줄 수로 계산)
+            if (totalClearedLines > 0) {
+                scoreManager1.addScore(totalClearedLines);
+                System.out.println("Player 1 cleared " + totalClearedLines + " lines! (" + completedLines + " completed + " + bombLines + " bomb lines)");
                 
-                // 2줄 이상 삭제 시 상대방에게 공격 블록 생성
-                if (clearedLines >= 2) {
+                // 아이템 모드일 때 ItemManager에 줄 삭제 알림 (총 삭제 줄 수)
+                if (itemManager1 != null) {
+                    itemManager1.onLinesCleared(totalClearedLines);
+                    
+                    // 아이템 블록 생성 조건 확인 - 다음 블록 생성 시 아이템 블록으로 변환하도록 플래그 설정
+                    if (itemManager1.shouldCreateItemBlock()) {
+                        System.out.println("Player 1: Item block will be created on next block generation!");
+                    }
+                }
+                
+                // 일반 완성된 줄이 2줄 이상일 때만 상대방에게 공격 블록 생성 (아이템 줄은 제외)
+                if (completedLines >= 2) {
                     generateAttackBlocks(fullLines, 2); // Player 2가 공격받음
+                    System.out.println("Player 1: Generated attack blocks based on " + completedLines + " completed lines (bomb lines excluded)");
                 }
             }
             
             // 다음 블록 생성
             if (!blockManager1.isGameOver()) {
                 blockManager1.generateNextBlock();
+                
+                // 아이템 모드에서 아이템 블록 생성 조건 확인 후 다음 블록을 아이템 블록으로 변환
+                if (itemManager1 != null && itemManager1.shouldCreateItemBlock()) {
+                    Block nextBlock = blockManager1.getNextBlock();
+                    if (nextBlock != null) {
+                        Block itemBlock = itemManager1.createItemBlock(nextBlock);
+                        if (itemBlock != null) {
+                            // reflection을 사용하여 private nextBlock 필드에 접근
+                            try {
+                                java.lang.reflect.Field nextBlockField = blockManager1.getClass().getDeclaredField("nextBlock");
+                                nextBlockField.setAccessible(true);
+                                nextBlockField.set(blockManager1, itemBlock);
+                                System.out.println("Player 1: Next block successfully converted to item block!");
+                            } catch (Exception e) {
+                                System.out.println("Player 1: Failed to set item block: " + e.getMessage());
+                            }
+                        }
+                    }
+                }
             }
             
             repaint();
@@ -303,22 +384,54 @@ public class BattleScene extends Scene {
             
             // 줄 삭제
             int[] lineResults = boardMgr.clearCompletedAndBombLinesSeparately();
-            int clearedLines = lineResults[0];
+            int completedLines = lineResults[0]; // 일반 완성된 줄 수
+            int bombLines = lineResults[1]; // 아이템(폭탄)으로 삭제된 줄 수
+            int totalClearedLines = completedLines + bombLines; // 총 삭제된 줄 수
             
-            // 점수 추가
-            if (clearedLines > 0) {
-                scoreManager2.addScore(clearedLines);
-                System.out.println("Player 2 cleared " + clearedLines + " lines!");
+            // 점수 추가 (총 삭제된 줄 수로 계산)
+            if (totalClearedLines > 0) {
+                scoreManager2.addScore(totalClearedLines);
+                System.out.println("Player 2 cleared " + totalClearedLines + " lines! (" + completedLines + " completed + " + bombLines + " bomb lines)");
                 
-                // 2줄 이상 삭제 시 상대방에게 공격 블록 생성
-                if (clearedLines >= 2) {
+                // 아이템 모드일 때 ItemManager에 줄 삭제 알림 (총 삭제 줄 수)
+                if (itemManager2 != null) {
+                    itemManager2.onLinesCleared(totalClearedLines);
+                    
+                    // 아이템 블록 생성 조건 확인 - 다음 블록 생성 시 아이템 블록으로 변환하도록 플래그 설정
+                    if (itemManager2.shouldCreateItemBlock()) {
+                        System.out.println("Player 2: Item block will be created on next block generation!");
+                    }
+                }
+                
+                // 일반 완성된 줄이 2줄 이상일 때만 상대방에게 공격 블록 생성 (아이템 줄은 제외)
+                if (completedLines >= 2) {
                     generateAttackBlocks(fullLines, 1); // Player 1이 공격받음
+                    System.out.println("Player 2: Generated attack blocks based on " + completedLines + " completed lines (bomb lines excluded)");
                 }
             }
             
             // 다음 블록 생성
             if (!blockManager2.isGameOver()) {
                 blockManager2.generateNextBlock();
+                
+                // 아이템 모드에서 아이템 블록 생성 조건 확인 후 다음 블록을 아이템 블록으로 변환
+                if (itemManager2 != null && itemManager2.shouldCreateItemBlock()) {
+                    Block nextBlock = blockManager2.getNextBlock();
+                    if (nextBlock != null) {
+                        Block itemBlock = itemManager2.createItemBlock(nextBlock);
+                        if (itemBlock != null) {
+                            // reflection을 사용하여 private nextBlock 필드에 접근
+                            try {
+                                java.lang.reflect.Field nextBlockField = blockManager2.getClass().getDeclaredField("nextBlock");
+                                nextBlockField.setAccessible(true);
+                                nextBlockField.set(blockManager2, itemBlock);
+                                System.out.println("Player 2: Next block successfully converted to item block!");
+                            } catch (Exception e) {
+                                System.out.println("Player 2: Failed to set item block: " + e.getMessage());
+                            }
+                        }
+                    }
+                }
             }
             
             repaint();
@@ -340,7 +453,18 @@ public class BattleScene extends Scene {
      * @param targetPlayer 공격받을 플레이어 (1 또는 2)
      */
     private void generateAttackBlocks(java.util.List<Integer> clearedLines, int targetPlayer) {
-        Queue<AttackBlock> targetQueue = (targetPlayer == 1) ? attackQueue1 : attackQueue2;
+        Stack<AttackBlock> targetStack = (targetPlayer == 1) ? attackQueue1 : attackQueue2;
+        BoardManager targetBoardMgr = (targetPlayer == 1) ? boardManager1 : boardManager2;
+        
+        // 대상 플레이어의 현재 방해블럭 줄 수 확인
+        int currentInterferenceLines = countInterferenceLines(targetBoardMgr);
+        
+        // 이미 10줄 이상이면 방해블럭 생성하지 않음
+        if (currentInterferenceLines >= 10) {
+            System.out.println("Player " + targetPlayer + " already has " + currentInterferenceLines + 
+                             " interference lines (≥10). Skipping attack block generation.");
+            return;
+        }
         
         // 공격하는 플레이어의 BlockManager에서 마지막 배치된 블록 정보 가져오기
         BlockManager attackingBlockMgr = (targetPlayer == 1) ? blockManager2 : blockManager1; // 상대방이 공격하는 것
@@ -433,7 +557,7 @@ public class BattleScene extends Scene {
                 System.out.println("  Random hole created at column " + randomCol);
             }
             
-            targetQueue.offer(new AttackBlock(GAME_WIDTH, pattern, colors, blockTypes));
+            targetStack.push(new AttackBlock(GAME_WIDTH, pattern, colors, blockTypes));
         }
         
         System.out.println("Generated " + clearedLines.size() + " attack blocks for Player " + targetPlayer);
@@ -444,18 +568,48 @@ public class BattleScene extends Scene {
      * @param player 공격받는 플레이어 (1 또는 2)
      */
     private void applyAttackBlocks(int player) {
-        Queue<AttackBlock> attackQueue = (player == 1) ? attackQueue1 : attackQueue2;
+        Stack<AttackBlock> attackStack = (player == 1) ? attackQueue1 : attackQueue2;
         BoardManager boardMgr = (player == 1) ? boardManager1 : boardManager2;
         
-        if (attackQueue.isEmpty()) {
+        if (attackStack.isEmpty()) {
             return;
         }
         
-        System.out.println("Applying " + attackQueue.size() + " attack blocks to Player " + player);
+        System.out.println("Applying " + attackStack.size() + " attack blocks to Player " + player);
         
-        // 모든 대기 중인 공격 블록을 보드 하단에 추가
-        while (!attackQueue.isEmpty()) {
-            AttackBlock attackBlock = attackQueue.poll();
+        // 현재 보드에서 방해블럭이 있는 줄 수를 계산
+        int currentInterferenceLines = countInterferenceLines(boardMgr);
+        
+        // 모든 대기 중인 공격 블록을 보드 하단에 추가하되, 최대 10줄까지만 허용
+        int blocksToApply = 0;
+        int stackSize = attackStack.size();
+        
+        // 10줄을 넘지 않도록 적용할 블록 수 계산
+        int maxAllowedBlocks = Math.max(0, 10 - currentInterferenceLines);
+        blocksToApply = Math.min(stackSize, maxAllowedBlocks);
+        
+        System.out.println("Current interference lines: " + currentInterferenceLines + 
+                          ", Max allowed new blocks: " + maxAllowedBlocks + 
+                          ", Will apply: " + blocksToApply + " out of " + stackSize);
+        
+        // 10줄을 초과하여 적용되지 못한 공격 블록들은 스택에서 제거 (최신 것부터 제거)
+        if (stackSize > blocksToApply) {
+            int blocksToDiscard = stackSize - blocksToApply;
+            System.out.println("Discarding " + blocksToDiscard + " attack blocks due to 10-line limit");
+            for (int i = 0; i < blocksToDiscard; i++) {
+                attackStack.pop(); // 가장 최근 블록들 제거 (LIFO)
+            }
+        }
+        
+        // 남은 블록들을 적용 (이제 오래된 것부터 적용하기 위해 역순으로 처리)
+        AttackBlock[] blocksToApplyArray = new AttackBlock[blocksToApply];
+        for (int j = blocksToApply - 1; j >= 0; j--) {
+            blocksToApplyArray[j] = attackStack.pop();
+        }
+        
+        // 배열에 저장된 블록들을 순서대로 적용 (오래된 것부터)
+        for (int j = 0; j < blocksToApply; j++) {
+            AttackBlock attackBlock = blocksToApplyArray[j];
             
             // 기존 블록들을 위로 한 줄씩 이동
             int[][] board = boardMgr.getBoard();
@@ -486,6 +640,33 @@ public class BattleScene extends Scene {
     }
     
     /**
+     * 보드에서 방해블럭이 있는 줄의 수를 계산
+     * @param boardMgr 확인할 보드 매니저
+     * @return 방해블럭이 있는 줄의 수
+     */
+    private int countInterferenceLines(BoardManager boardMgr) {
+        int[][] board = boardMgr.getBoard();
+        int[][] boardTypes = boardMgr.getBoardTypes();
+        int interferenceLines = 0;
+        
+        for (int row = 0; row < GAME_HEIGHT; row++) {
+            boolean hasInterference = false;
+            for (int col = 0; col < GAME_WIDTH; col++) {
+                // 방해블럭 타입(8)이 있는지 확인
+                if (board[row][col] == 1 && boardTypes[row][col] == 8) {
+                    hasInterference = true;
+                    break;
+                }
+            }
+            if (hasInterference) {
+                interferenceLines++;
+            }
+        }
+        
+        return interferenceLines;
+    }
+    
+    /**
      * 타이머 설정 (블록 자동 낙하)
      */
     private void setupTimers() {
@@ -496,6 +677,18 @@ public class BattleScene extends Scene {
         fallTimer1 = new Timer(delay, e -> {
             if (!isGameOver && !gameStateManager1.isPaused()) {
                 moveBlockDown(1);
+                // 무게추 아이템 블록 업데이트 (아이템 모드일 때만)
+                if ("item".equals(gameMode)) {
+                    boolean shouldGenerateNext = blockManager1.updateWeightBlock();
+                    if (shouldGenerateNext) {
+                        // 무게추 블록이 사라졌으므로 다음 블록 생성
+                        if (!blockManager1.isGameOver()) {
+                            blockManager1.generateNextBlock();
+                            System.out.println("Player 1 (fallTimer): Generated next block after WeightItemBlock disappeared");
+                        }
+                        return;
+                    }
+                }
             }
         });
         
@@ -503,6 +696,18 @@ public class BattleScene extends Scene {
         fallTimer2 = new Timer(delay, e -> {
             if (!isGameOver && !gameStateManager2.isPaused()) {
                 moveBlockDown(2);
+                // 무게추 아이템 블록 업데이트 (아이템 모드일 때만)
+                if ("item".equals(gameMode)) {
+                    boolean shouldGenerateNext = blockManager2.updateWeightBlock();
+                    if (shouldGenerateNext) {
+                        // 무게추 블록이 사라졌으므로 다음 블록 생성
+                        if (!blockManager2.isGameOver()) {
+                            blockManager2.generateNextBlock();
+                            System.out.println("Player 2 (fallTimer): Generated next block after WeightItemBlock disappeared");
+                        }
+                        return;
+                    }
+                }
             }
         });
         
@@ -512,13 +717,55 @@ public class BattleScene extends Scene {
                 // 일시정지되지 않은 플레이어만 점멸 효과 업데이트
                 if (!gameStateManager1.isPaused()) {
                     lineBlinkEffect1.update();
+                    // 아이템 모드에서 무게추 블록의 점멸 효과 및 소멸 처리
+                    if ("item".equals(gameMode)) {
+                        boolean shouldUpdateP1 = blockManager1.updateWeightBlock();
+                        if (shouldUpdateP1) {
+                            // 무게추 블록이 사라졌으므로 다음 블록 생성
+                            if (!blockManager1.isGameOver()) {
+                                blockManager1.generateNextBlock();
+                                System.out.println("Player 1: Generated next block after WeightItemBlock disappeared");
+                            }
+                            repaint();
+                            return;
+                        }
+                    }
                 }
                 if (!gameStateManager2.isPaused()) {
                     lineBlinkEffect2.update();
+                    // 아이템 모드에서 무게추 블록의 점멸 효과 및 소멸 처리
+                    if ("item".equals(gameMode)) {
+                        boolean shouldUpdateP2 = blockManager2.updateWeightBlock();
+                        if (shouldUpdateP2) {
+                            // 무게추 블록이 사라졌으므로 다음 블록 생성
+                            if (!blockManager2.isGameOver()) {
+                                blockManager2.generateNextBlock();
+                                System.out.println("Player 2: Generated next block after WeightItemBlock disappeared");
+                            }
+                            repaint();
+                            return;
+                        }
+                    }
                 }
                 repaint();
             }
         });
+        
+        // 시간제한 모드일 때만 시간 타이머 설정
+        if ("time_limit".equals(gameMode)) {
+            remainingTimeSeconds = TIME_LIMIT_SECONDS;
+            timeLimitTimer = new Timer(1000, e -> { // 1초마다 실행
+                remainingTimeSeconds--;
+                repaint(); // UI 업데이트를 위해
+                
+                if (remainingTimeSeconds <= 0) {
+                    // 시간 종료 - 점수 비교하여 승자 결정
+                    timeLimitTimer.stop();
+                    checkTimeLimitGameEnd();
+                }
+            });
+            timeLimitTimer.start();
+        }
     }
     
     /**
@@ -627,7 +874,9 @@ public class BattleScene extends Scene {
             // 완성된 줄이 없으면 즉시 다음 블록 생성
             BlockManager blockMgr = (player == 1) ? blockManager1 : blockManager2;
             if (!blockMgr.isGameOver()) {
+                // 무게추 아이템 블록이 사라진 경우도 여기서 처리됨
                 blockMgr.generateNextBlock();
+                System.out.println("Player " + player + ": Generated next block (no completed lines)");
             }
         }
         
@@ -661,6 +910,19 @@ public class BattleScene extends Scene {
         BoardManager boardMgr = (player == 1) ? boardManager1 : boardManager2;
         GameStateManager gameStateMgr = (player == 1) ? gameStateManager1 : gameStateManager2;
         
+        // 무게추 아이템 블록 처리 (아이템 모드일 때만)
+        if ("item".equals(gameMode)) {
+            Block currentBlock = blockMgr.getCurrentBlock();
+            if (currentBlock instanceof tetris.scene.game.blocks.WeightItemBlock) {
+                tetris.scene.game.blocks.WeightItemBlock weightBlock = (tetris.scene.game.blocks.WeightItemBlock) currentBlock;
+                if (weightBlock.shouldDisappear()) {
+                    System.out.println("Player " + player + ": WeightItemBlock should disappear, will generate next block after line check");
+                    // 무게추 블록이 사라질 때는 바로 다음 블록을 생성하지 않고, 
+                    // checkAndClearLines에서 처리되도록 함
+                }
+            }
+        }
+        
         // 대기 중인 공격 블록 적용
         applyAttackBlocks(player);
         
@@ -689,6 +951,7 @@ public class BattleScene extends Scene {
             fallTimer1.stop();
             fallTimer2.stop();
             if (blinkTimer != null) blinkTimer.stop(); // 점멸 효과 타이머 정지
+            if (timeLimitTimer != null) timeLimitTimer.stop(); // 시간제한 타이머 정지
             
             // 양쪽 모두 게임 오버 상태로 설정
             if (!gameStateManager1.isGameOver()) {
@@ -722,6 +985,47 @@ public class BattleScene extends Scene {
             
             // 승자 표시 다이얼로그 실행
             showBattleGameOverDialog(actualWinner);
+        }
+    }
+    
+    /**
+     * 시간제한 모드에서 시간 종료 시 점수 비교하여 승자 결정
+     */
+    private void checkTimeLimitGameEnd() {
+        if (!isGameOver) {
+            isGameOver = true;
+            
+            // 모든 타이머 정지
+            fallTimer1.stop();
+            fallTimer2.stop();
+            if (blinkTimer != null) blinkTimer.stop();
+            if (timeLimitTimer != null) timeLimitTimer.stop();
+            
+            // 양쪽 모두 게임 오버 상태로 설정
+            if (!gameStateManager1.isGameOver()) {
+                gameStateManager1.triggerGameOver();
+            }
+            if (!gameStateManager2.isGameOver()) {
+                gameStateManager2.triggerGameOver();
+            }
+            
+            // 점수 비교하여 승자 결정
+            int score1 = scoreManager1.getScore();
+            int score2 = scoreManager2.getScore();
+            
+            int winner;
+            if (score1 > score2) {
+                winner = 1; // Player 1 승리
+            } else if (score2 > score1) {
+                winner = 2; // Player 2 승리
+            } else {
+                winner = 0; // 무승부
+            }
+            
+            System.out.println("시간 종료! 최종 점수 - Player 1: " + score1 + ", Player 2: " + score2);
+            
+            // 승자 대화상자 표시
+            showBattleGameOverDialog(winner);
         }
     }
     
@@ -773,7 +1077,7 @@ public class BattleScene extends Scene {
         String modeDescription = "";
         
         if ("item".equals(gameMode)) {
-            modeDescription = "아이템 모드: ";
+            modeDescription = "아이템 모드(1줄 삭제시 아이템 등장): ";
         } else {
             modeDescription = "일반 모드: ";
         }
@@ -842,10 +1146,14 @@ public class BattleScene extends Scene {
         String winnerText = "시간제한 모드: ";
         if (winner == 1) {
             winnerText += "플레이어 1 승리!";
-        } else {
+            winnerLabel.setForeground(new Color(255, 215, 0)); // Gold color
+        } else if (winner == 2) {
             winnerText += "플레이어 2 승리!";
+            winnerLabel.setForeground(new Color(255, 215, 0)); // Gold color
+        } else {
+            winnerText += "무승부!";
+            winnerLabel.setForeground(new Color(192, 192, 192)); // Silver color
         }
-        winnerLabel.setForeground(new Color(255, 215, 0)); // Gold color
         winnerLabel.setText(winnerText);
         winnerLabel.setHorizontalAlignment(SwingConstants.CENTER);
         
@@ -865,12 +1173,12 @@ public class BattleScene extends Scene {
         
         JLabel player1ScoreLabel = new JLabel("플레이어 1: " + String.format("%,d", player1Score));
         player1ScoreLabel.setFont(new Font("Malgun Gothic", Font.BOLD, 14));
-        player1ScoreLabel.setForeground(winner == 1 ? new Color(255, 215, 0) : Color.WHITE);
+        player1ScoreLabel.setForeground(winner == 1 ? new Color(255, 215, 0) : (winner == 0 ? new Color(192, 192, 192) : Color.WHITE));
         player1ScoreLabel.setHorizontalAlignment(SwingConstants.CENTER);
         
         JLabel player2ScoreLabel = new JLabel("플레이어 2: " + String.format("%,d", player2Score));
         player2ScoreLabel.setFont(new Font("Malgun Gothic", Font.BOLD, 14));
-        player2ScoreLabel.setForeground(winner == 2 ? new Color(255, 215, 0) : Color.WHITE);
+        player2ScoreLabel.setForeground(winner == 2 ? new Color(255, 215, 0) : (winner == 0 ? new Color(192, 192, 192) : Color.WHITE));
         player2ScoreLabel.setHorizontalAlignment(SwingConstants.CENTER);
         
         scorePanel.add(player1ScoreLabel);
@@ -1040,6 +1348,54 @@ public class BattleScene extends Scene {
                                null, 0, 0, false, false, new java.util.HashSet<>());
             }
             
+            // 시간제한 모드일 때 기존 시간 표시 영역을 덮어쓰기
+            if ("time_limit".equals(gameMode)) {
+                int cellSize = renderMgr.getCellSize();
+                int previewCellSize = renderMgr.getPreviewCellSize();
+                int previewX = (GAME_WIDTH + 2) * cellSize + 20;
+                int previewY = cellSize + 20;
+                int previewAreaSize = PREVIEW_SIZE * previewCellSize;
+                int scoreBoardY = previewY + previewAreaSize + 30;
+                int scoreBoardHeight = 120;
+                int timeBoardY = scoreBoardY + scoreBoardHeight + 10;
+                int timeBoardHeight = 50;
+                int timeBoardWidth = PREVIEW_SIZE * previewCellSize;
+                
+                // 기존 시간 보드 영역을 배경색으로 지우기
+                g2.setColor(new Color(40, 40, 40)); // 배경색
+                g2.fillRect(previewX, timeBoardY, timeBoardWidth, timeBoardHeight);
+                
+                // 시간제한 보드 테두리 그리기
+                g2.setColor(new Color(100, 100, 100));
+                g2.setStroke(new BasicStroke(2));
+                g2.drawRect(previewX, timeBoardY, timeBoardWidth, timeBoardHeight);
+                
+                // TIME LIMIT 라벨
+                g2.setColor(Color.WHITE);
+                g2.setFont(new Font("Arial", Font.BOLD, 12));
+                FontMetrics fm = g2.getFontMetrics();
+                String timeLabel = "TIME LIMIT";
+                int labelWidth = fm.stringWidth(timeLabel);
+                g2.drawString(timeLabel, previewX + (timeBoardWidth - labelWidth) / 2, timeBoardY + 20);
+                
+                // 남은 시간 표시
+                int minutes = remainingTimeSeconds / 60;
+                int seconds = remainingTimeSeconds % 60;
+                String timeText = String.format("%02d:%02d", minutes, seconds);
+                
+                // 시간이 30초 이하일 때 빨간색으로 표시
+                if (remainingTimeSeconds <= 30) {
+                    g2.setColor(Color.RED);
+                } else {
+                    g2.setColor(Color.WHITE);
+                }
+                
+                g2.setFont(new Font("Arial", Font.BOLD, 16));
+                fm = g2.getFontMetrics();
+                int timeWidth = fm.stringWidth(timeText);
+                g2.drawString(timeText, previewX + (timeBoardWidth - timeWidth) / 2, timeBoardY + 40);
+            }
+            
             // 1P/2P 표시 추가 (타이머 아래)
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g2.setColor(Color.WHITE);
@@ -1078,18 +1434,18 @@ public class BattleScene extends Scene {
             g2.setStroke(new BasicStroke(2));
             g2.drawRect(previewX - 10, attackBoardY, attackBoardWidth, attackBoardHeight);
             
-            // 공격 블록 큐 내용 표시
-            Queue<AttackBlock> currentQueue = (playerNum == 1) ? attackQueue1 : attackQueue2;
-            drawAttackQueue(g2, currentQueue, previewX, attackBoardY + 10, previewCellSize, attackBoardWidth, attackBoardHeight);
+            // 공격 블록 스택 내용 표시
+            Stack<AttackBlock> currentStack = (playerNum == 1) ? attackQueue1 : attackQueue2;
+            drawAttackQueue(g2, currentStack, previewX, attackBoardY + 10, previewCellSize, attackBoardWidth, attackBoardHeight);
             
             g2.dispose();
         }
     }
     
     /**
-     * 공격 블록 큐의 내용을 그립니다
+     * 공격 블록 스택의 내용을 그립니다
      */
-    private void drawAttackQueue(Graphics2D g2, Queue<AttackBlock> queue, int startX, int startY, int cellSize, int maxWidth, int maxHeight) {
+    private void drawAttackQueue(Graphics2D g2, Stack<AttackBlock> stack, int startX, int startY, int cellSize, int maxWidth, int maxHeight) {
         // 사각형 영역 내에서만 그리도록 클리핑 설정
         Shape originalClip = g2.getClip();
         g2.setClip(startX, startY, maxWidth - 10, maxHeight - 20);
@@ -1102,7 +1458,7 @@ public class BattleScene extends Scene {
         int count = 0;
         int maxBlocks = Math.min(4, (maxHeight - 20) / (blockCellSize + 3)); // 텍스트 영역이 줄어든만큼 조정
         
-        for (AttackBlock attackBlock : queue) {
+        for (AttackBlock attackBlock : stack) {
             if (count >= maxBlocks) break;
             
             // 각 공격 블록 패턴을 한 줄로 표시
