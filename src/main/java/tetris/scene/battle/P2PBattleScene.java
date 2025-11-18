@@ -33,6 +33,8 @@ class SerializedGameState {
     double difficultyMultiplier; 
     int elapsedSeconds;
 
+    // 게임 오버 플래그
+    boolean gameOverFlag;
 }
 
 public class P2PBattleScene extends BattleScene {
@@ -111,6 +113,10 @@ public class P2PBattleScene extends BattleScene {
         scoreManager2.setDifficultyMultiplier(state.difficultyMultiplier);
         repaint();
         //gameStateManager2.setElapsedSeconds(state.elapsedSeconds);
+
+        if(state.gameOverFlag && !this.isGameOver) {
+            this.handleGameOver(2); // 2P 패배 처리
+        }
     }
 
     // 현재 게임 상태를 직렬화하여 전송
@@ -178,6 +184,8 @@ public class P2PBattleScene extends BattleScene {
         state.difficultyMultiplier = scoreManager1.getDifficultyMultiplier();
         state.elapsedSeconds = gameStateManager1.getElapsedTimeInSeconds();
 
+        state.gameOverFlag = this.isGameOver;
+
         Gson gson = new Gson();
         return gson.toJson(state);
     }
@@ -208,14 +216,6 @@ public class P2PBattleScene extends BattleScene {
     private int[][] copy2DInt(int[][] src) {
         int[][] dst = new int[src.length][];
         for (int i = 0; i < src.length; i++) {
-            dst[i] = src[i].clone();    // 각 row를 따로 clone
-        }
-        return dst;
-    }
-
-    private char[][] copy2DChar(char[][] src) {
-        char[][] dst = new char[src.length][];
-        for (int i = 0; i < src.length; i++) {
             dst[i] = src[i].clone();
         }
         return dst;
@@ -229,14 +229,6 @@ public class P2PBattleScene extends BattleScene {
         return dst;
     }
 
-    private Color[][] copy2DColor(Color[][] src) {
-        Color[][] dst = new Color[src.length][];
-        for (int i = 0; i < src.length; i++) {
-            dst[i] = src[i].clone();    // Color는 객체지만, 어차피 여기서는 읽기만 하니까 ok
-        }
-        return dst;
-    }
-    
     /**
      * BattleScene의 게임 오버 다이얼로그를 P2P 전용으로 오버라이드
      */

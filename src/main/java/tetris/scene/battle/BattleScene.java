@@ -71,7 +71,7 @@ public class BattleScene extends Scene {
     private Queue<AttackBlock> attackQueue2 = new LinkedList<>(); // 2P가 받을 공격
     
     // 게임 오버 상태 (어느 한쪽이라도 게임 오버되면 양쪽 모두 종료)
-    private boolean isGameOver = false;
+    protected boolean isGameOver = false;
 
     public BattleScene(JFrame frame, String gameMode) {
         super(frame);
@@ -683,7 +683,7 @@ public class BattleScene extends Scene {
     /**
      * 게임 오버 처리 (어느 한쪽이라도 게임 오버되면 양쪽 모두 종료)
      */
-    private void handleGameOver(int loser) {
+    protected void handleGameOver(int loser) {
         if (!isGameOver) {
             isGameOver = true;
             fallTimer1.stop();
