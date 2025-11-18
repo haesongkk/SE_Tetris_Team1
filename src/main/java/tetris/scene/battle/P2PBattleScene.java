@@ -33,6 +33,46 @@ class SerializedGameState {
     double difficultyMultiplier; 
     int elapsedSeconds;
 
+    // 게임 오버 플래그
+    boolean gameOverFlag;
+
+    // 공격 블럭 정보
+    String[] serializedAttackBlocks;
+
+}
+
+class SerializabledAttackBlock {
+    int width;
+    boolean[] pattern;
+    int[] colors;
+    int[] blockTypes;
+    SerializabledAttackBlock(AttackBlock ab) {
+        this.width = ab.getWidth();
+        this.pattern = new boolean[width];
+        this.colors = new int[width];
+        this.blockTypes = new int[width];
+        for(int c = 0; c < width; c++) {
+            this.pattern[c] = ab.hasBlockAt(c);
+            Color color = ab.getColorAt(c);
+            if(color == null) {
+                this.colors[c] = 0;
+            } else {
+                this.colors[c] = color.getRGB();
+            }
+            this.blockTypes[c] = ab.getBlockTypeAt(c);
+        }
+    }
+    AttackBlock toAttackBlock() {
+        Color[] cols = new Color[width];
+        for(int c = 0; c < width; c++) {
+            if(colors[c] == ' ') {
+                cols[c] = null;
+            } else {
+                cols[c] = new Color(colors[c]);
+            }
+        }
+        return new AttackBlock(width, pattern, cols, blockTypes);
+    }
 }
 
 public class P2PBattleScene extends BattleScene {
@@ -47,6 +87,7 @@ public class P2PBattleScene extends BattleScene {
     public P2PBattleScene(JFrame frame, String gameMode, P2PBase p2p) {
         super(frame, gameMode);
 
+        this.inputHandler1 = new InputHandler(frame, new Player1Callback(), 0);
 
         this.gameStateManager2 = new GameStateManager(new EmptyCallback());
         this.inputHandler2 = new InputHandler(frame, new EmptyCallback(), 2); 
@@ -97,7 +138,15 @@ public class P2PBattleScene extends BattleScene {
         // ItemBlock[][] ib = new ItemBlock[bc.length][bc[0].length];
         for (int r = 0; r < height; r++) {
             for (int c = 0; c < width; c++) {
-                bc[r][c] = Theme.Block(state.boardColors[r][c]);
+                if(state.boardColors[r][c] == ' ') {
+                    bc[r][c] = null;
+                } else if(state.boardColors[r][c] == 'B') {
+                    bc[r][c] = Color.BLACK;
+                } else if(state.boardColors[r][c] == 'G') {
+                    bc[r][c] = Color.GRAY;
+                } else {
+                    bc[r][c] = Theme.Block(state.boardColors[r][c]);
+                }
                 if(state.itemCells[r][c]){}
                     // boardManager2.setItemBlockInfo(r, c, new ItemBlock(state.itemBlockInfo[r][c]));
             }
@@ -111,6 +160,17 @@ public class P2PBattleScene extends BattleScene {
         scoreManager2.setDifficultyMultiplier(state.difficultyMultiplier);
         repaint();
         //gameStateManager2.setElapsedSeconds(state.elapsedSeconds);
+
+        if(state.gameOverFlag && !this.isGameOver) {
+            this.handleGameOver(2); // 2P 패배 처리
+        }
+
+        for(int i = 0; i < state.serializedAttackBlocks.length; i++) {
+            String serializedAB = state.serializedAttackBlocks[i];
+            SerializabledAttackBlock sab = gson.fromJson(serializedAB, SerializabledAttackBlock.class);
+            attackQueue1.push(sab.toAttackBlock());
+        }
+
     }
 
     // 현재 게임 상태를 직렬화하여 전송
@@ -143,6 +203,8 @@ public class P2PBattleScene extends BattleScene {
                         state.boardColors[r][c] = blockType;
                         break;
                     }
+                    if(bc[r][c].equals(Color.BLACK)) state.boardColors[r][c] = 'B';
+                    else if(bc[r][c].equals(Color.GRAY)) state.boardColors[r][c] = 'G';
                 }
                 if(state.itemCells[r][c]) state.itemBlockInfo[r][c] = boardManager1.getItemBlockInfo(r,c).getItemDisplayName();
             }
@@ -178,6 +240,19 @@ public class P2PBattleScene extends BattleScene {
         state.difficultyMultiplier = scoreManager1.getDifficultyMultiplier();
         state.elapsedSeconds = gameStateManager1.getElapsedTimeInSeconds();
 
+        state.gameOverFlag = this.isGameOver;
+
+        int qSize = attackQueue2.size();
+        
+        state.serializedAttackBlocks = new String[qSize];
+        for(int i = 0; i < qSize; i++) {
+            AttackBlock ab = attackQueue2.pop();
+            SerializabledAttackBlock sab = new SerializabledAttackBlock(ab);
+            Gson gson = new Gson();
+            String serializedAB = gson.toJson(sab);
+            state.serializedAttackBlocks[i] = serializedAB;
+        }
+
         Gson gson = new Gson();
         return gson.toJson(state);
     }
@@ -208,14 +283,6 @@ public class P2PBattleScene extends BattleScene {
     private int[][] copy2DInt(int[][] src) {
         int[][] dst = new int[src.length][];
         for (int i = 0; i < src.length; i++) {
-            dst[i] = src[i].clone();    // 각 row를 따로 clone
-        }
-        return dst;
-    }
-
-    private char[][] copy2DChar(char[][] src) {
-        char[][] dst = new char[src.length][];
-        for (int i = 0; i < src.length; i++) {
             dst[i] = src[i].clone();
         }
         return dst;
@@ -229,14 +296,6 @@ public class P2PBattleScene extends BattleScene {
         return dst;
     }
 
-    private Color[][] copy2DColor(Color[][] src) {
-        Color[][] dst = new Color[src.length][];
-        for (int i = 0; i < src.length; i++) {
-            dst[i] = src[i].clone();    // Color는 객체지만, 어차피 여기서는 읽기만 하니까 ok
-        }
-        return dst;
-    }
-    
     /**
      * BattleScene의 게임 오버 다이얼로그를 P2P 전용으로 오버라이드
      */
