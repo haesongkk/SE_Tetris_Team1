@@ -168,7 +168,7 @@ public class P2PBattleScene extends BattleScene {
         for(int i = 0; i < state.serializedAttackBlocks.length; i++) {
             String serializedAB = state.serializedAttackBlocks[i];
             SerializabledAttackBlock sab = gson.fromJson(serializedAB, SerializabledAttackBlock.class);
-            attackQueue1.add(sab.toAttackBlock());
+            attackQueue1.push(sab.toAttackBlock());
         }
 
     }
@@ -246,7 +246,7 @@ public class P2PBattleScene extends BattleScene {
         
         state.serializedAttackBlocks = new String[qSize];
         for(int i = 0; i < qSize; i++) {
-            AttackBlock ab = attackQueue2.poll();
+            AttackBlock ab = attackQueue2.pop();
             SerializabledAttackBlock sab = new SerializabledAttackBlock(ab);
             Gson gson = new Gson();
             String serializedAB = gson.toJson(sab);
