@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.util.Timer;
 
 import javax.swing.JFrame;
+import javax.swing.SwingUtilities;
 
 import com.google.gson.Gson;
 
@@ -122,10 +123,14 @@ public class P2PBattleScene extends BattleScene {
         readThread = new Thread(()-> {
             while (true) {
                 String receive = p2p.receive();
-                if (receive != null) {
-                    deserializeGameState(receive);
-                }
+                if (receive == null) break;
+                deserializeGameState(receive);
             }
+            System.out.println("상대방과 연결이 끊어졌습니다.");
+            SwingUtilities.invokeLater(() -> {
+                showDisconnectDialog();
+            });
+
         });
         readThread.start();
 
@@ -523,7 +528,81 @@ public class P2PBattleScene extends BattleScene {
         dialogPanel.add(centerPanel, java.awt.BorderLayout.CENTER);
         dialogPanel.add(buttonPanel, java.awt.BorderLayout.SOUTH);
     }
+
+    private void showDisconnectDialog() {
+    // 메인메뉴 스타일의 다이얼로그 생성
+        javax.swing.JDialog dialog = new javax.swing.JDialog(m_frame, true);
+        dialog.setUndecorated(true);
+        dialog.setDefaultCloseOperation(javax.swing.JDialog.DISPOSE_ON_CLOSE);
+        dialog.setResizable(false);
+        dialog.setSize(400, 300);
+        dialog.setLocationRelativeTo(m_frame);
+        dialog.setFocusable(true);
+        
+        javax.swing.JPanel dialogPanel = new javax.swing.JPanel();
+        dialogPanel.setBackground(tetris.util.Theme.MenuBG());
+        dialogPanel.setLayout(new java.awt.BorderLayout());
+        dialogPanel.setBorder(javax.swing.BorderFactory.createCompoundBorder(
+            javax.swing.BorderFactory.createLineBorder(tetris.util.Theme.MenuTitle(), 2),
+            javax.swing.BorderFactory.createEmptyBorder(20, 20, 20, 20)
+        ));
+        // 제목 라벨
+        javax.swing.JLabel titleLabel = new javax.swing.JLabel("서버 연결 오류", javax.swing.SwingConstants.CENTER);
+        titleLabel.setFont(new java.awt.Font("Malgun Gothic", java.awt.Font.BOLD, 20));
+        titleLabel.setForeground(tetris.util.Theme.MenuTitle());
+        titleLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 15, 0));
+        
+        // 중앙 패널 (승자 정보 + 설명)
+        javax.swing.JPanel centerPanel = new javax.swing.JPanel();
+        centerPanel.setOpaque(false);
+        centerPanel.setLayout(new java.awt.GridLayout(3, 1, 0, 10));
+        
+        javax.swing.JLabel description = new javax.swing.JLabel();
+        description.setFont(new java.awt.Font("Malgun Gothic", java.awt.Font.BOLD, 18));
+        
+        description.setForeground(new java.awt.Color(255, 215, 0)); // Gold color
+        description.setText("상대방과 연결이 끊어졌습니다.");
+        description.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        
+        centerPanel.add(description);
+        centerPanel.add(new javax.swing.JLabel()); // 빈 공간
+        
+        // 버튼 패널
+        javax.swing.JPanel buttonPanel = new javax.swing.JPanel();
+        buttonPanel.setOpaque(false);
+        buttonPanel.setLayout(new java.awt.GridLayout(1, 1, 0, 10));
+        
+        // 메인 메뉴로 돌아가기 버튼
+        javax.swing.JButton mainMenuButton = new javax.swing.JButton("메인 메뉴로 돌아가기");
+        mainMenuButton.setFont(new java.awt.Font("Malgun Gothic", java.awt.Font.BOLD, 14));
+        mainMenuButton.setPreferredSize(new java.awt.Dimension(250, 35));
+        mainMenuButton.setBackground(tetris.util.Theme.MenuButton());
+        mainMenuButton.setForeground(java.awt.Color.WHITE);
+        mainMenuButton.setFocusPainted(false);
+        mainMenuButton.setBorderPainted(true);
+        mainMenuButton.setBorder(javax.swing.BorderFactory.createRaisedBevelBorder());
+        mainMenuButton.addActionListener(e -> {
+            ((javax.swing.JDialog)dialogPanel.getTopLevelAncestor()).dispose();
+            returnToMainMenu();
+        });
+        
+        buttonPanel.add(mainMenuButton);
+        
+        // 컴포넌트 배치
+        dialogPanel.add(titleLabel, java.awt.BorderLayout.NORTH);
+        dialogPanel.add(centerPanel, java.awt.BorderLayout.CENTER);
+        dialogPanel.add(buttonPanel, java.awt.BorderLayout.SOUTH);
+
+        dialog.add(dialogPanel);
+        dialog.setVisible(true);
+        dialog.requestFocus();
+    }
     
+
+    @Override
+    protected void exitToMenu() {
+        returnToMainMenu();
+    }
     /**
      * P2P 전용 메인 메뉴 복귀 처리 (네트워크 리소스 정리 후 메인 메뉴로 복귀)
      */

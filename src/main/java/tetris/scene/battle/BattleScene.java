@@ -1505,7 +1505,7 @@ public class BattleScene extends Scene {
     /**
      * 메인 메뉴로 나가기
      */
-    private void exitToMenu() {
+    protected void exitToMenu() {
         try {
             Game.setScene(new MainMenuScene(m_frame));
         } catch (Exception e) {
