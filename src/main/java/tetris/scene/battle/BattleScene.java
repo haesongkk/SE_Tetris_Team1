@@ -1230,7 +1230,7 @@ public class BattleScene extends Scene {
         });
     }
 
-    private void setupLayout(JFrame frame) {
+    protected void setupLayout(JFrame frame) {
         setLayout(new BorderLayout());
 
         // background based on colorblind theme

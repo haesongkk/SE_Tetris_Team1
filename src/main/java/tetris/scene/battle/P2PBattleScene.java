@@ -36,6 +36,9 @@ class SerializedGameState {
     // 게임 오버 플래그
     boolean gameOverFlag;
 
+    // 일시정지 플래그 (상태)
+    boolean pauseFlag;
+
     // 공격 블럭 정보
     String[] serializedAttackBlocks;
 
@@ -81,6 +84,10 @@ public class P2PBattleScene extends BattleScene {
     Timer writeTimer;
     Thread readThread;
 
+    // 상대방이 보낸 pauseFlag의 "마지막 값"을 기억
+    private boolean hasRemotePauseState = false;
+    private boolean lastRemotePauseState = false;
+
     // 블럭 타입 매핑
     final char[] blockTypes = { 'I','J','L','O','S','T','Z' };
 
@@ -92,6 +99,9 @@ public class P2PBattleScene extends BattleScene {
         this.gameStateManager2 = new GameStateManager(new EmptyCallback());
         this.inputHandler2 = new InputHandler(frame, new EmptyCallback(), 2); 
         this.blockManager2.resetBlock();
+
+        // 매니저 설정을 덮어씌운 후 다시 호출해야함
+        super.setupLayout(frame);
 
         this.p2p = p2p;
 
@@ -159,10 +169,28 @@ public class P2PBattleScene extends BattleScene {
         scoreManager2.setSpeedMultiplier(state.speedMultiplier);
         scoreManager2.setDifficultyMultiplier(state.difficultyMultiplier);
         repaint();
-        //gameStateManager2.setElapsedSeconds(state.elapsedSeconds);
+        gameStateManager2.setFixedElapsedTime(state.elapsedSeconds);
 
         if(state.gameOverFlag && !this.isGameOver) {
             this.handleGameOver(2); // 2P 패배 처리
+        }
+
+        // 일시정지 상태 동기화 (게임 오버가 아닐 때만)
+        if (!this.isGameOver && !gameStateManager1.isGameOver()) {
+            boolean remoteIsPaused = state.pauseFlag;
+
+            // 1) "상대방이 보낸 값"이 이전과 달라질 때만 딱 한 번 반응
+            if (!hasRemotePauseState || lastRemotePauseState != remoteIsPaused) {
+
+                hasRemotePauseState = true;
+                lastRemotePauseState = remoteIsPaused;
+
+
+                if (gameStateManager1.isPaused() != remoteIsPaused) {
+                    gameStateManager1.togglePause();
+                    gameStateManager2.togglePause();
+                }
+            }
         }
 
         for(int i = 0; i < state.serializedAttackBlocks.length; i++) {
@@ -241,6 +269,7 @@ public class P2PBattleScene extends BattleScene {
         state.elapsedSeconds = gameStateManager1.getElapsedTimeInSeconds();
 
         state.gameOverFlag = this.isGameOver;
+        state.pauseFlag = gameStateManager1.isPaused();
 
         int qSize = attackQueue2.size();
         
