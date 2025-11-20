@@ -12,11 +12,11 @@ public class P2PServer extends P2PBase {
     public P2PServer() {
         // 호스트 주소 얻기
         try { HOST = InetAddress.getLocalHost().getHostAddress(); }
-        catch (UnknownHostException e) { throw new RuntimeException(e);}
+        catch (UnknownHostException e) { return; }
 
         // 서버 소켓 생성
         try { serverSocket = new ServerSocket(PORT); }
-        catch (IOException e) { e.printStackTrace(); }
+        catch (IOException e) { return; }
         System.out.println("서버 시작: " + HOST);
 
         Thread waitThread = new Thread(()-> waitForClient());
@@ -45,5 +45,15 @@ public class P2PServer extends P2PBase {
             SwingUtilities.invokeLater(onConnect);
         }
 
+    }
+
+    @Override
+    public void release() {
+        super.release();
+        try {
+            if(serverSocket != null) serverSocket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

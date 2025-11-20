@@ -89,6 +89,9 @@ public class P2PBattleScene extends BattleScene {
     private boolean hasRemotePauseState = false;
     private boolean lastRemotePauseState = false;
 
+    boolean bCloseByGameOver = false;
+    boolean bCloseByDisconnect = false;
+
     // 블럭 타입 매핑
     final char[] blockTypes = { 'I','J','L','O','S','T','Z' };
 
@@ -335,6 +338,8 @@ public class P2PBattleScene extends BattleScene {
      */
     @Override
     protected void showBattleGameOverDialog(int winner) {
+        if(bCloseByDisconnect || bCloseByGameOver) return;
+        bCloseByGameOver = true;
         javax.swing.SwingUtilities.invokeLater(() -> {
             // 메인메뉴 스타일의 다이얼로그 생성
             javax.swing.JDialog dialog = new javax.swing.JDialog(m_frame, true);
@@ -530,6 +535,8 @@ public class P2PBattleScene extends BattleScene {
     }
 
     private void showDisconnectDialog() {
+        if(bCloseByDisconnect || bCloseByGameOver) return;
+        bCloseByDisconnect = true;
     // 메인메뉴 스타일의 다이얼로그 생성
         javax.swing.JDialog dialog = new javax.swing.JDialog(m_frame, true);
         dialog.setUndecorated(true);
@@ -618,7 +625,12 @@ public class P2PBattleScene extends BattleScene {
             readThread.interrupt();
             readThread = null;
         }
-        
+
+        if(p2p != null) {
+            p2p.release();
+            p2p = null;
+        }
+
         // 부모 클래스의 메인 메뉴 복귀 로직 호출
         super.returnToMainMenu();
     }

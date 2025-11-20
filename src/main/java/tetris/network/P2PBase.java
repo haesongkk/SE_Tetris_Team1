@@ -11,9 +11,9 @@ public class P2PBase {
     final int PORT = 5000;
     public String HOST;
 
-    Socket socket;
-    BufferedReader in;
-    BufferedWriter out;
+    Socket socket = null;
+    BufferedReader in = null;
+    BufferedWriter out = null;
 
     public String receive() {
         try { return in.readLine(); } 
@@ -26,6 +26,16 @@ public class P2PBase {
         try { out.write(message + '\n'); out.flush(); } 
         catch (IOException ex) { 
             System.out.println("전송 실패"); 
+        }
+    }
+
+    public void release() {
+        try {
+            if(in != null) in.close();
+            if(out != null) out.close();
+            if(socket != null) socket.close();
+        } catch (IOException e) {
+            System.out.println("릴리즈 실패");
         }
     }
 
