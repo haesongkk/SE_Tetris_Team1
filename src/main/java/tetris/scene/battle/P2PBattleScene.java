@@ -16,6 +16,9 @@ import tetris.util.Theme;
 // 직렬화된 게임 상태를 저장할 필드들
 class SerializedGameState {
 
+    // 전송 시간
+    long timestamp;
+
     // 게임 보드 (현재 블럭 포함)
     int[][] board;
     char[][] boardColors;
@@ -92,6 +95,8 @@ public class P2PBattleScene extends BattleScene {
     boolean bCloseByGameOver = false;
     boolean bCloseByDisconnect = false;
 
+    final long MAX_LATENCY_MS = 200;
+
     // 블럭 타입 매핑
     final char[] blockTypes = { 'I','J','L','O','S','T','Z' };
 
@@ -143,6 +148,10 @@ public class P2PBattleScene extends BattleScene {
     void deserializeGameState(String serialized) {
         Gson gson = new Gson();
         SerializedGameState state = gson.fromJson(serialized, SerializedGameState.class);
+
+        long currentTimestamp = System.currentTimeMillis();
+        long latency = currentTimestamp - state.timestamp;
+        handleLatency(latency);
 
         boardManager2.setBoard(state.board);
         boardManager2.setBoardTypes(state.boardTypes);
@@ -212,6 +221,9 @@ public class P2PBattleScene extends BattleScene {
     // 현재 게임 상태를 직렬화하여 전송
     String serializeGameState() {
         SerializedGameState state = new SerializedGameState();
+
+        // 현재 시간 기록
+        state.timestamp = System.currentTimeMillis();
 
         int[][] board = boardManager1.getBoard();
         int[][] boardTypes = boardManager1.getBoardTypes();
@@ -292,6 +304,13 @@ public class P2PBattleScene extends BattleScene {
 
         Gson gson = new Gson();
         return gson.toJson(state);
+    }
+
+    private void handleLatency(long latency) {
+        System.out.println("지연 시간: " + latency + " ms");
+        if(latency > MAX_LATENCY_MS) {
+            // 지연 시간이 높을 때 처리
+        }
     }
 
     class EmptyCallback implements InputHandler.InputCallback, GameStateManager.StateChangeCallback {
