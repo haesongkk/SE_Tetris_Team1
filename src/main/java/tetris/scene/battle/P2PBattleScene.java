@@ -310,6 +310,9 @@ public class P2PBattleScene extends BattleScene {
         System.out.println("지연 시간: " + latency + " ms");
         if(latency > MAX_LATENCY_MS) {
             // 지연 시간이 높을 때 처리
+            SwingUtilities.invokeLater(() -> {
+                showDisconnectDialog();
+            });
         }
     }
 
@@ -623,7 +626,6 @@ public class P2PBattleScene extends BattleScene {
         dialog.setVisible(true);
         dialog.requestFocus();
     }
-    
 
     @Override
     protected void exitToMenu() {
