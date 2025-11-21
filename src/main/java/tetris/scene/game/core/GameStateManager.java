@@ -44,6 +44,12 @@ public class GameStateManager {
     
     // 콜백 인터페이스
     private StateChangeCallback callback;
+
+    // 외부 주입용 경과 시간
+    private int fixedElapsedTime = -1;
+    public void setFixedElapsedTime(int elapsedTime) {
+        this.fixedElapsedTime = elapsedTime;
+    }
     
     /**
      * GameStateManager 생성자
@@ -172,6 +178,7 @@ public class GameStateManager {
      * @return 경과 시간 (초)
      */
     public int getElapsedTimeInSeconds() {
+        if (fixedElapsedTime != -1) return fixedElapsedTime;
         if (gameStartTime == 0) return 0;
         
         long currentTime = System.currentTimeMillis();

@@ -1230,7 +1230,7 @@ public class BattleScene extends Scene {
         });
     }
 
-    private void setupLayout(JFrame frame) {
+    protected void setupLayout(JFrame frame) {
         setLayout(new BorderLayout());
 
         // background based on colorblind theme
@@ -1505,7 +1505,7 @@ public class BattleScene extends Scene {
     /**
      * 메인 메뉴로 나가기
      */
-    private void exitToMenu() {
+    protected void exitToMenu() {
         try {
             Game.setScene(new MainMenuScene(m_frame));
         } catch (Exception e) {

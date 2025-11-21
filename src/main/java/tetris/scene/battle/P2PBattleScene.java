@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.util.Timer;
 
 import javax.swing.JFrame;
+import javax.swing.SwingUtilities;
 
 import com.google.gson.Gson;
 
@@ -14,6 +15,9 @@ import tetris.util.Theme;
 
 // 직렬화된 게임 상태를 저장할 필드들
 class SerializedGameState {
+
+    // 전송 시간
+    long timestamp;
 
     // 게임 보드 (현재 블럭 포함)
     int[][] board;
@@ -35,6 +39,9 @@ class SerializedGameState {
 
     // 게임 오버 플래그
     boolean gameOverFlag;
+
+    // 일시정지 플래그 (상태)
+    boolean pauseFlag;
 
     // 공격 블럭 정보
     String[] serializedAttackBlocks;
@@ -81,6 +88,15 @@ public class P2PBattleScene extends BattleScene {
     Timer writeTimer;
     Thread readThread;
 
+    // 상대방이 보낸 pauseFlag의 "마지막 값"을 기억
+    private boolean hasRemotePauseState = false;
+    private boolean lastRemotePauseState = false;
+
+    boolean bCloseByGameOver = false;
+    boolean bCloseByDisconnect = false;
+
+    final long MAX_LATENCY_MS = 200;
+
     // 블럭 타입 매핑
     final char[] blockTypes = { 'I','J','L','O','S','T','Z' };
 
@@ -92,6 +108,9 @@ public class P2PBattleScene extends BattleScene {
         this.gameStateManager2 = new GameStateManager(new EmptyCallback());
         this.inputHandler2 = new InputHandler(frame, new EmptyCallback(), 2); 
         this.blockManager2.resetBlock();
+
+        // 매니저 설정을 덮어씌운 후 다시 호출해야함
+        super.setupLayout(frame);
 
         this.p2p = p2p;
 
@@ -112,10 +131,14 @@ public class P2PBattleScene extends BattleScene {
         readThread = new Thread(()-> {
             while (true) {
                 String receive = p2p.receive();
-                if (receive != null) {
-                    deserializeGameState(receive);
-                }
+                if (receive == null) break;
+                deserializeGameState(receive);
             }
+            System.out.println("상대방과 연결이 끊어졌습니다.");
+            SwingUtilities.invokeLater(() -> {
+                showDisconnectDialog();
+            });
+
         });
         readThread.start();
 
@@ -125,6 +148,10 @@ public class P2PBattleScene extends BattleScene {
     void deserializeGameState(String serialized) {
         Gson gson = new Gson();
         SerializedGameState state = gson.fromJson(serialized, SerializedGameState.class);
+
+        long currentTimestamp = System.currentTimeMillis();
+        long latency = currentTimestamp - state.timestamp;
+        handleLatency(latency);
 
         boardManager2.setBoard(state.board);
         boardManager2.setBoardTypes(state.boardTypes);
@@ -159,10 +186,28 @@ public class P2PBattleScene extends BattleScene {
         scoreManager2.setSpeedMultiplier(state.speedMultiplier);
         scoreManager2.setDifficultyMultiplier(state.difficultyMultiplier);
         repaint();
-        //gameStateManager2.setElapsedSeconds(state.elapsedSeconds);
+        gameStateManager2.setFixedElapsedTime(state.elapsedSeconds);
 
         if(state.gameOverFlag && !this.isGameOver) {
             this.handleGameOver(2); // 2P 패배 처리
+        }
+
+        // 일시정지 상태 동기화 (게임 오버가 아닐 때만)
+        if (!this.isGameOver && !gameStateManager1.isGameOver()) {
+            boolean remoteIsPaused = state.pauseFlag;
+
+            // 1) "상대방이 보낸 값"이 이전과 달라질 때만 딱 한 번 반응
+            if (!hasRemotePauseState || lastRemotePauseState != remoteIsPaused) {
+
+                hasRemotePauseState = true;
+                lastRemotePauseState = remoteIsPaused;
+
+
+                if (gameStateManager1.isPaused() != remoteIsPaused) {
+                    gameStateManager1.togglePause();
+                    gameStateManager2.togglePause();
+                }
+            }
         }
 
         for(int i = 0; i < state.serializedAttackBlocks.length; i++) {
@@ -176,6 +221,9 @@ public class P2PBattleScene extends BattleScene {
     // 현재 게임 상태를 직렬화하여 전송
     String serializeGameState() {
         SerializedGameState state = new SerializedGameState();
+
+        // 현재 시간 기록
+        state.timestamp = System.currentTimeMillis();
 
         int[][] board = boardManager1.getBoard();
         int[][] boardTypes = boardManager1.getBoardTypes();
@@ -241,6 +289,7 @@ public class P2PBattleScene extends BattleScene {
         state.elapsedSeconds = gameStateManager1.getElapsedTimeInSeconds();
 
         state.gameOverFlag = this.isGameOver;
+        state.pauseFlag = gameStateManager1.isPaused();
 
         int qSize = attackQueue2.size();
         
@@ -255,6 +304,16 @@ public class P2PBattleScene extends BattleScene {
 
         Gson gson = new Gson();
         return gson.toJson(state);
+    }
+
+    private void handleLatency(long latency) {
+        System.out.println("지연 시간: " + latency + " ms");
+        if(latency > MAX_LATENCY_MS) {
+            // 지연 시간이 높을 때 처리
+            SwingUtilities.invokeLater(() -> {
+                showDisconnectDialog();
+            });
+        }
     }
 
     class EmptyCallback implements InputHandler.InputCallback, GameStateManager.StateChangeCallback {
@@ -301,6 +360,8 @@ public class P2PBattleScene extends BattleScene {
      */
     @Override
     protected void showBattleGameOverDialog(int winner) {
+        if(bCloseByDisconnect || bCloseByGameOver) return;
+        bCloseByGameOver = true;
         javax.swing.SwingUtilities.invokeLater(() -> {
             // 메인메뉴 스타일의 다이얼로그 생성
             javax.swing.JDialog dialog = new javax.swing.JDialog(m_frame, true);
@@ -494,7 +555,82 @@ public class P2PBattleScene extends BattleScene {
         dialogPanel.add(centerPanel, java.awt.BorderLayout.CENTER);
         dialogPanel.add(buttonPanel, java.awt.BorderLayout.SOUTH);
     }
-    
+
+    private void showDisconnectDialog() {
+        if(bCloseByDisconnect || bCloseByGameOver) return;
+        bCloseByDisconnect = true;
+    // 메인메뉴 스타일의 다이얼로그 생성
+        javax.swing.JDialog dialog = new javax.swing.JDialog(m_frame, true);
+        dialog.setUndecorated(true);
+        dialog.setDefaultCloseOperation(javax.swing.JDialog.DISPOSE_ON_CLOSE);
+        dialog.setResizable(false);
+        dialog.setSize(400, 300);
+        dialog.setLocationRelativeTo(m_frame);
+        dialog.setFocusable(true);
+        
+        javax.swing.JPanel dialogPanel = new javax.swing.JPanel();
+        dialogPanel.setBackground(tetris.util.Theme.MenuBG());
+        dialogPanel.setLayout(new java.awt.BorderLayout());
+        dialogPanel.setBorder(javax.swing.BorderFactory.createCompoundBorder(
+            javax.swing.BorderFactory.createLineBorder(tetris.util.Theme.MenuTitle(), 2),
+            javax.swing.BorderFactory.createEmptyBorder(20, 20, 20, 20)
+        ));
+        // 제목 라벨
+        javax.swing.JLabel titleLabel = new javax.swing.JLabel("서버 연결 오류", javax.swing.SwingConstants.CENTER);
+        titleLabel.setFont(new java.awt.Font("Malgun Gothic", java.awt.Font.BOLD, 20));
+        titleLabel.setForeground(tetris.util.Theme.MenuTitle());
+        titleLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 15, 0));
+        
+        // 중앙 패널 (승자 정보 + 설명)
+        javax.swing.JPanel centerPanel = new javax.swing.JPanel();
+        centerPanel.setOpaque(false);
+        centerPanel.setLayout(new java.awt.GridLayout(3, 1, 0, 10));
+        
+        javax.swing.JLabel description = new javax.swing.JLabel();
+        description.setFont(new java.awt.Font("Malgun Gothic", java.awt.Font.BOLD, 18));
+        
+        description.setForeground(new java.awt.Color(255, 215, 0)); // Gold color
+        description.setText("상대방과 연결이 끊어졌습니다.");
+        description.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        
+        centerPanel.add(description);
+        centerPanel.add(new javax.swing.JLabel()); // 빈 공간
+        
+        // 버튼 패널
+        javax.swing.JPanel buttonPanel = new javax.swing.JPanel();
+        buttonPanel.setOpaque(false);
+        buttonPanel.setLayout(new java.awt.GridLayout(1, 1, 0, 10));
+        
+        // 메인 메뉴로 돌아가기 버튼
+        javax.swing.JButton mainMenuButton = new javax.swing.JButton("메인 메뉴로 돌아가기");
+        mainMenuButton.setFont(new java.awt.Font("Malgun Gothic", java.awt.Font.BOLD, 14));
+        mainMenuButton.setPreferredSize(new java.awt.Dimension(250, 35));
+        mainMenuButton.setBackground(tetris.util.Theme.MenuButton());
+        mainMenuButton.setForeground(java.awt.Color.WHITE);
+        mainMenuButton.setFocusPainted(false);
+        mainMenuButton.setBorderPainted(true);
+        mainMenuButton.setBorder(javax.swing.BorderFactory.createRaisedBevelBorder());
+        mainMenuButton.addActionListener(e -> {
+            ((javax.swing.JDialog)dialogPanel.getTopLevelAncestor()).dispose();
+            returnToMainMenu();
+        });
+        
+        buttonPanel.add(mainMenuButton);
+        
+        // 컴포넌트 배치
+        dialogPanel.add(titleLabel, java.awt.BorderLayout.NORTH);
+        dialogPanel.add(centerPanel, java.awt.BorderLayout.CENTER);
+        dialogPanel.add(buttonPanel, java.awt.BorderLayout.SOUTH);
+
+        dialog.add(dialogPanel);
+        dialog.setVisible(true);
+        dialog.requestFocus();
+    }
+
+    @Override
+    protected void exitToMenu() {
+        returnToMainMenu();
+    }
     /**
      * P2P 전용 메인 메뉴 복귀 처리 (네트워크 리소스 정리 후 메인 메뉴로 복귀)
      */
@@ -510,7 +646,12 @@ public class P2PBattleScene extends BattleScene {
             readThread.interrupt();
             readThread = null;
         }
-        
+
+        if(p2p != null) {
+            p2p.release();
+            p2p = null;
+        }
+
         // 부모 클래스의 메인 메뉴 복귀 로직 호출
         super.returnToMainMenu();
     }
