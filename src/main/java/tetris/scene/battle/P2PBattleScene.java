@@ -92,6 +92,8 @@ public class P2PBattleScene extends BattleScene {
     private boolean hasRemotePauseState = false;
     private boolean lastRemotePauseState = false;
 
+    private boolean prevPauseState = false;
+
     boolean bCloseByGameOver = false;
     boolean bCloseByDisconnect = false;
 
@@ -205,7 +207,6 @@ public class P2PBattleScene extends BattleScene {
 
                 if (gameStateManager1.isPaused() != remoteIsPaused) {
                     gameStateManager1.togglePause();
-                    gameStateManager2.togglePause();
                 }
             }
         }
@@ -290,6 +291,8 @@ public class P2PBattleScene extends BattleScene {
 
         state.gameOverFlag = this.isGameOver;
         state.pauseFlag = gameStateManager1.isPaused();
+        if(prevPauseState != gameStateManager1.isPaused()) gameStateManager2.togglePause();
+        prevPauseState = gameStateManager1.isPaused();
 
         int qSize = attackQueue2.size();
         
