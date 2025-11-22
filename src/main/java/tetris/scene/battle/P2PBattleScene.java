@@ -421,9 +421,9 @@ public class P2PBattleScene extends BattleScene {
         }
         
         if (winner == 1) {
-            winnerText = modeDescription + "서버 승리!";
+            winnerText = modeDescription + "승리!";
         } else if (winner == 2) {
-            winnerText = modeDescription + "클라이언트 승리!";
+            winnerText = modeDescription + "패배!";
         } else {
             winnerText = modeDescription + "무승부!";
         }
@@ -486,9 +486,9 @@ public class P2PBattleScene extends BattleScene {
         
         String winnerText = "시간제한 모드: ";
         if (winner == 1) {
-            winnerText += "서버 승리!";
+            winnerText += "승리!";
         } else if (winner == 2) {
-            winnerText += "클라이언트 승리!";
+            winnerText += "패배!";
         } else {
             winnerText += "무승부!";
         }
@@ -511,12 +511,12 @@ public class P2PBattleScene extends BattleScene {
         int player1Score = scoreManager1.getScore();
         int player2Score = scoreManager2.getScore();
         
-        javax.swing.JLabel player1ScoreLabel = new javax.swing.JLabel("서버: " + String.format("%,d", player1Score));
+        javax.swing.JLabel player1ScoreLabel = new javax.swing.JLabel("당신: " + String.format("%,d", player1Score));
         player1ScoreLabel.setFont(new java.awt.Font("Malgun Gothic", java.awt.Font.BOLD, 14));
         player1ScoreLabel.setForeground(winner == 1 ? new java.awt.Color(255, 215, 0) : java.awt.Color.WHITE);
         player1ScoreLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         
-        javax.swing.JLabel player2ScoreLabel = new javax.swing.JLabel("클라이언트: " + String.format("%,d", player2Score));
+        javax.swing.JLabel player2ScoreLabel = new javax.swing.JLabel("상대: " + String.format("%,d", player2Score));
         player2ScoreLabel.setFont(new java.awt.Font("Malgun Gothic", java.awt.Font.BOLD, 14));
         player2ScoreLabel.setForeground(winner == 2 ? new java.awt.Color(255, 215, 0) : java.awt.Color.WHITE);
         player2ScoreLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
