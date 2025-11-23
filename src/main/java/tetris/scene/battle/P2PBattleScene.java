@@ -8,9 +8,11 @@ import javax.swing.SwingUtilities;
 
 import com.google.gson.Gson;
 
+import tetris.Game;
 import tetris.network.P2PBase;
 import tetris.scene.game.blocks.Block;
 import tetris.scene.game.core.*;
+import tetris.scene.menu.MainMenuScene;
 import tetris.util.Theme;
 
 // 직렬화된 게임 상태를 저장할 필드들
@@ -86,7 +88,6 @@ public class P2PBattleScene extends BattleScene {
 
     P2PBase p2p;
     Timer writeTimer;
-    Thread readThread;
 
     // 상대방이 보낸 pauseFlag의 "마지막 값"을 기억
     private boolean hasRemotePauseState = false;
@@ -123,26 +124,20 @@ public class P2PBattleScene extends BattleScene {
                 @Override
                 public void run() {
                     String send = serializeGameState();
-                    p2p.send(send);
+                    p2p.send("game:" + send);
                 }
             },
-            0, 100
+            100, 100
         );
 
-        // 게임 상태 수신 스레드 시작
-        readThread = new Thread(()-> {
-            while (true) {
-                String receive = p2p.receive();
-                if (receive == null) break;
-                deserializeGameState(receive);
-            }
-            System.out.println("상대방과 연결이 끊어졌습니다.");
+        p2p.addCallback("game:", (serialized) -> {
+            deserializeGameState(serialized);
+        });
+        p2p.setOnDisconnect(() -> {
             SwingUtilities.invokeLater(() -> {
                 showDisconnectDialog();
             });
-
         });
-        readThread.start();
 
     }
 
@@ -310,7 +305,7 @@ public class P2PBattleScene extends BattleScene {
     }
 
     private void handleLatency(long latency) {
-        System.out.println("지연 시간: " + latency + " ms");
+        //System.out.println("지연 시간: " + latency + " ms");
         if(latency > MAX_LATENCY_MS) {
             // 지연 시간이 높을 때 처리
             SwingUtilities.invokeLater(() -> {
@@ -460,7 +455,7 @@ public class P2PBattleScene extends BattleScene {
         mainMenuButton.setBorder(javax.swing.BorderFactory.createRaisedBevelBorder());
         mainMenuButton.addActionListener(e -> {
             ((javax.swing.JDialog)dialogPanel.getTopLevelAncestor()).dispose();
-            returnToMainMenu();
+            exit(false);
         });
         
         buttonPanel.add(mainMenuButton);
@@ -548,7 +543,7 @@ public class P2PBattleScene extends BattleScene {
         mainMenuButton.setBorder(javax.swing.BorderFactory.createRaisedBevelBorder());
         mainMenuButton.addActionListener(e -> {
             ((javax.swing.JDialog)dialogPanel.getTopLevelAncestor()).dispose();
-            returnToMainMenu();
+            exit(false);
         });
         
         buttonPanel.add(mainMenuButton);
@@ -615,7 +610,7 @@ public class P2PBattleScene extends BattleScene {
         mainMenuButton.setBorder(javax.swing.BorderFactory.createRaisedBevelBorder());
         mainMenuButton.addActionListener(e -> {
             ((javax.swing.JDialog)dialogPanel.getTopLevelAncestor()).dispose();
-            returnToMainMenu();
+            exit(true);
         });
         
         buttonPanel.add(mainMenuButton);
@@ -630,33 +625,49 @@ public class P2PBattleScene extends BattleScene {
         dialog.requestFocus();
     }
 
+    // 게임 종료 또는 연결 끊김으로 인한 메인 메뉴 복귀 처리
+    private void exit(boolean exitWithDisconnect) {
+        // 리소스 정리
+        if(p2p != null) {
+            p2p.removeCallback("game:");
+            p2p.setOnDisconnect(null); // onDisconnect 콜백 제거
+        }
+        if (writeTimer != null) { 
+            writeTimer.cancel(); 
+            writeTimer.purge(); // 완전히 정리
+        }
+        MainMenuScene nextScene = new MainMenuScene(m_frame);
+        Game.setScene(nextScene);
+        
+        if(exitWithDisconnect) {
+            // 연결 끊김: p2p를 release하고 새로운 연결 시작
+            boolean wasServer = (p2p instanceof tetris.network.P2PServer);
+            if(p2p != null) { p2p.release(); }
+
+            if(wasServer) { nextScene.showServerMode(); } 
+            else { nextScene.showClientMode(); }
+
+        } else {
+            // 정상 종료: p2p 연결은 유지하고 같은 상대와 다시 게임 가능
+            nextScene.showP2PWaitOther(p2p);
+        }
+    }
+
+
+    // 게임 중 나가기 액션으로 인한 메인 메뉴 복귀 처리
     @Override
     protected void exitToMenu() {
-        returnToMainMenu();
-    }
-    /**
-     * P2P 전용 메인 메뉴 복귀 처리 (네트워크 리소스 정리 후 메인 메뉴로 복귀)
-     */
-    @Override
-    protected void returnToMainMenu() {
-        // P2P 네트워크 리소스 정리
-        if (writeTimer != null) {
-            writeTimer.cancel();
-            writeTimer = null;
-        }
-        
-        if (readThread != null) {
-            readThread.interrupt();
-            readThread = null;
-        }
-
+        // 리소스 정리
         if(p2p != null) {
+            p2p.removeCallback("game:");
+            p2p.setOnDisconnect(null); 
             p2p.release();
-            p2p = null;
         }
-
-        // 부모 클래스의 메인 메뉴 복귀 로직 호출
-        super.returnToMainMenu();
+        if (writeTimer != null) { 
+            writeTimer.cancel(); 
+            writeTimer.purge(); // 완전히 정리
+        }
+        super.exitToMenu();
     }
 
 }
