@@ -4,6 +4,10 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 
 public class P2PBase {
@@ -15,22 +19,14 @@ public class P2PBase {
     BufferedReader in = null;
     BufferedWriter out = null;
 
-    public String receive() {
-        try { return in.readLine(); } 
-        catch (IOException e) { 
-            System.out.println("수신 실패"); return null; 
-        }
-    }
-
-    public void send(String message) {
+    public void send(String message) { 
         try { out.write(message + '\n'); out.flush(); } 
-        catch (IOException ex) { 
-            System.out.println("전송 실패"); 
-        }
-    }
+        catch (IOException ex) { }
+     }
 
     public void release() {
         try {
+            bRunning = false;
             if(in != null) in.close();
             if(out != null) out.close();
             if(socket != null) socket.close();
@@ -38,5 +34,70 @@ public class P2PBase {
             System.out.println("릴리즈 실패");
         }
     }
+
+    boolean bRunning = false;
+
+    private Map<String, Consumer<String>> callbacks = new HashMap<>();
+    private Runnable onDisconnect;
+
+    protected void run() {
+        bRunning = true;
+        new Thread(() -> {
+            while(bRunning) {
+                String message = "";
+                try { message = in.readLine(); } 
+                catch (IOException ex) { break;  }
+                if(message == null) { break; }
+
+                for(String key : callbacks.keySet()) {
+                    if(message.startsWith(key)) {
+                        callbacks.get(key).accept(message.substring(key.length()));
+                        break;
+                    }
+                }
+
+            }
+            if(onDisconnect != null) onDisconnect.run();
+            release();
+            System.out.println("release");
+        }).start();
+    }
+
+
+    public void addCallback(String message, Consumer<String> callback) {
+        callbacks.put(message, callback);
+        for(String key : callbacks.keySet()) {
+            System.out.println("key: " + key);
+        }
+    }
+
+    public void removeCallback(String message) {
+        callbacks.remove(message);
+        for(String key : callbacks.keySet()) {
+            System.out.println("key: " + key);
+        }
+    }
+
+    public void setOnDisconnect(Runnable onDisconnect) {
+        this.onDisconnect = onDisconnect;
+    }
+
+    public void sync(String message, Runnable callback) {
+        AtomicBoolean syncFlag = new AtomicBoolean(false);
+        addCallback(message, (data) -> {
+            syncFlag.set(true);
+        });
+        new Thread(() -> {
+            do {
+                try { Thread.sleep(100); } 
+                catch (InterruptedException e) { }
+                send(message);
+            } while(!syncFlag.get());
+            callback.run();
+            removeCallback(message);
+        }).start();
+
+    }
+
 
 }

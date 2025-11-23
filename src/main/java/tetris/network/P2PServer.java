@@ -44,6 +44,7 @@ public class P2PServer extends P2PBase {
         if (onConnect != null) {
             SwingUtilities.invokeLater(onConnect);
         }
+        super.run();
 
     }
 

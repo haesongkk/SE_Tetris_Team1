@@ -165,7 +165,8 @@ public class InputHandler implements KeyListener {
      * 메인 메뉴로 나가기 처리
      */
     private void handleExitToMenu() {
-        Game.setScene(new MainMenuScene(frame));
+        callback.onGameAction(GameAction.EXIT_TO_MENU);
+        //Game.setScene(new MainMenuScene(frame));
     }
 
     

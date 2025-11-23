@@ -1221,7 +1221,7 @@ public class BattleScene extends Scene {
     /**
      * 메인 메뉴로 돌아갑니다
      */
-    protected void returnToMainMenu() {
+    private void returnToMainMenu() {
         // 타이머들을 완전히 정지
         if (fallTimer1 != null) {
             fallTimer1.stop();

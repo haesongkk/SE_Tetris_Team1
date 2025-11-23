@@ -15,6 +15,7 @@ public class P2PClient extends P2PBase {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        super.run();
         return true;
     }
 }
