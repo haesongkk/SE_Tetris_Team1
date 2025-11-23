@@ -686,6 +686,111 @@ public class SettingsScene extends Scene implements KeyListener {
         keyDialog.setVisible(true);
     }
     
+    /**
+     * 키 충돌 검증 - 상대방 플레이어가 같은 키를 사용하고 있는지 확인
+     */
+    private boolean isKeyConflict(int keyCode, int keyIndex, int playerNumber) {
+        GameSettings settings = GameSettings.getInstance();
+        int otherPlayer = playerNumber == 1 ? 2 : 1;
+        
+        // 상대방 플레이어의 모든 키와 비교
+        int[] otherPlayerKeys = new int[7];
+        for (int i = 0; i < 7; i++) {
+            switch (i) {
+                case 0: otherPlayerKeys[i] = settings.getLeftKey(otherPlayer); break;
+                case 1: otherPlayerKeys[i] = settings.getRightKey(otherPlayer); break;
+                case 2: otherPlayerKeys[i] = settings.getRotateKey(otherPlayer); break;
+                case 3: otherPlayerKeys[i] = settings.getFallKey(otherPlayer); break;
+                case 4: otherPlayerKeys[i] = settings.getDropKey(otherPlayer); break;
+                case 5: otherPlayerKeys[i] = settings.getPauseKey(otherPlayer); break;
+                case 6: otherPlayerKeys[i] = settings.getExitKey(otherPlayer); break;
+            }
+        }
+        
+        // 키 중복 검사
+        for (int key : otherPlayerKeys) {
+            if (key == keyCode) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * 키 충돌 경고 다이얼로그 표시
+     */
+    private void showKeyConflictWarning(JDialog parentDialog, int keyCode, int playerNumber) {
+        String otherPlayerName = playerNumber == 1 ? "2P" : "1P";
+        String keyName = GameSettings.getKeyName(keyCode);
+        
+        JDialog warningDialog = new JDialog(parentDialog, "키 충돌 경고", true);
+        warningDialog.setSize(500, 300); // 크기 증가
+        warningDialog.setLocationRelativeTo(parentDialog);
+        warningDialog.setLayout(new BorderLayout());
+        warningDialog.getContentPane().setBackground(getBackgroundColor());
+        
+        // 경고 패널과 메시지 패널 - 여백 증가
+        JPanel messagePanel = new JPanel(new BorderLayout());
+        messagePanel.setBackground(getBackgroundColor());
+        messagePanel.setBorder(BorderFactory.createEmptyBorder(25, 40, 25, 40)); // 좌우 여백 증가
+        
+        // 경고 아이콘
+        JLabel iconLabel = new JLabel("⚠️", SwingConstants.CENTER);
+        iconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 48));
+        iconLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 20, 0));
+        
+        // 경고 메시지 - 한글 렌더링 개선
+        String warningText = String.format(
+            "<html><div style='text-align:center; font-family:Malgun Gothic; line-height:1.5;'>" +
+            "<div style='font-size:18px; color:#FF6B6B; font-weight:bold; margin-bottom:15px;'>키 충돌!</div>" +
+            "<div style='font-size:16px; margin-bottom:15px;'>'%s' 키는 이미<br/>%s가 사용 중입니다.</div>" +
+            "<div style='font-size:14px; color:#CCCCCC;'>다른 키를 선택해주세요.</div>" +
+            "</div></html>", 
+            keyName, otherPlayerName
+        );
+        
+        JLabel messageLabel = new JLabel(warningText);
+        messageLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        messageLabel.setFont(new Font("Malgun Gothic", Font.PLAIN, 16)); // 폰트 크기 증가
+        messageLabel.setForeground(getTextColor());
+        
+        messagePanel.add(iconLabel, BorderLayout.NORTH);
+        messagePanel.add(messageLabel, BorderLayout.CENTER);
+        
+        // 확인 버튼
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        buttonPanel.setBackground(getBackgroundColor());
+        buttonPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 20, 0));
+        
+        JButton okButton = createStyledButton("확인");
+        okButton.setBackground(new Color(255, 107, 107)); // 빨간색 경고 버튼
+        okButton.setPreferredSize(new Dimension(100, 35));
+        okButton.addActionListener(e -> warningDialog.dispose());
+        
+        buttonPanel.add(okButton);
+        
+        warningDialog.add(messagePanel, BorderLayout.CENTER);
+        warningDialog.add(buttonPanel, BorderLayout.SOUTH);
+        
+        // Enter 키로 확인 버튼 누르기
+        warningDialog.addKeyListener(new KeyListener() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ENTER || e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                    warningDialog.dispose();
+                }
+            }
+            @Override public void keyReleased(KeyEvent e) {}
+            @Override public void keyTyped(KeyEvent e) {}
+        });
+        
+        warningDialog.setFocusable(true);
+        warningDialog.requestFocus();
+        warningDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        warningDialog.setVisible(true);
+    }
+    
     private void changeBattleKey(JButton button, int keyIndex, int playerNumber) {
         // 키 입력 대화상자 (스타일링 적용)
         JDialog keyInputDialog = new JDialog(frame, "키 입력", true);
@@ -727,6 +832,12 @@ public class SettingsScene extends Scene implements KeyListener {
                 
                 if (keyCode == KeyEvent.VK_ESCAPE) {
                     keyInputDialog.dispose();
+                    return;
+                }
+                
+                // 키 중복 검증
+                if (isKeyConflict(keyCode, keyIndex, playerNumber)) {
+                    showKeyConflictWarning(keyInputDialog, keyCode, playerNumber);
                     return;
                 }
                 
