@@ -1,18 +1,17 @@
 package tetris.scene.battle;
 
 import java.awt.Color;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
 import java.util.Timer;
+import java.util.Queue;
+import java.util.LinkedList;
 
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
+import javax.swing.JLabel;
 
 import com.google.gson.Gson;
 
 import tetris.Game;
-import tetris.network.NetworkStatusDisplay;
 import tetris.network.P2PBase;
 import tetris.scene.game.blocks.Block;
 import tetris.scene.game.blocks.ItemBlock;
@@ -105,14 +104,39 @@ public class P2PBattleScene extends BattleScene {
     boolean bCloseByGameOver = false;
     boolean bCloseByDisconnect = false;
 
+    /**
+     * 최대 허용 지연 시간 (밀리초)
+     * 
+     * 기준 설정 근거:
+     * - R82 요구사항: 키 입력 → 화면 표시까지 지연 200ms 이하
+     * - 게임 플레이에 영향을 주지 않는 수준의 지연 허용
+     * - 이 값을 초과하면 게임 경험 저하
+     * 
+     * 연결 끊김과의 관계:
+     * - 지연 100ms 미만: 정상 (초록색 표시)
+     * - 지연 100-150ms: 주의 (노란색 표시)
+     * - 지연 150-200ms: 경고 (주황색 표시)
+     * - 지연 200ms 이상: 위험 (빨간색 표시)
+     * - 지연이 지속적으로 200ms 초과 (최근 3개 샘플 모두 초과): 연결 끊김 처리
+     * - P2PBase.TIMEOUT_MS(5000ms) 초과: 연결 끊김 처리
+     * 
+     * 지연(랙)과 연결 끊김의 구분:
+     * - 지연(랙): 일시적 높은 지연 (100-200ms) - 게임은 계속 진행, UI에 경고 표시
+     * - 연결 끊김: 
+     *   * 지속적 높은 지연 (최근 3개 샘플 모두 200ms 초과)
+     *   * 또는 P2PBase.TIMEOUT_MS(5000ms) 이상 응답 없음
+     *   * → 연결 종료 처리 및 사용자 알림
+     */
     final long MAX_LATENCY_MS = 200;
+    
+    // 지연 시간 모니터링 관련 필드
+    private long currentLatency = 0;
+    private long averageLatency = 0;
+    private Queue<Long> latencyHistory = new LinkedList<>();
+    private static final int LATENCY_HISTORY_SIZE = 10;
 
     // 블럭 타입 매핑
     final char[] blockTypes = { 'I','J','L','O','S','T','Z' };
-    
-    // 네트워크 상태 표시 UI
-    private NetworkStatusDisplay networkStatus;
-    private long lastLatency = 0;
 
     public P2PBattleScene(JFrame frame, String gameMode, P2PBase p2p) {
         super(frame, gameMode);
@@ -123,20 +147,10 @@ public class P2PBattleScene extends BattleScene {
         this.inputHandler2 = new InputHandler(frame, new EmptyCallback(), 2); 
         this.blockManager2.resetBlock();
 
-        // 매니저 설정을 덮어씌운 후 다시 호출해야함
-        super.setupLayout(frame);
+        // setupLayout은 BattleScene 생성자에서 호출되며, 
+        // P2PBattleScene의 오버라이드된 setupLayout이 실행됨
 
         this.p2p = p2p;
-        
-        // 네트워크 상태 표시 UI 초기화 및 화면에 추가
-        networkStatus = new NetworkStatusDisplay();
-        networkStatus.showConnected();
-        networkStatus.setBounds(10, 10, 250, 60);
-        
-        // JFrame의 layered pane에 최상위 레이어로 추가
-        javax.swing.JLayeredPane layeredPane = frame.getLayeredPane();
-        layeredPane.add(networkStatus, javax.swing.JLayeredPane.PALETTE_LAYER);
-        networkStatus.setVisible(true);
 
         // 게임 상태 전송 타이머 시작
         writeTimer = new Timer();
@@ -178,15 +192,6 @@ public class P2PBattleScene extends BattleScene {
 
         long currentTimestamp = System.currentTimeMillis();
         long latency = currentTimestamp - state.timestamp;
-        
-        // 네트워크 상태 UI 업데이트
-        if (networkStatus != null) {
-            final long finalLatency = latency;
-            SwingUtilities.invokeLater(() -> {
-                networkStatus.updateLatency(finalLatency);
-            });
-        }
-        
         handleLatency(latency);
 
         boardManager2.setBoard(state.board);
@@ -465,20 +470,46 @@ public class P2PBattleScene extends BattleScene {
     }
 
     private void handleLatency(long latency) {
-        // 네트워크 상태 UI에 지연 시간 업데이트는 콜백에서 자동으로 처리됨
-        // 200ms 초과 시에만 특별 처리 (경고 표시는 NetworkStatusDisplay에서 자동)
-        if(latency > MAX_LATENCY_MS) {
-            // UI에서 이미 경고 표시 중이므로 추가 조치는 필요 없음
-            // 매우 높은 지연(예: 5초 이상)에서만 연결 끊김으로 간주
-            if(latency > 5000) {
+        currentLatency = latency;
+        
+        // 지연 히스토리 관리
+        latencyHistory.offer(latency);
+        if (latencyHistory.size() > LATENCY_HISTORY_SIZE) {
+            latencyHistory.poll();
+        }
+        
+        // 평균 지연 시간 계산
+        if (!latencyHistory.isEmpty()) {
+            averageLatency = (long) latencyHistory.stream()
+                .mapToLong(Long::longValue)
+                .average()
+                .orElse(0);
+        } else {
+            averageLatency = latency;
+        }
+        
+        // 연결 끊김 판단: 지속적으로 높은 지연만 연결 끊김 처리
+        // 기준: 최근 3개 이상의 샘플이 모두 MAX_LATENCY_MS(200ms) 초과
+        // 이는 일시적 지연과 실제 연결 문제를 구분하기 위함
+        // 참고: P2PBase.TIMEOUT_MS(5000ms) 초과 시에도 연결 끊김 처리됨
+        if (latency > MAX_LATENCY_MS && averageLatency > MAX_LATENCY_MS && latencyHistory.size() >= 3) {
+            boolean allHighLatency = latencyHistory.stream()
+                .allMatch(l -> l > MAX_LATENCY_MS);
+            if (allHighLatency) {
+                System.out.println("연결 끊김 판단: 지속적 높은 지연 (" + averageLatency + "ms 평균)");
                 SwingUtilities.invokeLater(() -> {
-                    if (!bCloseByGameOver && !bCloseByDisconnect) {
-                        showDisconnectDialog();
-                    }
+                    showDisconnectDialog();
                 });
             }
         }
+
+        System.out.println(String.format("네트워크 지연: %dms (평균: %dms)", 
+                    currentLatency, averageLatency));
+        
+        
     }
+    
+    
 
     class EmptyCallback implements InputHandler.InputCallback, GameStateManager.StateChangeCallback {
         @Override
@@ -517,41 +548,6 @@ public class P2PBattleScene extends BattleScene {
             dst[i] = src[i].clone();
         }
         return dst;
-    }
-    
-    /**
-     * 네트워크 상태 UI를 화면 상단 중앙에 표시
-     */
-    @Override
-    public void paint(Graphics g) {
-        super.paint(g);
-        
-        // 컴포넌트가 제대로 초기화되었는지 확인
-        if (networkStatus != null && !isGameOver && getWidth() > 0 && getHeight() > 0) {
-            try {
-                Graphics2D g2d = (Graphics2D) g.create();
-                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                
-                // 화면 중앙 상단에 배치
-                int statusWidth = 200;
-                int statusHeight = 60;
-                int statusX = (getWidth() - statusWidth) / 2;
-                int statusY = 10;
-                
-                // 반투명 배경
-                g2d.setColor(new Color(0, 0, 0, 180));
-                g2d.fillRoundRect(statusX - 10, statusY - 5, statusWidth + 20, statusHeight + 10, 10, 10);
-                
-                // 네트워크 상태 컴포넌트 렌더링
-                g2d.translate(statusX, statusY);
-                networkStatus.setSize(statusWidth, statusHeight);
-                networkStatus.paint(g2d);
-                
-                g2d.dispose();
-            } catch (Exception e) {
-                // 렌더링 오류 무시
-            }
-        }
     }
 
     /**
@@ -756,7 +752,7 @@ public class P2PBattleScene extends BattleScene {
     }
 
     private void showDisconnectDialog() {
-        if(bCloseByDisconnect || bCloseByGameOver) return;
+        if(bCloseByDisconnect) return;
         bCloseByDisconnect = true;
     // 메인메뉴 스타일의 다이얼로그 생성
         javax.swing.JDialog dialog = new javax.swing.JDialog(m_frame, true);
