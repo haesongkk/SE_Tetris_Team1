@@ -2,9 +2,12 @@ package tetris.scene.battle;
 
 import java.awt.Color;
 import java.util.Timer;
+import java.util.Queue;
+import java.util.LinkedList;
 
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
+import javax.swing.JLabel;
 
 import com.google.gson.Gson;
 
@@ -102,6 +105,13 @@ public class P2PBattleScene extends BattleScene {
     boolean bCloseByDisconnect = false;
 
     final long MAX_LATENCY_MS = 200;
+    
+    // 지연 시간 모니터링 관련 필드
+    private long currentLatency = 0;
+    private long averageLatency = 0;
+    private Queue<Long> latencyHistory = new LinkedList<>();
+    private static final int LATENCY_HISTORY_SIZE = 10;
+    private JLabel latencyLabel;
 
     // 블럭 타입 매핑
     final char[] blockTypes = { 'I','J','L','O','S','T','Z' };
@@ -115,8 +125,8 @@ public class P2PBattleScene extends BattleScene {
         this.inputHandler2 = new InputHandler(frame, new EmptyCallback(), 2); 
         this.blockManager2.resetBlock();
 
-        // 매니저 설정을 덮어씌운 후 다시 호출해야함
-        super.setupLayout(frame);
+        // setupLayout은 BattleScene 생성자에서 호출되며, 
+        // P2PBattleScene의 오버라이드된 setupLayout이 실행됨
 
         this.p2p = p2p;
 
@@ -438,11 +448,60 @@ public class P2PBattleScene extends BattleScene {
     }
 
     private void handleLatency(long latency) {
-        //System.out.println("지연 시간: " + latency + " ms");
-        if(latency > MAX_LATENCY_MS) {
-            // 지연 시간이 높을 때 처리
+        currentLatency = latency;
+        
+        // 지연 히스토리 관리
+        latencyHistory.offer(latency);
+        if (latencyHistory.size() > LATENCY_HISTORY_SIZE) {
+            latencyHistory.poll();
+        }
+        
+        // 평균 지연 시간 계산
+        if (!latencyHistory.isEmpty()) {
+            averageLatency = (long) latencyHistory.stream()
+                .mapToLong(Long::longValue)
+                .average()
+                .orElse(0);
+        } else {
+            averageLatency = latency;
+        }
+        
+        // 지속적으로 높은 지연만 연결 끊김 처리 (평균이 기준을 초과할 때)
+        if (latency > MAX_LATENCY_MS && averageLatency > MAX_LATENCY_MS && latencyHistory.size() >= 3) {
+            // 최근 3개 이상의 샘플이 모두 기준을 초과할 때만 연결 끊김
+            boolean allHighLatency = latencyHistory.stream()
+                .allMatch(l -> l > MAX_LATENCY_MS);
+            if (allHighLatency) {
+                SwingUtilities.invokeLater(() -> {
+                    showDisconnectDialog();
+                });
+            }
+        }
+        
+        // UI 업데이트 (지연 시간 표시)
+        updateLatencyDisplay();
+    }
+    
+    /**
+     * 지연 시간 표시 UI 업데이트
+     */
+    private void updateLatencyDisplay() {
+        if (latencyLabel != null) {
             SwingUtilities.invokeLater(() -> {
-                showDisconnectDialog();
+                String latencyText = String.format("네트워크 지연: %dms (평균: %dms)", 
+                    currentLatency, averageLatency);
+                latencyLabel.setText(latencyText);
+                
+                // 지연 시간에 따른 색상 설정
+                if (currentLatency >= MAX_LATENCY_MS) {
+                    latencyLabel.setForeground(Color.RED); // 200ms 이상: 빨간색
+                } else if (currentLatency >= 150) {
+                    latencyLabel.setForeground(new Color(255, 165, 0)); // 150ms 이상: 주황색
+                } else if (currentLatency >= 100) {
+                    latencyLabel.setForeground(Color.YELLOW); // 100ms 이상: 노란색
+                } else {
+                    latencyLabel.setForeground(Color.GREEN); // 100ms 미만: 초록색
+                }
             });
         }
     }
@@ -806,6 +865,43 @@ public class P2PBattleScene extends BattleScene {
             writeTimer.purge(); // 완전히 정리
         }
         super.exitToMenu();
+    }
+    
+    /**
+     * setupLayout 오버라이드하여 지연 시간 표시 추가
+     */
+    @Override
+    protected void setupLayout(JFrame frame) {
+        // 부모 클래스의 setupLayout 호출
+        super.setupLayout(frame);
+        
+        // 지연 시간 표시 라벨 생성
+        latencyLabel = new JLabel("네트워크 지연: 측정 중...");
+        latencyLabel.setFont(new java.awt.Font("Malgun Gothic", java.awt.Font.BOLD, 14));
+        latencyLabel.setForeground(Color.GREEN);
+        latencyLabel.setHorizontalAlignment(JLabel.CENTER);
+        latencyLabel.setOpaque(true);
+        latencyLabel.setBackground(new Color(0, 0, 0, 180)); // 반투명 검은 배경
+        latencyLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        
+        // 기존 레이아웃을 유지하면서 상단에 지연 시간 표시 추가
+        java.awt.BorderLayout layout = (java.awt.BorderLayout) getLayout();
+        if (layout != null) {
+            // CENTER에 있는 기존 컴포넌트를 임시로 제거
+            java.awt.Component center = layout.getLayoutComponent(java.awt.BorderLayout.CENTER);
+            if (center != null) {
+                remove(center);
+                // 지연 시간 표시와 기존 컴포넌트를 다시 추가
+                add(latencyLabel, java.awt.BorderLayout.NORTH);
+                add(center, java.awt.BorderLayout.CENTER);
+            } else {
+                // CENTER 컴포넌트가 없으면 그냥 추가
+                add(latencyLabel, java.awt.BorderLayout.NORTH);
+            }
+        }
+        
+        revalidate();
+        repaint();
     }
 
 }
