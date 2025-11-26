@@ -483,5 +483,279 @@ public class P2PNetworkTest {
             }
         }, "콜백 등록/제거 테스트는 예외 없이 작동해야 합니다");
     }
+
+    @Test
+    @DisplayName("여러 메시지 동시 전송 테스트")
+    @Timeout(value = TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
+    void testMultipleMessages() {
+        System.out.println("--- 여러 메시지 동시 전송 테스트 ---");
+        
+        assertDoesNotThrow(() -> {
+            P2PServer server = null;
+            P2PClient client = null;
+            
+            try {
+                // 서버 시작
+                server = new P2PServer();
+                String serverHost = server.HOST;
+                
+                // 클라이언트 연결 대기
+                Thread.sleep(NETWORK_WAIT_MS);
+                
+                // 클라이언트 연결
+                client = new P2PClient();
+                boolean connected = client.connect(serverHost);
+                assertTrue(connected, "클라이언트가 연결되어야 합니다");
+                
+                // 서버가 클라이언트를 받을 때까지 대기
+                Thread.sleep(NETWORK_WAIT_MS);
+                
+                // 여러 메시지 수신을 위한 콜백 설정
+                CountDownLatch messageCount = new CountDownLatch(5);
+                AtomicReference<Integer> receivedCount = new AtomicReference<>(0);
+                
+                server.addCallback("multi:", (message) -> {
+                    receivedCount.set(receivedCount.get() + 1);
+                    messageCount.countDown();
+                });
+                
+                // 여러 메시지 전송
+                for (int i = 1; i <= 5; i++) {
+                    client.send("multi:message" + i);
+                }
+                
+                // 모든 메시지 수신 대기
+                boolean allReceived = messageCount.await(3, TimeUnit.SECONDS);
+                assertTrue(allReceived, "모든 메시지가 수신되어야 합니다");
+                assertEquals(5, receivedCount.get(), "5개의 메시지가 모두 수신되어야 합니다");
+                
+                System.out.println("✅ 여러 메시지 동시 전송 성공: " + receivedCount.get() + "개");
+                
+            } finally {
+                // 리소스 정리
+                if (client != null) {
+                    client.release();
+                }
+                if (server != null) {
+                    server.release();
+                }
+                Thread.sleep(300);
+            }
+        }, "여러 메시지 동시 전송 테스트는 예외 없이 작동해야 합니다");
+    }
+
+    @Test
+    @DisplayName("onDisconnect 콜백 테스트")
+    @Timeout(value = TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
+    void testOnDisconnectCallback() {
+        System.out.println("--- onDisconnect 콜백 테스트 ---");
+        
+        assertDoesNotThrow(() -> {
+            P2PServer server = null;
+            P2PClient client = null;
+            
+            try {
+                // 서버 시작
+                server = new P2PServer();
+                String serverHost = server.HOST;
+                
+                // 클라이언트 연결 대기
+                Thread.sleep(NETWORK_WAIT_MS);
+                
+                // 클라이언트 연결
+                client = new P2PClient();
+                boolean connected = client.connect(serverHost);
+                assertTrue(connected, "클라이언트가 연결되어야 합니다");
+                
+                // 서버가 클라이언트를 받을 때까지 대기
+                Thread.sleep(NETWORK_WAIT_MS);
+                
+                // onDisconnect 콜백 설정
+                CountDownLatch disconnectCallback = new CountDownLatch(1);
+                AtomicBoolean callbackCalled = new AtomicBoolean(false);
+                
+                server.setOnDisconnect(() -> {
+                    callbackCalled.set(true);
+                    disconnectCallback.countDown();
+                });
+                
+                // 클라이언트 연결 해제
+                client.release();
+                
+                // 콜백 호출 대기
+                boolean callbackReceived = disconnectCallback.await(3, TimeUnit.SECONDS);
+                assertTrue(callbackReceived, "onDisconnect 콜백이 호출되어야 합니다");
+                assertTrue(callbackCalled.get(), "콜백이 실행되어야 합니다");
+                
+                System.out.println("✅ onDisconnect 콜백 호출 확인");
+                
+            } finally {
+                // 리소스 정리
+                if (client != null) {
+                    try {
+                        client.release();
+                    } catch (Exception e) {
+                        // 이미 종료된 경우 무시
+                    }
+                }
+                if (server != null) {
+                    try {
+                        server.release();
+                    } catch (Exception e) {
+                        // 이미 종료된 경우 무시
+                    }
+                }
+                Thread.sleep(300);
+            }
+        }, "onDisconnect 콜백 테스트는 예외 없이 작동해야 합니다");
+    }
+
+    @Test
+    @DisplayName("네트워크 오류 처리 테스트 - null 스트림")
+    @Timeout(value = TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
+    void testNetworkErrorHandling() {
+        System.out.println("--- 네트워크 오류 처리 테스트 ---");
+        
+        assertDoesNotThrow(() -> {
+            P2PClient client = new P2PClient();
+            
+            // 연결하지 않은 상태에서 send() 호출 (out이 null)
+            // 이 경우 handleNetworkError가 호출되어야 함
+            client.send("test:message");
+            
+            // 예외가 발생하지 않고 조용히 처리되어야 함
+            System.out.println("✅ null 스트림에서 send() 호출 시 오류 처리 확인");
+            
+            // 리소스 정리
+            client.release();
+        }, "네트워크 오류 처리 테스트는 예외 없이 작동해야 합니다");
+    }
+
+    @Test
+    @DisplayName("긴 메시지 전송 테스트")
+    @Timeout(value = TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
+    void testLongMessage() {
+        System.out.println("--- 긴 메시지 전송 테스트 ---");
+        
+        assertDoesNotThrow(() -> {
+            P2PServer server = null;
+            P2PClient client = null;
+            
+            try {
+                // 서버 시작
+                server = new P2PServer();
+                String serverHost = server.HOST;
+                
+                // 클라이언트 연결 대기
+                Thread.sleep(NETWORK_WAIT_MS);
+                
+                // 클라이언트 연결
+                client = new P2PClient();
+                boolean connected = client.connect(serverHost);
+                assertTrue(connected, "클라이언트가 연결되어야 합니다");
+                
+                // 서버가 클라이언트를 받을 때까지 대기
+                Thread.sleep(NETWORK_WAIT_MS);
+                
+                // 긴 메시지 생성 (게임 상태 직렬화 데이터 시뮬레이션)
+                StringBuilder longMessage = new StringBuilder("long:");
+                for (int i = 0; i < 1000; i++) {
+                    longMessage.append("data").append(i).append(",");
+                }
+                
+                // 메시지 수신을 위한 콜백 설정
+                CountDownLatch messageReceived = new CountDownLatch(1);
+                AtomicReference<String> receivedMessage = new AtomicReference<>();
+                
+                server.addCallback("long:", (message) -> {
+                    receivedMessage.set(message);
+                    messageReceived.countDown();
+                });
+                
+                // 긴 메시지 전송
+                String testMessage = longMessage.toString();
+                client.send(testMessage);
+                
+                // 메시지 수신 대기
+                boolean received = messageReceived.await(3, TimeUnit.SECONDS);
+                assertTrue(received, "긴 메시지가 수신되어야 합니다");
+                assertTrue(receivedMessage.get().startsWith("data0"), 
+                    "수신된 메시지가 전송된 메시지의 일부를 포함해야 합니다");
+                
+                System.out.println("✅ 긴 메시지 전송 성공 (길이: " + testMessage.length() + "자)");
+                
+            } finally {
+                // 리소스 정리
+                if (client != null) {
+                    client.release();
+                }
+                if (server != null) {
+                    server.release();
+                }
+                Thread.sleep(300);
+            }
+        }, "긴 메시지 전송 테스트는 예외 없이 작동해야 합니다");
+    }
+
+    @Test
+    @DisplayName("빠른 연속 메시지 전송 테스트")
+    @Timeout(value = TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
+    void testRapidMessages() {
+        System.out.println("--- 빠른 연속 메시지 전송 테스트 ---");
+        
+        assertDoesNotThrow(() -> {
+            P2PServer server = null;
+            P2PClient client = null;
+            
+            try {
+                // 서버 시작
+                server = new P2PServer();
+                String serverHost = server.HOST;
+                
+                // 클라이언트 연결 대기
+                Thread.sleep(NETWORK_WAIT_MS);
+                
+                // 클라이언트 연결
+                client = new P2PClient();
+                boolean connected = client.connect(serverHost);
+                assertTrue(connected, "클라이언트가 연결되어야 합니다");
+                
+                // 서버가 클라이언트를 받을 때까지 대기
+                Thread.sleep(NETWORK_WAIT_MS);
+                
+                // 빠른 연속 메시지 수신을 위한 콜백 설정
+                CountDownLatch messageCount = new CountDownLatch(10);
+                AtomicReference<Integer> receivedCount = new AtomicReference<>(0);
+                
+                server.addCallback("rapid:", (message) -> {
+                    receivedCount.set(receivedCount.get() + 1);
+                    messageCount.countDown();
+                });
+                
+                // 빠른 연속 메시지 전송 (게임 상태 업데이트 시뮬레이션)
+                for (int i = 0; i < 10; i++) {
+                    client.send("rapid:update" + i);
+                    Thread.sleep(10); // 매우 짧은 간격
+                }
+                
+                // 모든 메시지 수신 대기
+                boolean allReceived = messageCount.await(3, TimeUnit.SECONDS);
+                assertTrue(allReceived, "모든 빠른 연속 메시지가 수신되어야 합니다");
+                assertEquals(10, receivedCount.get(), "10개의 메시지가 모두 수신되어야 합니다");
+                
+                System.out.println("✅ 빠른 연속 메시지 전송 성공: " + receivedCount.get() + "개");
+                
+            } finally {
+                // 리소스 정리
+                if (client != null) {
+                    client.release();
+                }
+                if (server != null) {
+                    server.release();
+                }
+                Thread.sleep(300);
+            }
+        }, "빠른 연속 메시지 전송 테스트는 예외 없이 작동해야 합니다");
+    }
 }
 
