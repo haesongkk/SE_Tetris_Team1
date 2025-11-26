@@ -461,7 +461,7 @@ public class BattleScene extends Scene {
      * @param clearedLines 삭제된 줄들의 행 번호
      * @param targetPlayer 공격받을 플레이어 (1 또는 2)
      */
-    private void generateAttackBlocks(java.util.List<Integer> clearedLines, int targetPlayer) {
+    protected void generateAttackBlocks(java.util.List<Integer> clearedLines, int targetPlayer) {
         Stack<AttackBlock> targetStack = (targetPlayer == 1) ? attackQueue1 : attackQueue2;
         BoardManager targetBoardMgr = (targetPlayer == 1) ? boardManager1 : boardManager2;
         
@@ -576,7 +576,7 @@ public class BattleScene extends Scene {
      * 대기 중인 공격 블록을 게임 보드에 적용
      * @param player 공격받는 플레이어 (1 또는 2)
      */
-    private void applyAttackBlocks(int player) {
+    protected void applyAttackBlocks(int player) {
         Stack<AttackBlock> attackStack = (player == 1) ? attackQueue1 : attackQueue2;
         BoardManager boardMgr = (player == 1) ? boardManager1 : boardManager2;
         

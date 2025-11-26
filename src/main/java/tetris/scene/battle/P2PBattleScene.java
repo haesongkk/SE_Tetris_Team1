@@ -46,9 +46,6 @@ class SerializedGameState {
     // 일시정지 플래그 (상태)
     boolean pauseFlag;
 
-    // 공격 블럭 정보
-    String[] serializedAttackBlocks;
-
 }
 
 class SerializabledAttackBlock {
@@ -125,14 +122,23 @@ public class P2PBattleScene extends BattleScene {
                 @Override
                 public void run() {
                     String send = serializeGameState();
-                    p2p.send("game:" + send);
+                    p2p.send("board:" + send);
                 }
             },
             100, 100
         );
 
-        p2p.addCallback("game:", (serialized) -> {
+        p2p.addCallback("board:", (serialized) -> {
             deserializeGameState(serialized);
+        });
+        p2p.addCallback("attack-generate:", (serialized) -> {
+            Gson gson = new Gson();
+            SerializabledAttackBlock sab = gson.fromJson(serialized, SerializabledAttackBlock.class);
+            AttackBlock ab = sab.toAttackBlock();
+            attackQueue1.push(ab);
+        });
+        p2p.addCallback("attack-apply", (s) -> {
+            attackQueue2.clear();
         });
         p2p.setOnDisconnect(() -> {
             SwingUtilities.invokeLater(() -> {
@@ -205,12 +211,6 @@ public class P2PBattleScene extends BattleScene {
                     gameStateManager1.togglePause();
                 }
             }
-        }
-
-        for(int i = 0; i < state.serializedAttackBlocks.length; i++) {
-            String serializedAB = state.serializedAttackBlocks[i];
-            SerializabledAttackBlock sab = gson.fromJson(serializedAB, SerializabledAttackBlock.class);
-            attackQueue1.push(sab.toAttackBlock());
         }
 
     }
@@ -290,19 +290,31 @@ public class P2PBattleScene extends BattleScene {
         if(prevPauseState != gameStateManager1.isPaused()) gameStateManager2.togglePause();
         prevPauseState = gameStateManager1.isPaused();
 
-        int qSize = attackQueue2.size();
         
-        state.serializedAttackBlocks = new String[qSize];
-        for(int i = 0; i < qSize; i++) {
-            AttackBlock ab = attackQueue2.pop();
-            SerializabledAttackBlock sab = new SerializabledAttackBlock(ab);
-            Gson gson = new Gson();
-            String serializedAB = gson.toJson(sab);
-            state.serializedAttackBlocks[i] = serializedAB;
-        }
 
         Gson gson = new Gson();
         return gson.toJson(state);
+    }
+
+    @Override
+    protected void applyAttackBlocks(int player) {
+        super.applyAttackBlocks(player);
+        if(player != 1) return;
+        p2p.send("attack-apply");
+    }
+
+    @Override
+    protected void generateAttackBlocks(java.util.List<Integer> clearedLines, int targetPlayer) {
+        super.generateAttackBlocks(clearedLines, targetPlayer);
+        if(targetPlayer == 1) return;
+
+        for(int i = 0; i < attackQueue2.size(); i++) {
+            AttackBlock ab = attackQueue2.get(i);
+            SerializabledAttackBlock sab = new SerializabledAttackBlock(ab);
+            Gson gson = new Gson();
+            String serializedAB = gson.toJson(sab);
+            p2p.send("attack-generate:" + serializedAB);
+        }
     }
 
     private void handleLatency(long latency) {
@@ -631,6 +643,8 @@ public class P2PBattleScene extends BattleScene {
         // 리소스 정리
         if(p2p != null) {
             p2p.removeCallback("game:");
+            p2p.removeCallback("attack-generate:");
+            p2p.removeCallback("attack-apply");
             p2p.setOnDisconnect(null); // onDisconnect 콜백 제거
         }
         if (writeTimer != null) { 
@@ -662,6 +676,8 @@ public class P2PBattleScene extends BattleScene {
         // 리소스 정리
         if(p2p != null) {
             p2p.removeCallback("game:");
+            p2p.removeCallback("attack-generate:");
+            p2p.removeCallback("attack-apply");
             p2p.setOnDisconnect(null); 
             p2p.release();
         }
