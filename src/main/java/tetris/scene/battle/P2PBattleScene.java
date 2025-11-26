@@ -104,6 +104,29 @@ public class P2PBattleScene extends BattleScene {
     boolean bCloseByGameOver = false;
     boolean bCloseByDisconnect = false;
 
+    /**
+     * 최대 허용 지연 시간 (밀리초)
+     * 
+     * 기준 설정 근거:
+     * - R82 요구사항: 키 입력 → 화면 표시까지 지연 200ms 이하
+     * - 게임 플레이에 영향을 주지 않는 수준의 지연 허용
+     * - 이 값을 초과하면 게임 경험 저하
+     * 
+     * 연결 끊김과의 관계:
+     * - 지연 100ms 미만: 정상 (초록색 표시)
+     * - 지연 100-150ms: 주의 (노란색 표시)
+     * - 지연 150-200ms: 경고 (주황색 표시)
+     * - 지연 200ms 이상: 위험 (빨간색 표시)
+     * - 지연이 지속적으로 200ms 초과 (최근 3개 샘플 모두 초과): 연결 끊김 처리
+     * - P2PBase.TIMEOUT_MS(5000ms) 초과: 연결 끊김 처리
+     * 
+     * 지연(랙)과 연결 끊김의 구분:
+     * - 지연(랙): 일시적 높은 지연 (100-200ms) - 게임은 계속 진행, UI에 경고 표시
+     * - 연결 끊김: 
+     *   * 지속적 높은 지연 (최근 3개 샘플 모두 200ms 초과)
+     *   * 또는 P2PBase.TIMEOUT_MS(5000ms) 이상 응답 없음
+     *   * → 연결 종료 처리 및 사용자 알림
+     */
     final long MAX_LATENCY_MS = 200;
     
     // 지연 시간 모니터링 관련 필드
@@ -466,12 +489,15 @@ public class P2PBattleScene extends BattleScene {
             averageLatency = latency;
         }
         
-        // 지속적으로 높은 지연만 연결 끊김 처리 (평균이 기준을 초과할 때)
+        // 연결 끊김 판단: 지속적으로 높은 지연만 연결 끊김 처리
+        // 기준: 최근 3개 이상의 샘플이 모두 MAX_LATENCY_MS(200ms) 초과
+        // 이는 일시적 지연과 실제 연결 문제를 구분하기 위함
+        // 참고: P2PBase.TIMEOUT_MS(5000ms) 초과 시에도 연결 끊김 처리됨
         if (latency > MAX_LATENCY_MS && averageLatency > MAX_LATENCY_MS && latencyHistory.size() >= 3) {
-            // 최근 3개 이상의 샘플이 모두 기준을 초과할 때만 연결 끊김
             boolean allHighLatency = latencyHistory.stream()
                 .allMatch(l -> l > MAX_LATENCY_MS);
             if (allHighLatency) {
+                System.out.println("연결 끊김 판단: 지속적 높은 지연 (" + averageLatency + "ms 평균)");
                 SwingUtilities.invokeLater(() -> {
                     showDisconnectDialog();
                 });

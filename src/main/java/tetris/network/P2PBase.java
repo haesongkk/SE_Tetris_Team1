@@ -71,7 +71,26 @@ public class P2PBase {
     protected Runnable onDisconnect;
     private final String RELEASE_MESSAGE = "release";
     private long lastReceiveTime = -1;
-    private final int TIMEOUT_MS = 5000;
+    
+    /**
+     * 네트워크 연결 타임아웃 기준 (밀리초)
+     * 
+     * 기준 설정 근거:
+     * - 게임 상태는 100ms 주기로 전송됨 (P2PBattleScene.writeTimer)
+     * - 5초(5000ms) = 50회 전송 주기 동안 응답 없음
+     * - 일반적인 네트워크 지연(50-200ms)과 구분하여 실제 연결 끊김을 감지
+     * - 너무 짧으면 일시적 지연을 끊김으로 오인, 너무 길면 끊김 감지가 늦어짐
+     * 
+     * 연결 끊김 판단 기준:
+     * - 마지막 메시지 수신 후 TIMEOUT_MS 이상 경과 시 ping 전송
+     * - ping 전송 후 TIMEOUT_MS 이상 pong 미수신 시 연결 끊김으로 판단
+     * 
+     * 지연(랙)과의 구분:
+     * - 지연(랙): 일시적 높은 지연 (예: 100-200ms) - 게임은 계속 진행
+     * - 연결 끊김: TIMEOUT_MS 이상 응답 없음 - 연결 종료 처리
+     */
+    private static final int TIMEOUT_MS = 5000;
+    
     private final String PING_MESSAGE = "ping";
     private final String PONG_MESSAGE = "pong";
     private boolean bWaitingPong = false;
@@ -109,14 +128,16 @@ public class P2PBase {
         
         new Thread(() -> {
             while(bRunning) {
-                // 타임아웃 검사
+                // 타임아웃 검사 (연결 끊김 판단 기준)
+                // 마지막 메시지 수신 후 TIMEOUT_MS 이상 경과 시 ping 전송
                 long currentTime = System.currentTimeMillis();
                 if(currentTime - lastReceiveTime > TIMEOUT_MS) {
                     if(bWaitingPong) {
+                        // ping 전송 후 TIMEOUT_MS 이상 pong 미수신 시 연결 끊김으로 판단
                         if(currentTime - lastPingTime > TIMEOUT_MS) {
-                            System.out.println("타임아웃 발생");
+                            System.out.println("타임아웃 발생: " + TIMEOUT_MS + "ms 이상 응답 없음");
                             break;
-                        } else { /* pong 대기 중 */}
+                        } else { /* pong 대기 중 - 아직 타임아웃 아님 */}
 
                     } else {
                         send(PING_MESSAGE);
