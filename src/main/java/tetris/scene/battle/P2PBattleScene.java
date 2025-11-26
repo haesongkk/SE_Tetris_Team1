@@ -13,6 +13,7 @@ import tetris.network.P2PBase;
 import tetris.scene.game.blocks.Block;
 import tetris.scene.game.core.*;
 import tetris.scene.menu.MainMenuScene;
+import tetris.scene.menu.P2PRoomDialog;
 import tetris.util.Theme;
 
 // 직렬화된 게임 상태를 저장할 필드들
@@ -636,11 +637,12 @@ public class P2PBattleScene extends BattleScene {
             writeTimer.cancel(); 
             writeTimer.purge(); // 완전히 정리
         }
-        MainMenuScene nextScene = new MainMenuScene(m_frame);
-        Game.setScene(nextScene);
         
         if(exitWithDisconnect) {
             // 연결 끊김: p2p를 release하고 새로운 연결 시작
+            MainMenuScene nextScene = new MainMenuScene(m_frame);
+            Game.setScene(nextScene);
+
             boolean wasServer = (p2p instanceof tetris.network.P2PServer);
             if(p2p != null) { p2p.release(); }
 
@@ -649,7 +651,7 @@ public class P2PBattleScene extends BattleScene {
 
         } else {
             // 정상 종료: p2p 연결은 유지하고 같은 상대와 다시 게임 가능
-            nextScene.showP2PWaitOther(p2p);
+            new P2PRoomDialog(m_frame, p2p);
         }
     }
 

@@ -25,8 +25,11 @@ public class P2PBase {
      }
 
     public void release() {
+        send(RELEASE_MESSAGE);
+        onDisconnect = null;
+        callbacks.clear();
+        bRunning = false;
         try {
-            bRunning = false;
             if(in != null) in.close();
             if(out != null) out.close();
             if(socket != null) socket.close();
@@ -39,6 +42,7 @@ public class P2PBase {
 
     private Map<String, Consumer<String>> callbacks = new HashMap<>();
     private Runnable onDisconnect;
+    private final String RELEASE_MESSAGE = "release";
 
     protected void run() {
         bRunning = true;
@@ -48,6 +52,10 @@ public class P2PBase {
                 try { message = in.readLine(); } 
                 catch (IOException ex) { break;  }
                 if(message == null) { break; }
+                if(message.equals(RELEASE_MESSAGE)) { 
+                    send(RELEASE_MESSAGE);
+                    break; 
+                }
 
                 for(String key : callbacks.keySet()) {
                     if(message.startsWith(key)) {
@@ -59,7 +67,7 @@ public class P2PBase {
             }
             if(onDisconnect != null) onDisconnect.run();
             release();
-            System.out.println("release");
+            System.out.println("p2p release");
         }).start();
     }
 
