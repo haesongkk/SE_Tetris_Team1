@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 
@@ -25,16 +24,21 @@ public class P2PBase {
      }
 
     public void release() {
+        if(onDisconnect != null) {
+            onDisconnect.run();
+            onDisconnect = null;
+        }
         send(RELEASE_MESSAGE);
-        onDisconnect = null;
         callbacks.clear();
         bRunning = false;
         try {
             if(in != null) in.close();
             if(out != null) out.close();
             if(socket != null) socket.close();
+            System.out.println("p2p release success");
+
         } catch (IOException e) {
-            System.out.println("릴리즈 실패");
+            System.out.println("p2p release failed");
         }
     }
 
@@ -43,18 +47,55 @@ public class P2PBase {
     private Map<String, Consumer<String>> callbacks = new HashMap<>();
     private Runnable onDisconnect;
     private final String RELEASE_MESSAGE = "release";
+    private long lastReceiveTime = -1;
+    private final int TIMEOUT_MS = 5000;
+    private final String PING_MESSAGE = "ping";
+    private final String PONG_MESSAGE = "pong";
+    private boolean bWaitingPong = false;
+    private long lastPingTime = -1;
+
 
     protected void run() {
         bRunning = true;
+        lastReceiveTime = System.currentTimeMillis();
+        
         new Thread(() -> {
             while(bRunning) {
+                // 타임아웃 검사
+                long currentTime = System.currentTimeMillis();
+                if(currentTime - lastReceiveTime > TIMEOUT_MS) {
+                    if(bWaitingPong) {
+                        if(currentTime - lastPingTime > TIMEOUT_MS) {
+                            System.out.println("타임아웃 발생");
+                            break;
+                        } else { /* pong 대기 중 */}
+
+                    } else {
+                        send(PING_MESSAGE);
+                        bWaitingPong = true;
+                        lastPingTime = currentTime;
+                    }
+                }
+
+                try { if(!in.ready()) continue; } 
+                catch (IOException e) { break; }
+                
                 String message = "";
                 try { message = in.readLine(); } 
-                catch (IOException ex) { break;  }
-                if(message == null) { break; }
+                catch (IOException ex) { break; }
+                if(message == null) break;
+
+                lastReceiveTime = System.currentTimeMillis();
                 if(message.equals(RELEASE_MESSAGE)) { 
                     send(RELEASE_MESSAGE);
                     break; 
+                } else if(message.equals(PING_MESSAGE)) {
+                    send(PONG_MESSAGE);
+                    continue;
+                } else if(message.equals(PONG_MESSAGE)) {
+                    bWaitingPong = false;
+                    lastPingTime = -1;
+                    continue;
                 }
 
                 for(String key : callbacks.keySet()) {
@@ -65,9 +106,7 @@ public class P2PBase {
                 }
 
             }
-            if(onDisconnect != null) onDisconnect.run();
             release();
-            System.out.println("p2p release");
         }).start();
     }
 
@@ -90,22 +129,6 @@ public class P2PBase {
         this.onDisconnect = onDisconnect;
     }
 
-    public void sync(String message, Runnable callback) {
-        AtomicBoolean syncFlag = new AtomicBoolean(false);
-        addCallback(message, (data) -> {
-            syncFlag.set(true);
-        });
-        new Thread(() -> {
-            do {
-                try { Thread.sleep(100); } 
-                catch (InterruptedException e) { }
-                send(message);
-            } while(!syncFlag.get());
-            callback.run();
-            removeCallback(message);
-        }).start();
-
-    }
 
 
 }

@@ -2,6 +2,8 @@ package tetris.scene.menu;
 
 
 import java.awt.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import javax.swing.*;
 
 import tetris.Game;
@@ -71,7 +73,7 @@ public class P2PRoomDialog extends BaseDG {
         panel.repaint();
 
         final boolean isServer = (p2p instanceof P2PServer);
-        p2p.sync("ready", () -> {
+        sync(p2p, "ready", () -> {
             readyFlag = true;
             SwingUtilities.invokeLater(() -> {
                 if(isServer) onSelectMode(panel, p2p);
@@ -117,7 +119,7 @@ public class P2PRoomDialog extends BaseDG {
         panel.add(new DGDesc(MODE_TEXTS[selectedMode]));
         panel.add(new DGButton("게임 시작") {{
             addActionListener(e -> {
-                p2p.sync("start", () -> {
+                sync(p2p, "start", () -> {
                     startFlag = true;
                     SwingUtilities.invokeLater(() -> {
                         Game.setScene(new P2PBattleScene(
@@ -138,6 +140,7 @@ public class P2PRoomDialog extends BaseDG {
 
     private void onExit(P2PBase p2p) {
         System.out.println("P2PRoomDialog: onExit");
+        p2p.setOnDisconnect(null);
         p2p.release();
         final JFrame FRAME = (JFrame)super.getOwner();
         this.dispose();
@@ -153,6 +156,23 @@ public class P2PRoomDialog extends BaseDG {
             JOptionPane.ERROR_MESSAGE
         );
         onExit(p2p);
+    }
+
+    public void sync(P2PBase p2p, String message, Runnable callback) {
+        AtomicBoolean syncFlag = new AtomicBoolean(false);
+        p2p.addCallback(message, (data) -> {
+            syncFlag.set(true);
+        });
+        new Thread(() -> {
+            do {
+                try { Thread.sleep(100); } 
+                catch (InterruptedException e) { }
+                p2p.send(message);
+            } while(!syncFlag.get());
+            callback.run();
+            p2p.removeCallback(message);
+        }).start();
+
     }
 }
    
