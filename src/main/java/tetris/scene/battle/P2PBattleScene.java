@@ -128,18 +128,15 @@ public class P2PBattleScene extends BattleScene {
 
         this.p2p = p2p;
         
-        // 네트워크 상태 표시 UI 초기화
+        // 네트워크 상태 표시 UI 초기화 및 화면에 추가
         networkStatus = new NetworkStatusDisplay();
         networkStatus.showConnected();
+        networkStatus.setBounds(10, 10, 250, 60);
         
-        // P2P 지연 시간 업데이트 콜백 설정
-        p2p.setOnLatencyUpdate((latency) -> {
-            lastLatency = latency;
-            SwingUtilities.invokeLater(() -> {
-                networkStatus.updateLatency(latency);
-                repaint();
-            });
-        });
+        // JFrame의 layered pane에 최상위 레이어로 추가
+        javax.swing.JLayeredPane layeredPane = frame.getLayeredPane();
+        layeredPane.add(networkStatus, javax.swing.JLayeredPane.PALETTE_LAYER);
+        networkStatus.setVisible(true);
 
         // 게임 상태 전송 타이머 시작
         writeTimer = new Timer();
@@ -181,6 +178,15 @@ public class P2PBattleScene extends BattleScene {
 
         long currentTimestamp = System.currentTimeMillis();
         long latency = currentTimestamp - state.timestamp;
+        
+        // 네트워크 상태 UI 업데이트
+        if (networkStatus != null) {
+            final long finalLatency = latency;
+            SwingUtilities.invokeLater(() -> {
+                networkStatus.updateLatency(finalLatency);
+            });
+        }
+        
         handleLatency(latency);
 
         boardManager2.setBoard(state.board);

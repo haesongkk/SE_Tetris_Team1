@@ -596,66 +596,123 @@ public class MainMenuScene extends Scene implements KeyListener {
 
     // 게임 종료 확인 다이얼로그를 표시하는 메서드
     private void quitGame() {
-        JOptionPane pane = new JOptionPane(
-            "정말로 게임을 종료하시겠습니까?",
-            JOptionPane.QUESTION_MESSAGE,
-            JOptionPane.YES_NO_OPTION
-        );
-        JDialog dialog = pane.createDialog(this, "종료 확인");
-        dialog.setModal(true);
-
-        JComponent target = dialog.getRootPane();
-        InputMap im = target.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
-        ActionMap am = target.getActionMap();
-
-        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, 0), "focusPrev");
-        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP, 0),   "focusPrev");
-        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, 0), "focusNext");
-        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, 0),  "focusNext");
-
-        am.put("focusPrev", new AbstractAction() {
-            @Override public void actionPerformed(ActionEvent e) {
-                KeyboardFocusManager.getCurrentKeyboardFocusManager().focusPreviousComponent();
+        // 통일된 디자인의 종료 확인 다이얼로그
+        JDialog quitDialog = createBaseDialog();
+        JPanel dialogPanel = createDialogPanel();
+        
+        // 제목
+        JLabel titleLabel = createDialogTitle("종료 확인");
+        
+        // 설명 패널
+        JPanel centerPanel = new JPanel();
+        centerPanel.setOpaque(false);
+        centerPanel.setLayout(new GridLayout(2, 1, 0, 10));
+        
+        JLabel descLabel = new JLabel("정말로 게임을 종료하시겠습니까?", SwingConstants.CENTER);
+        descLabel.setFont(new Font("Malgun Gothic", Font.BOLD, 14));
+        descLabel.setForeground(Color.WHITE);
+        
+        JLabel emptyLabel = new JLabel("", SwingConstants.CENTER);
+        
+        centerPanel.add(descLabel);
+        centerPanel.add(emptyLabel);
+        
+        // 버튼 패널
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setOpaque(false);
+        buttonPanel.setLayout(new GridLayout(2, 1, 0, 10));
+        
+        JButton yesButton = createDialogButton("예");
+        yesButton.setBackground(new Color(100, 50, 50)); // 빨간색
+        yesButton.addActionListener(e -> {
+            quitDialog.dispose();
+            Game.quit();
+        });
+        
+        // 호버 효과
+        yesButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                yesButton.setBackground(new Color(255, 80, 80));
+            }
+            
+            @Override
+            public void mouseExited(MouseEvent e) {
+                yesButton.setBackground(new Color(200, 50, 50));
             }
         });
-        am.put("focusNext", new AbstractAction() {
-            @Override public void actionPerformed(ActionEvent e) {
-                KeyboardFocusManager.getCurrentKeyboardFocusManager().focusNextComponent();
-            }
-        });
-
-        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), "pressFocused");
-        am.put("pressFocused", new AbstractAction() {
-            @Override public void actionPerformed(ActionEvent e) {
-                Component fo = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
-                if (fo instanceof JButton) {
-                    ((JButton) fo).doClick();
+        
+        JButton noButton = createCancelButton(quitDialog);
+        noButton.setText("아니오");
+        
+        buttonPanel.add(yesButton);
+        buttonPanel.add(noButton);
+        
+        // 버튼 배열 (키보드 네비게이션용)
+        JButton[] buttons = {yesButton, noButton};
+        
+        // 컴포넌트 배치
+        dialogPanel.add(titleLabel, BorderLayout.NORTH);
+        dialogPanel.add(centerPanel, BorderLayout.CENTER);
+        dialogPanel.add(buttonPanel, BorderLayout.SOUTH);
+        
+        quitDialog.add(dialogPanel);
+        
+        // 키보드 네비게이션 추가
+        final int[] currentIndex = {0};
+        buttons[0].setBackground(new Color(255, 80, 80)); // 첫 번째 버튼 강조
+        
+        quitDialog.addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override
+            public void keyPressed(java.awt.event.KeyEvent e) {
+                int keyCode = e.getKeyCode();
+                Color yesNormalColor = new Color(200, 50, 50);
+                Color yesSelectedColor = new Color(255, 80, 80);
+                Color cancelColor = new Color(100, 50, 50);
+                
+                switch (keyCode) {
+                    case java.awt.event.KeyEvent.VK_ESCAPE:
+                        quitDialog.dispose();
+                        break;
+                    case java.awt.event.KeyEvent.VK_UP:
+                    case java.awt.event.KeyEvent.VK_LEFT:
+                        // 이전 버튼으로 이동
+                        if (buttons[currentIndex[0]] == yesButton) {
+                            buttons[currentIndex[0]].setBackground(yesNormalColor);
+                        } else {
+                            buttons[currentIndex[0]].setBackground(cancelColor);
+                        }
+                        currentIndex[0] = (currentIndex[0] - 1 + buttons.length) % buttons.length;
+                        if (buttons[currentIndex[0]] == yesButton) {
+                            buttons[currentIndex[0]].setBackground(yesSelectedColor);
+                        } else {
+                            buttons[currentIndex[0]].setBackground(getSelectedButtonColor());
+                        }
+                        break;
+                    case java.awt.event.KeyEvent.VK_DOWN:
+                    case java.awt.event.KeyEvent.VK_RIGHT:
+                        // 다음 버튼으로 이동
+                        if (buttons[currentIndex[0]] == yesButton) {
+                            buttons[currentIndex[0]].setBackground(yesNormalColor);
+                        } else {
+                            buttons[currentIndex[0]].setBackground(cancelColor);
+                        }
+                        currentIndex[0] = (currentIndex[0] + 1) % buttons.length;
+                        if (buttons[currentIndex[0]] == yesButton) {
+                            buttons[currentIndex[0]].setBackground(yesSelectedColor);
+                        } else {
+                            buttons[currentIndex[0]].setBackground(getSelectedButtonColor());
+                        }
+                        break;
+                    case java.awt.event.KeyEvent.VK_ENTER:
+                        buttons[currentIndex[0]].doClick();
+                        break;
                 }
             }
         });
-
-        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "cancel");
-        am.put("cancel", new AbstractAction() {
-            @Override public void actionPerformed(ActionEvent e) {
-                pane.setValue(JOptionPane.NO_OPTION);
-                dialog.dispose();
-            }
-        });
-
-        dialog.setVisible(true);
-
-        Object val = pane.getValue();
-        int choice = (val instanceof Integer) ? (Integer) val : JOptionPane.CLOSED_OPTION;
-
         
-        // int choice = JOptionPane.showConfirmDialog(this, 
-        //     "정말로 게임을 종료하시겠습니까?", 
-        //     "종료 확인", 
-        //     JOptionPane.YES_NO_OPTION);
-        
-        if (choice == JOptionPane.YES_OPTION) {
-            Game.quit();
-        }
+        quitDialog.setVisible(true);
+        quitDialog.requestFocus();
     }
 
     // 키보드 키가 눌렸을 때 처리하는 메서드
@@ -863,7 +920,7 @@ public class MainMenuScene extends Scene implements KeyListener {
     //==============
 
 
-     /**
+    /**
      * 서버 모드를 시작합니다.
      */
     public void showServerMode() {
@@ -872,29 +929,71 @@ public class MainMenuScene extends Scene implements KeyListener {
         // P2P 서버 객체 생성
         P2PServer server = new P2PServer();
 
-        // 안내 메시지용 다이얼로그 생성
-        String message = "서버 모드를 시작합니다.\n"
-                    + "클라이언트의 접속을 기다립니다.\n\n"
-                    + "서버 IP 주소: " + server.HOST;
-        JOptionPane optionPane = new JOptionPane(
-            message,
-            JOptionPane.INFORMATION_MESSAGE,
-            JOptionPane.DEFAULT_OPTION
-        );
-        JDialog waitDialog = optionPane.createDialog(this, "서버 모드");
-
+        // 통일된 디자인의 대기 다이얼로그 생성
+        JDialog waitDialog = createBaseDialog();
+        JPanel dialogPanel = createDialogPanel();
+        
+        // 제목
+        JLabel titleLabel = createDialogTitle("서버 모드");
+        
+        // 설명 패널
+        JPanel centerPanel = new JPanel();
+        centerPanel.setOpaque(false);
+        centerPanel.setLayout(new GridLayout(4, 1, 0, 10));
+        
+        JLabel descLabel1 = new JLabel("서버 모드를 시작합니다.", SwingConstants.CENTER);
+        descLabel1.setFont(new Font("Malgun Gothic", Font.PLAIN, 14));
+        descLabel1.setForeground(Color.WHITE);
+        
+        JLabel descLabel2 = new JLabel("클라이언트의 접속을 기다립니다.", SwingConstants.CENTER);
+        descLabel2.setFont(new Font("Malgun Gothic", Font.PLAIN, 14));
+        descLabel2.setForeground(Color.WHITE);
+        
+        // JLabel emptyLabel = new JLabel("", SwingConstants.CENTER);
+        
+        JLabel ipLabel = new JLabel("서버 IP 주소: " + server.HOST, SwingConstants.CENTER);
+        ipLabel.setFont(new Font("Malgun Gothic", Font.BOLD, 15));
+        ipLabel.setForeground(new Color(255, 215, 0)); // Gold color
+        
+        centerPanel.add(descLabel1);
+        centerPanel.add(descLabel2);
+        // centerPanel.add(emptyLabel);
+        centerPanel.add(ipLabel);
+        
+        // 취소 버튼 패널
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setOpaque(false);
+        buttonPanel.setLayout(new GridLayout(1, 1, 0, 10));
+        
+        JButton cancelButton = createCancelButton(waitDialog);
+        cancelButton.setText("취소");
+        cancelButton.addActionListener(e -> {
+            waitDialog.dispose();
+            server.release();
+        });
+        
+        buttonPanel.add(cancelButton);
+        
+        // 컴포넌트 배치
+        dialogPanel.add(titleLabel, BorderLayout.NORTH);
+        dialogPanel.add(centerPanel, BorderLayout.CENTER);
+        dialogPanel.add(buttonPanel, BorderLayout.SOUTH);
+        
+        waitDialog.add(dialogPanel);
 
         AtomicBoolean connectFlag = new AtomicBoolean(false);
         // onConnect에서 이 다이얼로그를 닫고, 모드 선택창 열기
         server.onConnect = () -> {
-            waitDialog.dispose();
-            new P2PRoomDialog(frame, server);
-            connectFlag.set(true);
+            SwingUtilities.invokeLater(() -> {
+                waitDialog.dispose();
+                new P2PRoomDialog(frame, server);
+                connectFlag.set(true);
+            });
         };
 
         // 다이얼로그 표시
-        waitDialog.setModal(true);
         waitDialog.setVisible(true);
+        waitDialog.requestFocus();
 
         // 대기 다이얼로그가 닫힌 상태
         if(!connectFlag.get()) server.release();
@@ -906,29 +1005,110 @@ public class MainMenuScene extends Scene implements KeyListener {
     public void showClientMode() {
         System.out.println("Starting Client Mode...");
 
-        // IP 입력 다이얼로그: 입력한 문자열 반환 (취소 시 null)
-        String serverIP = JOptionPane.showInputDialog(this, 
-            "접속할 서버의 IP 주소를 입력해주세요:\n\n예: " + LastConnectIP.load(), 
-            "클라이언트 모드", 
-            JOptionPane.QUESTION_MESSAGE
-        );
+        // 통일된 디자인의 IP 입력 다이얼로그
+        JDialog ipDialog = createBaseDialog();
+        JPanel dialogPanel = createDialogPanel();
         
-        if(serverIP == null) return; // 취소 시 종료
-        else showClientConnectionWaitingDialog(serverIP);
+        // 제목
+        JLabel titleLabel = createDialogTitle("클라이언트 모드");
+        
+        // 중앙 패널
+        JPanel centerPanel = new JPanel();
+        centerPanel.setOpaque(false);
+        centerPanel.setLayout(new BorderLayout(0, 10));
+        
+        JLabel descLabel = new JLabel("<html><center>접속할 서버의 IP 주소를 입력해주세요<br><br>예: " + LastConnectIP.load() + "</center></html>", SwingConstants.CENTER);
+        descLabel.setFont(new Font("Malgun Gothic", Font.PLAIN, 13));
+        descLabel.setForeground(Color.WHITE);
+        descLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
+        
+        JTextField ipField = new JTextField(LastConnectIP.load());
+        ipField.setFont(new Font("Malgun Gothic", Font.PLAIN, 14));
+        ipField.setPreferredSize(new Dimension(150, 20));
+        ipField.setHorizontalAlignment(JTextField.CENTER);
+        
+        centerPanel.add(descLabel, BorderLayout.NORTH);
+        centerPanel.add(ipField, BorderLayout.CENTER);
+        
+        // 버튼 패널
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setOpaque(false);
+        buttonPanel.setLayout(new GridLayout(2, 1, 0, 10));
+        
+        JButton connectButton = createDialogButton("연결");
+        connectButton.addActionListener(e -> {
+            String serverIP = ipField.getText();
+            if(serverIP != null && !serverIP.trim().isEmpty()) {
+                ipDialog.dispose();
+                showClientConnectionWaitingDialog(serverIP);
+            }
+        });
+        
+        JButton cancelButton = createCancelButton(ipDialog);
+        
+        buttonPanel.add(connectButton);
+        buttonPanel.add(cancelButton);
+        
+        // Enter 키로 연결
+        ipField.addActionListener(e -> connectButton.doClick());
+        
+        // 컴포넌트 배치
+        dialogPanel.add(titleLabel, BorderLayout.NORTH);
+        dialogPanel.add(centerPanel, BorderLayout.CENTER);
+        dialogPanel.add(buttonPanel, BorderLayout.SOUTH);
+        
+        ipDialog.add(dialogPanel);
+        ipDialog.setVisible(true);
+        ipField.requestFocusInWindow();
     }
 
     private void showClientConnectionWaitingDialog(String serverIP) {
-        JOptionPane op = new JOptionPane(
-            "서버에 연결을 시도합니다:\n" + serverIP.trim(), 
-            JOptionPane.INFORMATION_MESSAGE,
-            JOptionPane.DEFAULT_OPTION);
-        op.setOptions(new Object[]{});   // 버튼 삭제
-        JDialog connectingDialog = op.createDialog(this, "서버 연결 중...");
+        // 통일된 디자인의 연결 대기 다이얼로그
+        JDialog connectingDialog = createBaseDialog();
+        JPanel dialogPanel = createDialogPanel();
+        
+        // 제목
+        JLabel titleLabel = createDialogTitle("서버 연결 중...");
+        
+        // 설명 패널
+        JPanel centerPanel = new JPanel();
+        centerPanel.setOpaque(false);
+        centerPanel.setLayout(new GridLayout(3, 1, 0, 10));
+        
+        JLabel descLabel = new JLabel("서버에 연결을 시도합니다.", SwingConstants.CENTER);
+        descLabel.setFont(new Font("Malgun Gothic", Font.PLAIN, 14));
+        descLabel.setForeground(Color.WHITE);
+        
+        JLabel ipLabel = new JLabel(serverIP.trim(), SwingConstants.CENTER);
+        ipLabel.setFont(new Font("Malgun Gothic", Font.BOLD, 15));
+        ipLabel.setForeground(new Color(255, 215, 0)); // Gold color
+        
+        JLabel waitLabel = new JLabel("잠시만 기다려주세요...", SwingConstants.CENTER);
+        waitLabel.setFont(new Font("Malgun Gothic", Font.PLAIN, 12));
+        waitLabel.setForeground(new Color(200, 200, 200));
+        
+        centerPanel.add(descLabel);
+        centerPanel.add(ipLabel);
+        centerPanel.add(waitLabel);
+        
+        // 취소 버튼
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setOpaque(false);
+        buttonPanel.setLayout(new GridLayout(1, 1, 0, 10));
+        
+        JButton cancelButton = createCancelButton(connectingDialog);
+        buttonPanel.add(cancelButton);
+        
+        // 컴포넌트 배치
+        dialogPanel.add(titleLabel, BorderLayout.NORTH);
+        dialogPanel.add(centerPanel, BorderLayout.CENTER);
+        dialogPanel.add(buttonPanel, BorderLayout.SOUTH);
+        
+        connectingDialog.add(dialogPanel);
 
         P2PClient p2p = new P2PClient();
         final AtomicBoolean cancelFlag = new AtomicBoolean(false);
 
-        connectingDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
         connectingDialog.addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowClosing(java.awt.event.WindowEvent e) {
@@ -936,6 +1116,13 @@ public class MainMenuScene extends Scene implements KeyListener {
                 p2p.release();
             }
         });
+        
+        cancelButton.addActionListener(e -> {
+            cancelFlag.set(true);
+            p2p.release();
+            connectingDialog.dispose();
+        });
+        
         // P2P 클라이언트 객체 생성
         new Thread(() -> {
             // 서버 연결 시도 (블로킹)
@@ -955,20 +1142,64 @@ public class MainMenuScene extends Scene implements KeyListener {
             });
         }).start();
 
-
-        connectingDialog.setModal(true);
         connectingDialog.setVisible(true);
+        connectingDialog.requestFocus();
     }
 
     private void showClientConnectionFailedDialog() {
-        JOptionPane.showMessageDialog( 
-            this, 
-            "서버에 연결할 수 없습니다.\n" + 
-            "IP 주소를 확인하고 다시 시도해주세요.", 
-            "연결 실패", 
-            JOptionPane.ERROR_MESSAGE 
-        );
-        showClientMode();
+        // 통일된 디자인의 연결 실패 다이얼로그
+        JDialog failDialog = createBaseDialog();
+        JPanel dialogPanel = createDialogPanel();
+        
+        // 제목
+        JLabel titleLabel = createDialogTitle("연결 실패");
+        
+        // 설명 패널
+        JPanel centerPanel = new JPanel();
+        centerPanel.setOpaque(false);
+        centerPanel.setLayout(new GridLayout(3, 1, 0, 10));
+        
+        JLabel descLabel1 = new JLabel("서버에 연결할 수 없습니다.", SwingConstants.CENTER);
+        descLabel1.setFont(new Font("Malgun Gothic", Font.BOLD, 14));
+        descLabel1.setForeground(new Color(239, 68, 68)); // Red color
+        
+        JLabel descLabel2 = new JLabel("IP 주소를 확인하고", SwingConstants.CENTER);
+        descLabel2.setFont(new Font("Malgun Gothic", Font.PLAIN, 13));
+        descLabel2.setForeground(Color.WHITE);
+        
+        JLabel descLabel3 = new JLabel("다시 시도해주세요.", SwingConstants.CENTER);
+        descLabel3.setFont(new Font("Malgun Gothic", Font.PLAIN, 13));
+        descLabel3.setForeground(Color.WHITE);
+        
+        centerPanel.add(descLabel1);
+        centerPanel.add(descLabel2);
+        centerPanel.add(descLabel3);
+        
+        // 버튼 패널
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setOpaque(false);
+        buttonPanel.setLayout(new GridLayout(2, 1, 0, 10));
+        
+        JButton retryButton = createDialogButton("다시 시도");
+        retryButton.addActionListener(e -> {
+            failDialog.dispose();
+            showClientMode();
+        });
+        
+        JButton cancelButton = createCancelButton(failDialog);
+        cancelButton.setText("취소");
+        
+        buttonPanel.add(retryButton);
+        buttonPanel.add(cancelButton);
+        
+        // 컴포넌트 배치
+        dialogPanel.add(titleLabel, BorderLayout.NORTH);
+        dialogPanel.add(centerPanel, BorderLayout.CENTER);
+        dialogPanel.add(buttonPanel, BorderLayout.SOUTH);
+        
+        failDialog.add(dialogPanel);
+        failDialog.setVisible(true);
+        failDialog.requestFocus();
     }
 
 }
