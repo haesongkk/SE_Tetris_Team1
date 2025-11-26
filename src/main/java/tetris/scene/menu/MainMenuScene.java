@@ -2,13 +2,11 @@ package tetris.scene.menu;
 
 import tetris.Game;
 import tetris.GameSettings;
-import tetris.network.P2PBase;
-import tetris.network.P2PClient;
-import tetris.network.P2PServer;
+import tetris.network.*;
+import tetris.util.LastConnectIP;
 import tetris.util.Sound;
 import tetris.util.Theme;
 import tetris.scene.Scene;
-import tetris.scene.battle.P2PBattleScene;
 import tetris.scene.game.GameScene;
 import tetris.scene.game.ItemGameScene;
 import tetris.scene.scorescene.ScoreScene;
@@ -910,7 +908,7 @@ public class MainMenuScene extends Scene implements KeyListener {
 
         // IP 입력 다이얼로그: 입력한 문자열 반환 (취소 시 null)
         String serverIP = JOptionPane.showInputDialog(this, 
-            "접속할 서버의 IP 주소를 입력해주세요:\n\n예: 192.168.1.100", 
+            "접속할 서버의 IP 주소를 입력해주세요:\n\n예: " + LastConnectIP.load(), 
             "클라이언트 모드", 
             JOptionPane.QUESTION_MESSAGE
         );
@@ -948,6 +946,7 @@ public class MainMenuScene extends Scene implements KeyListener {
             SwingUtilities.invokeLater(() -> {
                 connectingDialog.dispose();
                 if (connected) {
+                    LastConnectIP.save(serverIP);
                     new P2PRoomDialog(frame, p2p);
                 } else {
                     p2p.release();
