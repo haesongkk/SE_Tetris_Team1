@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 
@@ -25,13 +24,21 @@ public class P2PBase {
      }
 
     public void release() {
+        if(onDisconnect != null) {
+            onDisconnect.run();
+            onDisconnect = null;
+        }
+        send(RELEASE_MESSAGE);
+        callbacks.clear();
+        bRunning = false;
         try {
-            bRunning = false;
             if(in != null) in.close();
             if(out != null) out.close();
             if(socket != null) socket.close();
+            System.out.println("p2p release success");
+
         } catch (IOException e) {
-            System.out.println("릴리즈 실패");
+            System.out.println("p2p release failed");
         }
     }
 
@@ -39,31 +46,56 @@ public class P2PBase {
 
     private Map<String, Consumer<String>> callbacks = new HashMap<>();
     private Runnable onDisconnect;
-    private Consumer<Long> onLatencyUpdate; // 지연 시간 업데이트 콜백 추가
-    private long lastReceivedTimestamp = 0; // 마지막 수신 시간
+    private final String RELEASE_MESSAGE = "release";
+    private long lastReceiveTime = -1;
+    private final int TIMEOUT_MS = 5000;
+    private final String PING_MESSAGE = "ping";
+    private final String PONG_MESSAGE = "pong";
+    private boolean bWaitingPong = false;
+    private long lastPingTime = -1;
+
 
     protected void run() {
         bRunning = true;
+        lastReceiveTime = System.currentTimeMillis();
+        
         new Thread(() -> {
             while(bRunning) {
+                // 타임아웃 검사
+                long currentTime = System.currentTimeMillis();
+                if(currentTime - lastReceiveTime > TIMEOUT_MS) {
+                    if(bWaitingPong) {
+                        if(currentTime - lastPingTime > TIMEOUT_MS) {
+                            System.out.println("타임아웃 발생");
+                            break;
+                        } else { /* pong 대기 중 */}
+
+                    } else {
+                        send(PING_MESSAGE);
+                        bWaitingPong = true;
+                        lastPingTime = currentTime;
+                    }
+                }
+
+                try { if(!in.ready()) continue; } 
+                catch (IOException e) { break; }
+                
                 String message = "";
                 try { message = in.readLine(); } 
-                catch (IOException ex) { break;  }
-                if(message == null) { break; }
+                catch (IOException ex) { break; }
+                if(message == null) break;
 
-                // 메시지 수신 시 타임스탬프 업데이트
-                long currentTime = System.currentTimeMillis();
-                long latency = 0;
-                
-                if (lastReceivedTimestamp > 0) {
-                    latency = currentTime - lastReceivedTimestamp;
-                }
-                lastReceivedTimestamp = currentTime;
-                
-                // 지연 시간 콜백 호출
-                if (onLatencyUpdate != null && latency > 0) {
-                    final long finalLatency = latency;
-                    onLatencyUpdate.accept(finalLatency);
+                lastReceiveTime = System.currentTimeMillis();
+                if(message.equals(RELEASE_MESSAGE)) { 
+                    send(RELEASE_MESSAGE);
+                    break; 
+                } else if(message.equals(PING_MESSAGE)) {
+                    send(PONG_MESSAGE);
+                    continue;
+                } else if(message.equals(PONG_MESSAGE)) {
+                    bWaitingPong = false;
+                    lastPingTime = -1;
+                    continue;
                 }
 
                 for(String key : callbacks.keySet()) {
@@ -74,9 +106,7 @@ public class P2PBase {
                 }
 
             }
-            if(onDisconnect != null) onDisconnect.run();
             release();
-            System.out.println("release");
         }).start();
     }
 
@@ -99,39 +129,6 @@ public class P2PBase {
         this.onDisconnect = onDisconnect;
     }
 
-    /**
-     * 지연 시간 업데이트 콜백을 설정합니다
-     * @param onLatencyUpdate 지연 시간(ms)을 받는 콜백
-     */
-    public void setOnLatencyUpdate(Consumer<Long> onLatencyUpdate) {
-        this.onLatencyUpdate = onLatencyUpdate;
-    }
-
-    /**
-     * 현재 추정 지연 시간을 반환합니다
-     * @return 마지막 수신 이후 경과 시간 (ms)
-     */
-    public long getEstimatedLatency() {
-        if (lastReceivedTimestamp == 0) return 0;
-        return System.currentTimeMillis() - lastReceivedTimestamp;
-    }
-
-    public void sync(String message, Runnable callback) {
-        AtomicBoolean syncFlag = new AtomicBoolean(false);
-        addCallback(message, (data) -> {
-            syncFlag.set(true);
-        });
-        new Thread(() -> {
-            do {
-                try { Thread.sleep(100); } 
-                catch (InterruptedException e) { }
-                send(message);
-            } while(!syncFlag.get());
-            callback.run();
-            removeCallback(message);
-        }).start();
-
-    }
 
 
 }

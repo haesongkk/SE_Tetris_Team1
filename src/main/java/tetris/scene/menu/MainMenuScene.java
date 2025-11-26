@@ -2,13 +2,11 @@ package tetris.scene.menu;
 
 import tetris.Game;
 import tetris.GameSettings;
-import tetris.network.P2PBase;
-import tetris.network.P2PClient;
-import tetris.network.P2PServer;
+import tetris.network.*;
+import tetris.util.LastConnectIP;
 import tetris.util.Sound;
 import tetris.util.Theme;
 import tetris.scene.Scene;
-import tetris.scene.battle.P2PBattleScene;
 import tetris.scene.game.GameScene;
 import tetris.scene.game.ItemGameScene;
 import tetris.scene.scorescene.ScoreScene;
@@ -19,6 +17,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MainMenuScene extends Scene implements KeyListener {
@@ -380,33 +380,7 @@ public class MainMenuScene extends Scene implements KeyListener {
      * 다이얼로그용 버튼을 생성합니다.
      */
     private JButton createDialogButton(String text) {
-        JButton button = new JButton(text);
-        button.setFont(new Font("Malgun Gothic", Font.BOLD, 14));
-        button.setPreferredSize(new Dimension(250, 35));
-        button.setBackground(getButtonColor());
-        button.setForeground(getTextColor());
-        button.setFocusPainted(false);
-        button.setBorderPainted(true);
-        button.setBorder(BorderFactory.createRaisedBevelBorder());
-        
-        // 호버 효과 (활성화된 버튼만)
-        button.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-            public void mouseEntered(java.awt.event.MouseEvent e) {
-                if (button.isEnabled()) {
-                    button.setBackground(getSelectedButtonColor());
-                }
-            }
-            
-            @Override
-            public void mouseExited(java.awt.event.MouseEvent e) {
-                if (button.isEnabled()) {
-                    button.setBackground(getButtonColor());
-                }
-            }
-        });
-        
-        return button;
+        return new DGButton(text);
     }
     
     /**
@@ -424,63 +398,28 @@ public class MainMenuScene extends Scene implements KeyListener {
     }
 
     private JDialog createBaseDialog() {
-        int[] resolution = gameSettings.getResolutionSize();
-        int screenWidth = resolution[0];
-        int screenHeight = resolution[1];
-        
-        int dialogWidth = Math.max(350, Math.min(450, screenWidth / 2));
-        int dialogHeight = Math.max(280, Math.min(380, screenHeight / 2));
-        
-        return createBaseDialog(dialogWidth, dialogHeight);
+        return new BaseDG(frame);
     }
     
     /**
      * 다이얼로그 메인 패널을 생성합니다.
      */
     private JPanel createDialogPanel() {
-        JPanel dialogPanel = new JPanel();
-        dialogPanel.setBackground(getBackgroundColor());
-        dialogPanel.setLayout(new BorderLayout());
-        dialogPanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(getTitleColor(), 2),
-            BorderFactory.createEmptyBorder(20, 20, 20, 20)
-        ));
-        return dialogPanel;
+        return new DGPanel();
     }
     
     /**
      * 다이얼로그 제목 라벨을 생성합니다.
      */
     private JLabel createDialogTitle(String title) {
-        int[] resolution = gameSettings.getResolutionSize();
-        int screenWidth = resolution[0];
-        int titleFontSize = Math.max(16, screenWidth / 50);
-        
-        JLabel titleLabel = new JLabel(title, SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Malgun Gothic", Font.BOLD, titleFontSize));
-        titleLabel.setForeground(getTitleColor());
-        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0));
-        return titleLabel;
+        return new DGTitle(title);
     }
 
     /**
      * 다이얼로그 설명 라벨을 생성합니다.
      */
     private JLabel createDialogDesc(String desc) {
-        int[] resolution = gameSettings.getResolutionSize();
-        int screenWidth = resolution[0];
-        int descFontSize = Math.max(11, screenWidth / 100);
-        
-        // HTML을 사용하여 여러 줄 텍스트 지원
-        String htmlDesc = "<html><div style='text-align: center;'>" + 
-                         desc.replace("\n", "<br>") + 
-                         "</div></html";
-        
-        JLabel descLabel = new JLabel(htmlDesc, SwingConstants.CENTER);
-        descLabel.setFont(new Font("Malgun Gothic", Font.PLAIN, descFontSize));
-        descLabel.setForeground(getTextColor());
-        descLabel.setBorder(BorderFactory.createEmptyBorder(5, 20, 15, 20));
-        return descLabel;
+        return new DGDesc(desc);
     }
     
     /**
@@ -657,76 +596,66 @@ public class MainMenuScene extends Scene implements KeyListener {
 
     // 게임 종료 확인 다이얼로그를 표시하는 메서드
     private void quitGame() {
-        // 메인메뉴 스타일의 종료 확인 다이얼로그
-        JDialog quitDialog = createBaseDialog();
-        JPanel dialogPanel = createDialogPanel();
-        
-        // 제목
-        JLabel titleLabel = createDialogTitle("종료 확인");
-        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
-        // 설명
-        JLabel descLabel = createDialogDesc("정말로 게임을 종료하시겠습니까?");
-        descLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
-        // 상단 패널 (제목 + 설명)
-        JPanel topPanel = new JPanel();
-        topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
-        topPanel.setOpaque(false);
-        topPanel.add(titleLabel);
-        topPanel.add(Box.createVerticalStrut(15));
-        topPanel.add(descLabel);
-        topPanel.add(Box.createVerticalStrut(20));
-        
-        // 버튼 패널
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setOpaque(false);
-        buttonPanel.setLayout(new GridLayout(2, 1, 0, 12));
-        
-        JButton yesButton = createDialogButton("예");
-        JButton noButton = createDialogButton("아니오");
-        Color noColor = new Color(100, 50, 50);
-        noButton.setBackground(noColor);
-        noButton.setForeground(getTextColor());
-        noButton.setFocusPainted(false);
-        noButton.setBorderPainted(true);
-        noButton.setBorder(BorderFactory.createRaisedBevelBorder());
+        JOptionPane pane = new JOptionPane(
+            "정말로 게임을 종료하시겠습니까?",
+            JOptionPane.QUESTION_MESSAGE,
+            JOptionPane.YES_NO_OPTION
+        );
+        JDialog dialog = pane.createDialog(this, "종료 확인");
+        dialog.setModal(true);
 
-        noButton.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-            public void mouseEntered(java.awt.event.MouseEvent e) {
-                noButton.setBackground(getSelectedButtonColor());
-            }
-            
-            @Override
-            public void mouseExited(java.awt.event.MouseEvent e) {
-                noButton.setBackground(noColor);
+        JComponent target = dialog.getRootPane();
+        InputMap im = target.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+        ActionMap am = target.getActionMap();
+
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, 0), "focusPrev");
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP, 0),   "focusPrev");
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, 0), "focusNext");
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, 0),  "focusNext");
+
+        am.put("focusPrev", new AbstractAction() {
+            @Override public void actionPerformed(ActionEvent e) {
+                KeyboardFocusManager.getCurrentKeyboardFocusManager().focusPreviousComponent();
             }
         });
+        am.put("focusNext", new AbstractAction() {
+            @Override public void actionPerformed(ActionEvent e) {
+                KeyboardFocusManager.getCurrentKeyboardFocusManager().focusNextComponent();
+            }
+        });
+
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), "pressFocused");
+        am.put("pressFocused", new AbstractAction() {
+            @Override public void actionPerformed(ActionEvent e) {
+                Component fo = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
+                if (fo instanceof JButton) {
+                    ((JButton) fo).doClick();
+                }
+            }
+        });
+
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "cancel");
+        am.put("cancel", new AbstractAction() {
+            @Override public void actionPerformed(ActionEvent e) {
+                pane.setValue(JOptionPane.NO_OPTION);
+                dialog.dispose();
+            }
+        });
+
+        dialog.setVisible(true);
+
+        Object val = pane.getValue();
+        int choice = (val instanceof Integer) ? (Integer) val : JOptionPane.CLOSED_OPTION;
+
         
-        buttonPanel.add(yesButton);
-        buttonPanel.add(noButton);
+        // int choice = JOptionPane.showConfirmDialog(this, 
+        //     "정말로 게임을 종료하시겠습니까?", 
+        //     "종료 확인", 
+        //     JOptionPane.YES_NO_OPTION);
         
-        // 컴포넌트 배치
-        dialogPanel.add(topPanel, BorderLayout.NORTH);
-        dialogPanel.add(buttonPanel, BorderLayout.CENTER);
-        quitDialog.add(dialogPanel);
-        
-        // 예 버튼 액션
-        yesButton.addActionListener(e -> {
-            quitDialog.dispose();
+        if (choice == JOptionPane.YES_OPTION) {
             Game.quit();
-        });
-        
-        // 아니오 버튼 액션
-        noButton.addActionListener(e -> quitDialog.dispose());
-        
-        // 키보드 네비게이션
-        addDialogKeyNavigation(quitDialog, new JButton[] {yesButton, noButton}, noButton);
-        
-        // 다이얼로그 표시
-        quitDialog.setVisible(true);
-        quitDialog.requestFocus();
+        }
     }
 
     // 키보드 키가 눌렸을 때 처리하는 메서드
@@ -943,31 +872,29 @@ public class MainMenuScene extends Scene implements KeyListener {
         // P2P 서버 객체 생성
         P2PServer server = new P2PServer();
 
-        // 메인메뉴 스타일의 대기 다이얼로그 생성
-        String description = "서버 모드를 시작합니다.\n" +
-                           "클라이언트의 접속을 기다립니다.\n\n" +
-                           "서버 IP 주소: " + server.HOST;
-        
-        JDialog waitDialog = createDialog(
-            "서버 모드",
-            description,
-            new JButton[] {},
-            () -> { server.release(); }
+        // 안내 메시지용 다이얼로그 생성
+        String message = "서버 모드를 시작합니다.\n"
+                    + "클라이언트의 접속을 기다립니다.\n\n"
+                    + "서버 IP 주소: " + server.HOST;
+        JOptionPane optionPane = new JOptionPane(
+            message,
+            JOptionPane.INFORMATION_MESSAGE,
+            JOptionPane.DEFAULT_OPTION
         );
+        JDialog waitDialog = optionPane.createDialog(this, "서버 모드");
+
 
         AtomicBoolean connectFlag = new AtomicBoolean(false);
         // onConnect에서 이 다이얼로그를 닫고, 모드 선택창 열기
         server.onConnect = () -> {
-            SwingUtilities.invokeLater(() -> {
-                waitDialog.dispose();
-                showP2PBattleModeSelection(server);
-                connectFlag.set(true);
-            });
+            waitDialog.dispose();
+            new P2PRoomDialog(frame, server);
+            connectFlag.set(true);
         };
 
         // 다이얼로그 표시
+        waitDialog.setModal(true);
         waitDialog.setVisible(true);
-        waitDialog.requestFocus();
 
         // 대기 다이얼로그가 닫힌 상태
         if(!connectFlag.get()) server.release();
@@ -979,102 +906,37 @@ public class MainMenuScene extends Scene implements KeyListener {
     public void showClientMode() {
         System.out.println("Starting Client Mode...");
 
-        // 더 큰 다이얼로그 생성 (클라이언트 모드 전용)
-        int[] resolution = gameSettings.getResolutionSize();
-        int screenWidth = resolution[0];
-        int screenHeight = resolution[1];
+        // IP 입력 다이얼로그: 입력한 문자열 반환 (취소 시 null)
+        String serverIP = JOptionPane.showInputDialog(this, 
+            "접속할 서버의 IP 주소를 입력해주세요:\n\n예: " + LastConnectIP.load(), 
+            "클라이언트 모드", 
+            JOptionPane.QUESTION_MESSAGE
+        );
         
-        int dialogWidth = Math.max(400, Math.min(500, screenWidth / 2));
-        int dialogHeight = Math.max(350, Math.min(450, screenHeight / 2));
-        
-        JDialog ipDialog = createBaseDialog(dialogWidth, dialogHeight);
-        JPanel dialogPanel = createDialogPanel();
-        
-        // 제목
-        JLabel titleLabel = createDialogTitle("클라이언트 모드");
-        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
-        // 설명
-        JLabel descLabel = createDialogDesc("접속할 서버의 IP 주소를 입력해주세요:\n예: 192.168.1.100");
-        descLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
-        // IP 입력 필드
-        JTextField ipField = new JTextField("192.168.1.100");
-        ipField.setFont(new Font("Malgun Gothic", Font.PLAIN, 14));
-        ipField.setHorizontalAlignment(JTextField.CENTER);
-        ipField.setPreferredSize(new Dimension(300, 35));
-        ipField.setMaximumSize(new Dimension(300, 35));
-        ipField.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
-        // 상단 패널 (제목 + 설명 + 입력 필드)
-        JPanel topPanel = new JPanel();
-        topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
-        topPanel.setOpaque(false);
-        topPanel.add(titleLabel);
-        topPanel.add(Box.createVerticalStrut(10));
-        topPanel.add(descLabel);
-        topPanel.add(Box.createVerticalStrut(15));
-        topPanel.add(ipField);
-        topPanel.add(Box.createVerticalStrut(20));
-        
-        // 버튼 패널 (중앙 정렬)
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setOpaque(false);
-        buttonPanel.setLayout(new GridLayout(2, 1, 0, 12));
-        
-        JButton connectButton = createDialogButton("연결");
-        JButton cancelButton = createCancelButton(ipDialog);
-        
-        buttonPanel.add(connectButton);
-        buttonPanel.add(cancelButton);
-        
-        // 컴포넌트 배치
-        dialogPanel.add(topPanel, BorderLayout.NORTH);
-        dialogPanel.add(buttonPanel, BorderLayout.CENTER);
-        ipDialog.add(dialogPanel);
-        
-        // 연결 버튼 액션
-        connectButton.addActionListener(e -> {
-            String serverIP = ipField.getText().trim();
-            if (serverIP.isEmpty()) {
-                JOptionPane.showMessageDialog(ipDialog, 
-                    "IP 주소를 입력해주세요.", 
-                    "입력 오류", 
-                    JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            ipDialog.dispose();
-            showClientConnectionWaitingDialog(serverIP);
-        });
-        
-        // Enter 키로 연결
-        ipField.addActionListener(e -> connectButton.doClick());
-        
-        // 키보드 네비게이션
-        addDialogKeyNavigation(ipDialog, new JButton[] {connectButton, cancelButton}, cancelButton);
-        
-        // 다이얼로그 표시
-        ipDialog.setVisible(true);
-        ipDialog.requestFocus();
-        ipField.requestFocusInWindow();
+        if(serverIP == null) return; // 취소 시 종료
+        else showClientConnectionWaitingDialog(serverIP);
     }
 
     private void showClientConnectionWaitingDialog(String serverIP) {
+        JOptionPane op = new JOptionPane(
+            "서버에 연결을 시도합니다:\n" + serverIP.trim(), 
+            JOptionPane.INFORMATION_MESSAGE,
+            JOptionPane.DEFAULT_OPTION);
+        op.setOptions(new Object[]{});   // 버튼 삭제
+        JDialog connectingDialog = op.createDialog(this, "서버 연결 중...");
+
         P2PClient p2p = new P2PClient();
         final AtomicBoolean cancelFlag = new AtomicBoolean(false);
 
-        // 메인메뉴 스타일의 연결 대기 다이얼로그
-        JDialog connectingDialog = createDialog(
-            "서버 연결 중",
-            "서버에 연결을 시도합니다:\n" + serverIP,
-            new JButton[] {},
-            () -> {
+        connectingDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        connectingDialog.addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent e) {
                 cancelFlag.set(true);
                 p2p.release();
             }
-        );
-
-        // P2P 클라이언트 연결 스레드
+        });
+        // P2P 클라이언트 객체 생성
         new Thread(() -> {
             // 서버 연결 시도 (블로킹)
             boolean connected = p2p.connect(serverIP.trim());
@@ -1084,7 +946,8 @@ public class MainMenuScene extends Scene implements KeyListener {
             SwingUtilities.invokeLater(() -> {
                 connectingDialog.dispose();
                 if (connected) {
-                    showP2PBattleWaitingScreen(p2p); 
+                    LastConnectIP.save(serverIP);
+                    new P2PRoomDialog(frame, p2p);
                 } else {
                     p2p.release();
                     showClientConnectionFailedDialog();
@@ -1093,225 +956,109 @@ public class MainMenuScene extends Scene implements KeyListener {
         }).start();
 
 
+        connectingDialog.setModal(true);
         connectingDialog.setVisible(true);
-        connectingDialog.requestFocus();
     }
 
     private void showClientConnectionFailedDialog() {
-        // 메인메뉴 스타일의 연결 실패 다이얼로그
-        JDialog failDialog = createBaseDialog();
-        JPanel dialogPanel = createDialogPanel();
-        
-        // 제목
-        JLabel titleLabel = createDialogTitle("연결 실패");
-        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
-        // 설명
-        JLabel descLabel = createDialogDesc("서버에 연결할 수 없습니다.\nIP 주소를 확인하고 다시 시도해주세요.");
-        descLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
-        // 상단 패널 (제목 + 설명)
-        JPanel topPanel = new JPanel();
-        topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
-        topPanel.setOpaque(false);
-        topPanel.add(titleLabel);
-        topPanel.add(Box.createVerticalStrut(15));
-        topPanel.add(descLabel);
-        topPanel.add(Box.createVerticalStrut(20));
-        
-        // 버튼 패널
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setOpaque(false);
-        buttonPanel.setLayout(new GridLayout(1, 1, 0, 0));
-        
-        JButton okButton = createDialogButton("확인");
-        buttonPanel.add(okButton);
-        
-        // 컴포넌트 배치
-        dialogPanel.add(topPanel, BorderLayout.NORTH);
-        dialogPanel.add(buttonPanel, BorderLayout.CENTER);
-        failDialog.add(dialogPanel);
-        
-        // 확인 버튼 액션
-        okButton.addActionListener(e -> {
-            failDialog.dispose();
-            showClientMode();
-        });
-        
-        // 키보드 네비게이션
-        addDialogKeyNavigation(failDialog, new JButton[] {okButton}, okButton);
-        
-        // 다이얼로그 표시
-        failDialog.setVisible(true);
-        failDialog.requestFocus();
-    }
-
-
-    // 클라이언트 대기 화면
-    public void showP2PBattleWaitingScreen(P2PClient p2p) { 
-        // 수신 스레드 시작 (게임 상태 핸들러는 null - 아직 게임 시작 전)
-        JDialog waitingDialog = createDialog(
-            "P2P 대전 준비 중",
-            "상대방이 모드를 선택하고 있습니다.",
-            new JButton[] {},
-            () -> { p2p.release(); }
+        JOptionPane.showMessageDialog( 
+            this, 
+            "서버에 연결할 수 없습니다.\n" + 
+            "IP 주소를 확인하고 다시 시도해주세요.", 
+            "연결 실패", 
+            JOptionPane.ERROR_MESSAGE 
         );
-
-        p2p.addCallback("mode:", (mode) -> {
-            SwingUtilities.invokeLater(() -> {
-                waitingDialog.dispose();
-                showP2PBattleStartScreen(mode, p2p);
-                p2p.removeCallback("mode:");
-            });
-        });
-
-        // 다이얼로그 표시
-        waitingDialog.setVisible(true);
-        waitingDialog.requestFocus();
+        showClientMode();
     }
-
-
-    /**
-     * P2P 배틀 모드 선택 다이얼로그
-     */
-    public void showP2PBattleModeSelection(P2PBase p2p) {
-
-        JButton normalModeButton = createDialogButton("일반 모드");
-        JButton itemModeButton = createDialogButton("아이템 모드");
-        JButton timeLimitModeButton = createDialogButton("시간 제한 모드");
-        
-        // 다이얼로그 생성
-        JDialog battleModeDialog = createDialog(
-            "P2P 배틀 모드 선택", 
-            "게임 모드를 선택하세요",
-            new JButton[] { normalModeButton, itemModeButton, timeLimitModeButton },
-            () -> { p2p.release(); }
-        );
-
-        normalModeButton.addActionListener(e -> {
-            p2p.send("mode:normal");
-            battleModeDialog.dispose();
-            showP2PBattleStartScreen("normal", p2p);
-        });
-        itemModeButton.addActionListener(e -> {
-            p2p.send("mode:item");
-            battleModeDialog.dispose();
-            showP2PBattleStartScreen("item", p2p);
-        });
-        timeLimitModeButton.addActionListener(e -> {
-            p2p.send("mode:time_limit");
-            battleModeDialog.dispose();
-            showP2PBattleStartScreen("time_limit", p2p);
-        });
-        
-        // 다이얼로그 표시
-        battleModeDialog.setVisible(true);
-        battleModeDialog.requestFocus();
-    }
-
-    private void showP2PBattleStartScreen(String mode, P2PBase p2p) {
-        String descContent = mode.equals("normal") ? "일반 모드" :
-                             mode.equals("item") ? "아이템 모드" :
-                             mode.equals("time_limit") ? "시간 제한 모드" :
-                             "알 수 없는 모드";
-        
-        JButton startButton = createDialogButton("게임 시작");
-
-        JDialog battleStartDialog = createDialog(
-            "P2P 배틀 게임 시작", 
-            descContent,
-            new JButton[] { startButton },
-            () -> { p2p.release(); }
-        );
-
-
-        startButton.addActionListener(e -> {
-            p2p.sync("start", () -> {
-                SwingUtilities.invokeLater(() -> {
-                    System.out.println("P2PBattleScene setScene");
-                    Game.setScene(new P2PBattleScene(frame, mode, p2p));
-                    battleStartDialog.dispose();
-                });
-            });
-        });
-
-        // 다이얼로그 표시
-        battleStartDialog.setVisible(true);
-        battleStartDialog.requestFocus();
-        
-    }
-
-    public void showP2PWaitOther(P2PBase p2p) { 
-        boolean isServer = p2p instanceof P2PServer;
-
-        JDialog waitingDialog = createDialog(
-            "P2P 대전 준비 중",
-            "상대방을 기다리고 있습니다.",
-            new JButton[] {},
-            () -> { p2p.release(); }
-        );
-        
-
-        p2p.sync("ready", () -> {
-            SwingUtilities.invokeLater(() -> {
-                waitingDialog.dispose();
-                if(isServer)showP2PBattleModeSelection(p2p);
-                else showP2PBattleWaitingScreen((P2PClient)p2p);
-            });
-        });
-
-        waitingDialog.setVisible(true);
-        waitingDialog.requestFocus();
-    }
-
-
-    JDialog createDialog(String title, String desc, JButton[] buttons, Runnable cancelAction) {
-        JDialog dialog = createBaseDialog();
-        JPanel dialogPanel = createDialogPanel();
-        
-        // 제목 라벨
-        JLabel titleLabel = createDialogTitle(title);
-        
-        // 설명 라벨
-        JLabel descLabel = createDialogDesc(desc);
-        
-        // 상단 패널 (제목 + 설명)
-        JPanel topPanel = new JPanel(new BorderLayout());
-        topPanel.setOpaque(false);
-        topPanel.add(titleLabel, BorderLayout.NORTH);
-        topPanel.add(descLabel, BorderLayout.CENTER);
-        
-        // 버튼 패널
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setOpaque(false);
-        buttonPanel.setLayout(new GridLayout(buttons.length + 1, 1, 0, 12));
-        
-        // 동적 버튼 생성
-        JButton[] allButtons = new JButton[buttons.length + 1];
-        for (int i = 0; i < buttons.length; i++) {
-            buttonPanel.add(buttons[i]);
-            allButtons[i] = buttons[i];
-        }
-        
-        // 취소 버튼
-        JButton cancelButton = createCancelButton(dialog);
-        buttonPanel.add(cancelButton);
-        allButtons[buttons.length] = cancelButton;
-        
-        // 컴포넌트 배치
-        dialogPanel.add(topPanel, BorderLayout.NORTH);
-        dialogPanel.add(buttonPanel, BorderLayout.CENTER);
-        dialog.add(dialogPanel);
-        
-        // 키보드 네비게이션 추가
-        addDialogKeyNavigation(dialog, allButtons, cancelButton);
-        
-
-        return dialog;
-    }
-
-    
-
-
 
 }
+
+class BaseDG extends JDialog {
+    BaseDG(JFrame frame) {
+        super(frame, true);
+
+        int[] resolution = GameSettings.getInstance().getResolutionSize();
+        int screenWidth = resolution[0];
+        int screenHeight = resolution[1];
+        int dialogWidth = Math.max(350, Math.min(450, screenWidth / 2));
+        int dialogHeight = Math.max(280, Math.min(380, screenHeight / 2));
+        setUndecorated(true);
+        setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        setResizable(false);
+        setSize(dialogWidth, dialogHeight);
+        setLocationRelativeTo(frame);
+        setFocusable(true);
+    }
+}
+
+class DGPanel extends JPanel {
+    DGPanel() {
+        setBackground(Theme.MenuBG());
+        setLayout(new BorderLayout());
+        setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(
+                Theme.MenuTitle(), 2
+            ), BorderFactory.createEmptyBorder(
+                20, 20, 20, 20
+            )
+        ));
+    }
+}
+
+class DGTitle extends JLabel {
+    DGTitle(String title) {
+        super(title, SwingConstants.CENTER);
+
+        int[] resolution = GameSettings.getInstance().getResolutionSize();
+        int screenWidth = resolution[0];
+        int titleFontSize = Math.max(16, screenWidth / 50);
+        
+        setFont(new Font("Malgun Gothic", Font.BOLD, titleFontSize));
+        setForeground(Theme.MenuTitle());
+        setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0));
+    }
+}
+
+class DGDesc extends JLabel {
+    DGDesc(String desc) {
+        super(desc, SwingConstants.CENTER);
+        int[] resolution = GameSettings.getInstance().getResolutionSize();
+        int screenWidth = resolution[0];
+        int descFontSize = Math.max(16, screenWidth / 50);
+        
+        setFont(new Font("Malgun Gothic", Font.BOLD, descFontSize));
+        setForeground(Theme.WHITE);
+        setBorder(BorderFactory.createEmptyBorder(0, 0, 20, 0));
+    }
+}
+
+class DGButton extends JButton {
+    DGButton(String text) {
+        super(text);
+        setFont(new Font("Malgun Gothic", Font.BOLD, 14));
+        setPreferredSize(new Dimension(250, 35));
+        setBackground(Theme.MenuButton());
+        setForeground(Theme.WHITE);
+        setFocusPainted(false);
+        setBorderPainted(true);
+        setBorder(BorderFactory.createRaisedBevelBorder());
+        
+        // 호버 효과 (활성화된 버튼만)
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                if (isEnabled()) {
+                    setBackground(Theme.MenuButton(true));
+                }
+            }
+            
+            @Override
+            public void mouseExited(MouseEvent e) {
+                if (isEnabled()) {
+                    setBackground(Theme.MenuButton());
+                }
+            }
+        });
+    }
+}
+

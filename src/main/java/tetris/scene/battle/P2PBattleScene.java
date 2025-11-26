@@ -15,8 +15,12 @@ import tetris.Game;
 import tetris.network.NetworkStatusDisplay;
 import tetris.network.P2PBase;
 import tetris.scene.game.blocks.Block;
+import tetris.scene.game.blocks.ItemBlock;
+import tetris.scene.game.blocks.WeightItemBlock;
 import tetris.scene.game.core.*;
+import tetris.scene.game.items.ItemEffectType;
 import tetris.scene.menu.MainMenuScene;
+import tetris.scene.menu.P2PRoomDialog;
 import tetris.util.Theme;
 
 // 직렬화된 게임 상태를 저장할 필드들
@@ -36,6 +40,8 @@ class SerializedGameState {
 
     // 다음 블럭
     int type;
+    String nextItemEffect; // 아이템 블록 프리뷰 동기화를 위한 아이템 타입 정보
+    boolean nextIsWeightBlock; // 무게추 아이템 블록 프리뷰 동기화용
 
     // 기타 정보
     int score; 
@@ -48,9 +54,6 @@ class SerializedGameState {
 
     // 일시정지 플래그 (상태)
     boolean pauseFlag;
-
-    // 공격 블럭 정보
-    String[] serializedAttackBlocks;
 
 }
 
@@ -145,14 +148,23 @@ public class P2PBattleScene extends BattleScene {
                 @Override
                 public void run() {
                     String send = serializeGameState();
-                    p2p.send("game:" + send);
+                    p2p.send("board:" + send);
                 }
             },
             100, 100
         );
 
-        p2p.addCallback("game:", (serialized) -> {
+        p2p.addCallback("board:", (serialized) -> {
             deserializeGameState(serialized);
+        });
+        p2p.addCallback("attack-generate:", (serialized) -> {
+            Gson gson = new Gson();
+            SerializabledAttackBlock sab = gson.fromJson(serialized, SerializabledAttackBlock.class);
+            AttackBlock ab = sab.toAttackBlock();
+            attackQueue1.push(ab);
+        });
+        p2p.addCallback("attack-apply", (s) -> {
+            attackQueue2.clear();
         });
         p2p.setOnDisconnect(() -> {
             SwingUtilities.invokeLater(() -> {
@@ -179,6 +191,7 @@ public class P2PBattleScene extends BattleScene {
         final int width = state.board[0].length;
         final int height = state.board.length;
 
+        ItemBlock[][] ib = new ItemBlock[height][width];
         Color[][] bc = new Color[height][width];
         // ItemBlock[][] ib = new ItemBlock[bc.length][bc[0].length];
         for (int r = 0; r < height; r++) {
@@ -192,13 +205,58 @@ public class P2PBattleScene extends BattleScene {
                 } else {
                     bc[r][c] = Theme.Block(state.boardColors[r][c]);
                 }
-                if(state.itemCells[r][c]){}
-                    // boardManager2.setItemBlockInfo(r, c, new ItemBlock(state.itemBlockInfo[r][c]));
+                if(state.itemCells[r][c]){
+                    ItemEffectType itemType = null;
+                    String itemName = (state.itemBlockInfo != null) ? state.itemBlockInfo[r][c] : null;
+
+                    if("줄 삭제".equals(itemName)) {
+                        itemType = ItemEffectType.LINE_CLEAR;
+                    } else if("청소".equals(itemName)) {
+                        itemType = ItemEffectType.CLEANUP;
+                    } else if("속도 감소".equals(itemName)) {
+                        itemType = ItemEffectType.SPEED_DOWN;
+                    } else if("속도 증가".equals(itemName)) {
+                        itemType = ItemEffectType.SPEED_UP;
+                    } else if("시야 제한".equals(itemName)) {
+                        itemType = ItemEffectType.VISION_BLOCK;
+                    }
+
+                    if(itemType != null) {
+                        ib[r][c] = new ItemBlock(itemType);
+                    } else {
+                        ib[r][c] = null;
+                    }
+                }
             }
         }
+        boardManager2.setItemBlockInfo(ib);
         boardManager2.setBoardColors(bc);
 
+        // 기본 다음 블록 생성
         blockManager2.setNextBlock(state.type);
+
+        try {
+            java.lang.reflect.Field nextBlockField = blockManager2.getClass().getDeclaredField("nextBlock");
+            nextBlockField.setAccessible(true);
+
+            // 1순위: 무게추 아이템 블록이면 그대로 WeightItemBlock 생성
+            if (state.nextIsWeightBlock) {
+                WeightItemBlock weightNext = new WeightItemBlock();
+                nextBlockField.set(blockManager2, weightNext);
+            }
+            // 2순위: 일반 아이템 블록이면 ItemBlock으로 감싸기
+            else if (state.nextItemEffect != null) {
+                ItemEffectType nextItemType = ItemEffectType.valueOf(state.nextItemEffect);
+                Block baseNextBlock = blockManager2.getNextBlock();
+                if (baseNextBlock != null) {
+                    ItemBlock itemNextBlock = new ItemBlock(baseNextBlock, nextItemType);
+                    nextBlockField.set(blockManager2, itemNextBlock);
+                }
+            }
+        } catch (Exception e) {
+            // 아이템 정보 복원 실패 시에는 그냥 일반 블록으로 사용
+            System.out.println("Failed to restore next special block in P2P: " + e.getMessage());
+        }
 
         scoreManager2.setScore(state.score);
         scoreManager2.setSpeedMultiplier(state.speedMultiplier);
@@ -225,12 +283,6 @@ public class P2PBattleScene extends BattleScene {
                     gameStateManager1.togglePause();
                 }
             }
-        }
-
-        for(int i = 0; i < state.serializedAttackBlocks.length; i++) {
-            String serializedAB = state.serializedAttackBlocks[i];
-            SerializabledAttackBlock sab = gson.fromJson(serializedAB, SerializabledAttackBlock.class);
-            attackQueue1.push(sab.toAttackBlock());
         }
 
     }
@@ -271,33 +323,99 @@ public class P2PBattleScene extends BattleScene {
                     if(bc[r][c].equals(Color.BLACK)) state.boardColors[r][c] = 'B';
                     else if(bc[r][c].equals(Color.GRAY)) state.boardColors[r][c] = 'G';
                 }
-                if(state.itemCells[r][c]) state.itemBlockInfo[r][c] = boardManager1.getItemBlockInfo(r,c).getItemDisplayName();
+                if(state.itemCells[r][c]) {
+                    tetris.scene.game.blocks.ItemBlock itemBlock = boardManager1.getItemBlockInfo(c, r);
+                    if(itemBlock != null) {
+                        state.itemBlockInfo[r][c] = itemBlock.getItemDisplayName();
+                    } else {
+                        state.itemBlockInfo[r][c] = null;
+                    }
+                }
             }
         }
 
         // 현재 낙하중인 블록 정보 추가
         Block currentBlock = blockManager1.getCurrentBlock();
-        int blockX = blockManager1.getX();
-        int blockY = blockManager1.getY();
-        Color blockColor = blockManager1.getCurrentBlock().getColor();
-        char colorSymbol = ' ';
-        for(char blockType : blockTypes) {
-            if(blockColor.equals(Theme.Block(blockType))) {
-                colorSymbol = blockType;
-                break;
+        if (currentBlock != null) {
+            int blockX = blockManager1.getX();
+            int blockY = blockManager1.getY();
+
+            // 색 심볼 계산
+            char colorSymbol = ' ';
+            Color blockColor = currentBlock.getColor();
+
+            // 일반 테트리스 블록(I,J,L,O,S,T,Z)은 Theme.Block 매핑으로 심볼을 찾고,
+            // 그 외(예: WeightItemBlock)는 그대로 보드 색을 사용하거나 회색(G)으로 처리
+            boolean mapped = false;
+            for(char blockType : blockTypes) {
+                if(blockColor.equals(Theme.Block(blockType))) {
+                    colorSymbol = blockType;
+                    mapped = true;
+                    break;
+                }
             }
-        }
-        for (int r = 0; r < currentBlock.height(); r++) {
-            for (int c = 0; c < currentBlock.width(); c++) {
-                if(currentBlock.getShape(c, r) == 1) {
-                    state.board[blockY + r][blockX + c] = 1;
-                    state.boardColors[blockY + r][blockX + c] = colorSymbol;
-                    state.boardTypes[blockY + r][blockX + c] = currentBlock.getType();
+            if (!mapped) {
+                // 매핑되지 않는 특수 블록(무게추 등)은 회색 심볼로 표시
+                if (Color.GRAY.equals(blockColor)) {
+                    colorSymbol = 'G';
+                } else if (Color.BLACK.equals(blockColor)) {
+                    colorSymbol = 'B';
+                } else {
+                    // 알 수 없는 색은 심볼 없이 색만 보드에 반영
+                    colorSymbol = ' ';
+                }
+            }
+
+            for (int r = 0; r < currentBlock.height(); r++) {
+                for (int c = 0; c < currentBlock.width(); c++) {
+                    if(currentBlock.getShape(c, r) == 1) {
+                        int br = blockY + r;
+                        int bc2 = blockX + c;
+
+                        // 보드 범위를 벗어나면 전송하지 않음 (안전장치)
+                        if (br < 0 || br >= height || bc2 < 0 || bc2 >= width) continue;
+
+                        state.board[br][bc2] = 1;
+
+                        // 특수 블록이면 실제 색을 그대로 반영하고,
+                        // 일반 블록이면 심볼 기반으로 색을 복원할 수 있도록 심볼을 기록
+                        if (mapped) {
+                            state.boardColors[br][bc2] = colorSymbol;
+                        } else {
+                            // 회색/기타는 그대로 색상으로만 사용되도록, 심볼은 비워 둠
+                            state.boardColors[br][bc2] = colorSymbol;
+                        }
+                        state.boardTypes[br][bc2] = currentBlock.getType();
+
+                        // 현재 블록이 ItemBlock인 경우, 내려오는 블록의 아이템 정보도 함께 전송
+                        if (currentBlock instanceof ItemBlock) {
+                            ItemBlock itemBlock = (ItemBlock) currentBlock;
+                            if (itemBlock.isItemCell(c, r)) {
+                                state.itemCells[br][bc2] = true;
+                                state.itemBlockInfo[br][bc2] = itemBlock.getItemDisplayName();
+                            }
+                        }
+                    }
                 }
             }
         }
 
-        state.type = blockManager1.getNextBlock().getType();
+        Block nextBlock = blockManager1.getNextBlock();
+        state.type = nextBlock.getType();
+
+        // 무게추 아이템 / 일반 아이템 여부를 함께 전송
+        if (nextBlock instanceof WeightItemBlock) {
+            state.nextIsWeightBlock = true;
+            state.nextItemEffect = null;
+        } else if (nextBlock instanceof ItemBlock) {
+            state.nextIsWeightBlock = false;
+            ItemBlock itemNext = (ItemBlock) nextBlock;
+            ItemEffectType itemType = itemNext.getItemType();
+            state.nextItemEffect = (itemType != null) ? itemType.name() : null;
+        } else {
+            state.nextIsWeightBlock = false;
+            state.nextItemEffect = null;
+        }
 
 
         state.score = scoreManager1.getScore();
@@ -310,19 +428,34 @@ public class P2PBattleScene extends BattleScene {
         if(prevPauseState != gameStateManager1.isPaused()) gameStateManager2.togglePause();
         prevPauseState = gameStateManager1.isPaused();
 
-        int qSize = attackQueue2.size();
         
-        state.serializedAttackBlocks = new String[qSize];
-        for(int i = 0; i < qSize; i++) {
-            AttackBlock ab = attackQueue2.pop();
-            SerializabledAttackBlock sab = new SerializabledAttackBlock(ab);
-            Gson gson = new Gson();
-            String serializedAB = gson.toJson(sab);
-            state.serializedAttackBlocks[i] = serializedAB;
-        }
 
         Gson gson = new Gson();
         return gson.toJson(state);
+    }
+
+    @Override
+    protected void applyAttackBlocks(int player) {
+        super.applyAttackBlocks(player);
+        if(player != 1) return;
+        p2p.send("attack-apply");
+    }
+
+    @Override
+    protected void generateAttackBlocks(java.util.List<Integer> clearedLines, int targetPlayer) {
+        int beforeSize = attackQueue2.size();
+        super.generateAttackBlocks(clearedLines, targetPlayer);
+        if(targetPlayer == 1) return;
+
+        int afterSize = attackQueue2.size();
+
+        for(int i = beforeSize; i < afterSize; i++) {
+            AttackBlock ab = attackQueue2.get(i);
+            SerializabledAttackBlock sab = new SerializabledAttackBlock(ab);
+            Gson gson = new Gson();
+            String serializedAB = gson.toJson(sab);
+            p2p.send("attack-generate:" + serializedAB);
+        }
     }
 
     private void handleLatency(long latency) {
@@ -691,18 +824,21 @@ public class P2PBattleScene extends BattleScene {
     private void exit(boolean exitWithDisconnect) {
         // 리소스 정리
         if(p2p != null) {
-            p2p.removeCallback("game:");
+            p2p.removeCallback("board:");
+            p2p.removeCallback("attack-generate:");
+            p2p.removeCallback("attack-apply");
             p2p.setOnDisconnect(null); // onDisconnect 콜백 제거
         }
         if (writeTimer != null) { 
             writeTimer.cancel(); 
             writeTimer.purge(); // 완전히 정리
         }
-        MainMenuScene nextScene = new MainMenuScene(m_frame);
-        Game.setScene(nextScene);
         
         if(exitWithDisconnect) {
             // 연결 끊김: p2p를 release하고 새로운 연결 시작
+            MainMenuScene nextScene = new MainMenuScene(m_frame);
+            Game.setScene(nextScene);
+
             boolean wasServer = (p2p instanceof tetris.network.P2PServer);
             if(p2p != null) { p2p.release(); }
 
@@ -711,7 +847,7 @@ public class P2PBattleScene extends BattleScene {
 
         } else {
             // 정상 종료: p2p 연결은 유지하고 같은 상대와 다시 게임 가능
-            nextScene.showP2PWaitOther(p2p);
+            new P2PRoomDialog(m_frame, p2p);
         }
     }
 
@@ -721,7 +857,9 @@ public class P2PBattleScene extends BattleScene {
     protected void exitToMenu() {
         // 리소스 정리
         if(p2p != null) {
-            p2p.removeCallback("game:");
+            p2p.removeCallback("board:");
+            p2p.removeCallback("attack-generate:");
+            p2p.removeCallback("attack-apply");
             p2p.setOnDisconnect(null); 
             p2p.release();
         }

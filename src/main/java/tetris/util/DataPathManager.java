@@ -147,6 +147,15 @@ public class DataPathManager {
     public File getDataFile(String fileName) {
         return dataDirectory.resolve(fileName).toFile();
     }
+
+    // 특정 데이터 파일이 없으면 생성 후 경로 반환
+    public File getOrCreateDataFile(String fileName) {
+        File file = getDataFile(fileName);
+        if(!file.exists()) {
+            createEmptyFileIfNotExists(fileName);
+            return getOrCreateDataFile(fileName);
+        } else return file;
+    }
     
     /**
      * settings.txt 파일 경로
