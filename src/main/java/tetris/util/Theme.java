@@ -49,6 +49,25 @@ public final class Theme {
         if(colorBlindMode == 0) return new Color(70, 70, 120);  // 일반 모드 - 원래 색상
         return Border();
     }
+
+    public static Color MenuButton(boolean hover) {
+        int colorBlindMode = GameSettings.getInstance().getColorBlindMode();
+        if(hover) {
+            switch (colorBlindMode) {
+                case 0:
+                    return new Color(120, 120, 200);
+                case 1:
+                    return new Color(150, 100, 255);
+                default:
+                    return new Color(255, 150, 80);
+            }
+        } 
+        else {
+            if(colorBlindMode == 0) 
+                return new Color(70, 70, 120);  
+            else return Border();
+        }
+    }
     
     public static Color MenuPanel() {
         int colorBlindMode = GameSettings.getInstance().getColorBlindMode();

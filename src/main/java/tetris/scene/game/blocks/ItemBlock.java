@@ -55,6 +55,11 @@ public class ItemBlock extends Block {
         System.out.println("Created ItemBlock with " + itemType.getDisplayName() + 
                           " at position (" + itemX + "," + itemY + ")");
     }
+
+    public ItemBlock(ItemEffectType itemType) {
+        this.originalBlock = null;
+        this.itemType = itemType;
+    }
     
     /**
      * 아이템 이미지들을 resources에서 로드합니다.
@@ -129,6 +134,8 @@ public class ItemBlock extends Block {
         
         // 원본 블록의 색상 복사
         this.color = originalBlock.getColor();
+        // 원본 블록의 타입도 그대로 복사 (미리보기·P2P 동기화에서 올바른 블록 타입 유지용)
+        this.type = originalBlock.getType();
     }
     
     /**
