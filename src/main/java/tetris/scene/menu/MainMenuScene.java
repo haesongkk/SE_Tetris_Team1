@@ -1022,13 +1022,20 @@ public class MainMenuScene extends Scene implements KeyListener {
         descLabel.setForeground(Color.WHITE);
         descLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
         
+        // IP 입력 필드를 중앙 정렬하기 위한 래퍼 패널
+        JPanel ipFieldWrapper = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        ipFieldWrapper.setOpaque(false);
+        
         JTextField ipField = new JTextField(LastConnectIP.load());
         ipField.setFont(new Font("Malgun Gothic", Font.PLAIN, 14));
-        ipField.setPreferredSize(new Dimension(150, 20));
+        ipField.setColumns(15); // IP 주소 길이에 맞춰 15자 정도
+        ipField.setPreferredSize(new Dimension(180, 32)); // 가로 180px, 세로 32px
         ipField.setHorizontalAlignment(JTextField.CENTER);
         
+        ipFieldWrapper.add(ipField);
+        
         centerPanel.add(descLabel, BorderLayout.NORTH);
-        centerPanel.add(ipField, BorderLayout.CENTER);
+        centerPanel.add(ipFieldWrapper, BorderLayout.CENTER);
         
         // 버튼 패널
         JPanel buttonPanel = new JPanel();
