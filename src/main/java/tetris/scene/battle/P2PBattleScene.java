@@ -305,10 +305,13 @@ public class P2PBattleScene extends BattleScene {
 
     @Override
     protected void generateAttackBlocks(java.util.List<Integer> clearedLines, int targetPlayer) {
+        int beforeSize = attackQueue2.size();
         super.generateAttackBlocks(clearedLines, targetPlayer);
         if(targetPlayer == 1) return;
 
-        for(int i = 0; i < attackQueue2.size(); i++) {
+        int afterSize = attackQueue2.size();
+
+        for(int i = beforeSize; i < afterSize; i++) {
             AttackBlock ab = attackQueue2.get(i);
             SerializabledAttackBlock sab = new SerializabledAttackBlock(ab);
             Gson gson = new Gson();
@@ -642,7 +645,7 @@ public class P2PBattleScene extends BattleScene {
     private void exit(boolean exitWithDisconnect) {
         // 리소스 정리
         if(p2p != null) {
-            p2p.removeCallback("game:");
+            p2p.removeCallback("board:");
             p2p.removeCallback("attack-generate:");
             p2p.removeCallback("attack-apply");
             p2p.setOnDisconnect(null); // onDisconnect 콜백 제거
@@ -675,7 +678,7 @@ public class P2PBattleScene extends BattleScene {
     protected void exitToMenu() {
         // 리소스 정리
         if(p2p != null) {
-            p2p.removeCallback("game:");
+            p2p.removeCallback("board:");
             p2p.removeCallback("attack-generate:");
             p2p.removeCallback("attack-apply");
             p2p.setOnDisconnect(null); 
