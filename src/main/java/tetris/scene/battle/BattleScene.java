@@ -95,7 +95,7 @@ public class BattleScene extends Scene {
         this.gameStateManager1 = new GameStateManager(new Player1Callback());
         this.inputHandler1 = new InputHandler(frame, new Player1Callback(), 1); // 1P 키 설정 사용
         this.lineBlinkEffect1 = new LineBlinkEffect(new BlinkCallback1());
-        this.itemManager1 = "item".equals(gameMode) ? new ItemManager() : null; // 아이템 모드일 때만 생성
+        this.itemManager1 = isItemMode(gameMode) ? new ItemManager() : null; // 아이템 모드일 때만 생성
         
         boardManager1.reset();
         blockManager1.initializeBlocks();
@@ -122,7 +122,7 @@ public class BattleScene extends Scene {
         this.gameStateManager2 = new GameStateManager(new Player2Callback());
         this.inputHandler2 = new InputHandler(frame, new Player2Callback(), 2); // 2P 키 설정 사용
         this.lineBlinkEffect2 = new LineBlinkEffect(new BlinkCallback2());
-        this.itemManager2 = "item".equals(gameMode) ? new ItemManager() : null; // 아이템 모드일 때만 생성
+        this.itemManager2 = isItemMode(gameMode) ? new ItemManager() : null; // 아이템 모드일 때만 생성
         
         boardManager2.reset();
         blockManager2.initializeBlocks();
@@ -143,6 +143,15 @@ public class BattleScene extends Scene {
         setupTimers();
     }
     
+    /**
+     * 게임 모드가 아이템 모드인지 확인하는 헬퍼 메서드
+     */
+    private boolean isItemMode(String gameMode) {
+        if (gameMode == null) return false;
+        return gameMode.equals("item") || gameMode.equals("아이템 모드") || 
+               gameMode.toLowerCase().contains("item") || gameMode.contains("아이템");
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // 1P InputCallback 구현
     // ═══════════════════════════════════════════════════════════════
