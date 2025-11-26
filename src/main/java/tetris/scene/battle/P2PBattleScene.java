@@ -1,6 +1,9 @@
 package tetris.scene.battle;
 
 import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.util.Timer;
 
 import javax.swing.JFrame;
@@ -9,6 +12,7 @@ import javax.swing.SwingUtilities;
 import com.google.gson.Gson;
 
 import tetris.Game;
+import tetris.network.NetworkStatusDisplay;
 import tetris.network.P2PBase;
 import tetris.scene.game.blocks.Block;
 import tetris.scene.game.core.*;
@@ -102,6 +106,10 @@ public class P2PBattleScene extends BattleScene {
 
     // 블럭 타입 매핑
     final char[] blockTypes = { 'I','J','L','O','S','T','Z' };
+    
+    // 네트워크 상태 표시 UI
+    private NetworkStatusDisplay networkStatus;
+    private long lastLatency = 0;
 
     public P2PBattleScene(JFrame frame, String gameMode, P2PBase p2p) {
         super(frame, gameMode);
@@ -116,6 +124,19 @@ public class P2PBattleScene extends BattleScene {
         super.setupLayout(frame);
 
         this.p2p = p2p;
+        
+        // 네트워크 상태 표시 UI 초기화
+        networkStatus = new NetworkStatusDisplay();
+        networkStatus.showConnected();
+        
+        // P2P 지연 시간 업데이트 콜백 설정
+        p2p.setOnLatencyUpdate((latency) -> {
+            lastLatency = latency;
+            SwingUtilities.invokeLater(() -> {
+                networkStatus.updateLatency(latency);
+                repaint();
+            });
+        });
 
         // 게임 상태 전송 타이머 시작
         writeTimer = new Timer();
@@ -305,12 +326,18 @@ public class P2PBattleScene extends BattleScene {
     }
 
     private void handleLatency(long latency) {
-        //System.out.println("지연 시간: " + latency + " ms");
+        // 네트워크 상태 UI에 지연 시간 업데이트는 콜백에서 자동으로 처리됨
+        // 200ms 초과 시에만 특별 처리 (경고 표시는 NetworkStatusDisplay에서 자동)
         if(latency > MAX_LATENCY_MS) {
-            // 지연 시간이 높을 때 처리
-            SwingUtilities.invokeLater(() -> {
-                showDisconnectDialog();
-            });
+            // UI에서 이미 경고 표시 중이므로 추가 조치는 필요 없음
+            // 매우 높은 지연(예: 5초 이상)에서만 연결 끊김으로 간주
+            if(latency > 5000) {
+                SwingUtilities.invokeLater(() -> {
+                    if (!bCloseByGameOver && !bCloseByDisconnect) {
+                        showDisconnectDialog();
+                    }
+                });
+            }
         }
     }
 
@@ -351,6 +378,41 @@ public class P2PBattleScene extends BattleScene {
             dst[i] = src[i].clone();
         }
         return dst;
+    }
+    
+    /**
+     * 네트워크 상태 UI를 화면 상단 중앙에 표시
+     */
+    @Override
+    public void paint(Graphics g) {
+        super.paint(g);
+        
+        // 컴포넌트가 제대로 초기화되었는지 확인
+        if (networkStatus != null && !isGameOver && getWidth() > 0 && getHeight() > 0) {
+            try {
+                Graphics2D g2d = (Graphics2D) g.create();
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // 화면 중앙 상단에 배치
+                int statusWidth = 200;
+                int statusHeight = 60;
+                int statusX = (getWidth() - statusWidth) / 2;
+                int statusY = 10;
+                
+                // 반투명 배경
+                g2d.setColor(new Color(0, 0, 0, 180));
+                g2d.fillRoundRect(statusX - 10, statusY - 5, statusWidth + 20, statusHeight + 10, 10, 10);
+                
+                // 네트워크 상태 컴포넌트 렌더링
+                g2d.translate(statusX, statusY);
+                networkStatus.setSize(statusWidth, statusHeight);
+                networkStatus.paint(g2d);
+                
+                g2d.dispose();
+            } catch (Exception e) {
+                // 렌더링 오류 무시
+            }
+        }
     }
 
     /**

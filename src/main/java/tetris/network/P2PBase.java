@@ -39,6 +39,8 @@ public class P2PBase {
 
     private Map<String, Consumer<String>> callbacks = new HashMap<>();
     private Runnable onDisconnect;
+    private Consumer<Long> onLatencyUpdate; // 지연 시간 업데이트 콜백 추가
+    private long lastReceivedTimestamp = 0; // 마지막 수신 시간
 
     protected void run() {
         bRunning = true;
@@ -48,6 +50,21 @@ public class P2PBase {
                 try { message = in.readLine(); } 
                 catch (IOException ex) { break;  }
                 if(message == null) { break; }
+
+                // 메시지 수신 시 타임스탬프 업데이트
+                long currentTime = System.currentTimeMillis();
+                long latency = 0;
+                
+                if (lastReceivedTimestamp > 0) {
+                    latency = currentTime - lastReceivedTimestamp;
+                }
+                lastReceivedTimestamp = currentTime;
+                
+                // 지연 시간 콜백 호출
+                if (onLatencyUpdate != null && latency > 0) {
+                    final long finalLatency = latency;
+                    onLatencyUpdate.accept(finalLatency);
+                }
 
                 for(String key : callbacks.keySet()) {
                     if(message.startsWith(key)) {
@@ -80,6 +97,23 @@ public class P2PBase {
 
     public void setOnDisconnect(Runnable onDisconnect) {
         this.onDisconnect = onDisconnect;
+    }
+
+    /**
+     * 지연 시간 업데이트 콜백을 설정합니다
+     * @param onLatencyUpdate 지연 시간(ms)을 받는 콜백
+     */
+    public void setOnLatencyUpdate(Consumer<Long> onLatencyUpdate) {
+        this.onLatencyUpdate = onLatencyUpdate;
+    }
+
+    /**
+     * 현재 추정 지연 시간을 반환합니다
+     * @return 마지막 수신 이후 경과 시간 (ms)
+     */
+    public long getEstimatedLatency() {
+        if (lastReceivedTimestamp == 0) return 0;
+        return System.currentTimeMillis() - lastReceivedTimestamp;
     }
 
     public void sync(String message, Runnable callback) {
