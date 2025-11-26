@@ -773,7 +773,7 @@ public class P2PBattleScene extends BattleScene {
     }
 
     private void showDisconnectDialog() {
-        if(bCloseByDisconnect || bCloseByGameOver) return;
+        if(bCloseByDisconnect) return;
         bCloseByDisconnect = true;
     // 메인메뉴 스타일의 다이얼로그 생성
         javax.swing.JDialog dialog = new javax.swing.JDialog(m_frame, true);
