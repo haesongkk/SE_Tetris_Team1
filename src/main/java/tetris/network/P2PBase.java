@@ -19,18 +19,41 @@ public class P2PBase {
     BufferedWriter out = null;
 
     public void send(String message) { 
-        try { out.write(message + '\n'); out.flush(); } 
-        catch (IOException ex) { }
+        if (out == null) {
+            System.err.println("P2P: 출력 스트림이 null입니다. 메시지 전송 실패: " + message);
+            handleNetworkError(new IOException("출력 스트림이 null입니다"));
+            return;
+        }
+        try { 
+            out.write(message + '\n'); 
+            out.flush(); 
+        } catch (IOException ex) {
+            System.err.println("P2P: 메시지 전송 실패 - " + ex.getMessage() + " (메시지: " + message + ")");
+            handleNetworkError(ex);
+        }
      }
 
     public void release() {
+        // release() 호출 시에는 정상 종료이므로 오류 처리를 하지 않음
+        bRunning = false;
+        isHandlingError = true; // handleNetworkError가 호출되지 않도록 설정
+        
         if(onDisconnect != null) {
             onDisconnect.run();
             onDisconnect = null;
         }
-        send(RELEASE_MESSAGE);
+        
+        // RELEASE_MESSAGE 전송 시도 (실패해도 무시)
+        try {
+            if (out != null) {
+                out.write(RELEASE_MESSAGE + '\n');
+                out.flush();
+            }
+        } catch (IOException e) {
+            // release() 중에는 예외를 무시
+        }
+        
         callbacks.clear();
-        bRunning = false;
         try {
             if(in != null) in.close();
             if(out != null) out.close();
@@ -45,7 +68,7 @@ public class P2PBase {
     boolean bRunning = false;
 
     private Map<String, Consumer<String>> callbacks = new HashMap<>();
-    private Runnable onDisconnect;
+    protected Runnable onDisconnect;
     private final String RELEASE_MESSAGE = "release";
     private long lastReceiveTime = -1;
     private final int TIMEOUT_MS = 5000;
@@ -53,7 +76,32 @@ public class P2PBase {
     private final String PONG_MESSAGE = "pong";
     private boolean bWaitingPong = false;
     private long lastPingTime = -1;
+    private boolean isHandlingError = false; // 중복 오류 처리 방지
 
+    /**
+     * 네트워크 오류 발생 시 처리
+     */
+    private void handleNetworkError(IOException e) {
+        // 중복 오류 처리 방지
+        if (isHandlingError || !bRunning) {
+            return;
+        }
+        
+        isHandlingError = true;
+        bRunning = false;
+        
+        System.err.println("P2P: 네트워크 오류 발생 - " + e.getMessage());
+        e.printStackTrace();
+        
+        // 사용자에게 알림 (onDisconnect 콜백 호출)
+        if (onDisconnect != null) {
+            try {
+                onDisconnect.run();
+            } catch (Exception ex) {
+                System.err.println("P2P: onDisconnect 콜백 실행 중 오류: " + ex.getMessage());
+            }
+        }
+    }
 
     protected void run() {
         bRunning = true;
@@ -77,13 +125,32 @@ public class P2PBase {
                     }
                 }
 
-                try { if(!in.ready()) continue; } 
-                catch (IOException e) { break; }
+                try { 
+                    if (in == null) {
+                        System.err.println("P2P: 입력 스트림이 null입니다");
+                        handleNetworkError(new IOException("입력 스트림이 null입니다"));
+                        break;
+                    }
+                    if(!in.ready()) continue; 
+                } catch (IOException e) { 
+                    System.err.println("P2P: 입력 스트림 확인 중 오류 - " + e.getMessage());
+                    handleNetworkError(e);
+                    break; 
+                }
                 
                 String message = "";
-                try { message = in.readLine(); } 
-                catch (IOException ex) { break; }
-                if(message == null) break;
+                try { 
+                    message = in.readLine(); 
+                } catch (IOException ex) { 
+                    System.err.println("P2P: 메시지 읽기 중 오류 - " + ex.getMessage());
+                    handleNetworkError(ex);
+                    break; 
+                }
+                if(message == null) {
+                    System.out.println("P2P: 연결이 종료되었습니다 (null 메시지 수신)");
+                    handleNetworkError(new IOException("연결이 종료되었습니다"));
+                    break;
+                }
 
                 lastReceiveTime = System.currentTimeMillis();
                 if(message.equals(RELEASE_MESSAGE)) { 
@@ -106,7 +173,10 @@ public class P2PBase {
                 }
 
             }
-            release();
+            // 정상 종료가 아닌 경우에만 release 호출 (이미 handleNetworkError에서 처리했을 수 있음)
+            if (bRunning || !isHandlingError) {
+                release();
+            }
         }).start();
     }
 
