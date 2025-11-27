@@ -84,7 +84,9 @@ public class P2PRoomDialog extends BaseDG {
 
     private void onSelectMode(JPanel panel, P2PBase p2p) {
         panel.removeAll();
-        panel.add(new DGDesc(TEXT_SELECT_MODE));
+        panel.add(new DGDesc(TEXT_SELECT_MODE) {{
+            setFont(new java.awt.Font("Malgun Gothic", java.awt.Font.PLAIN, 12)); // 폰트 크기 절반으로 축소
+        }});
         for(int i = 0; i < MODE_TEXTS.length; i++) {
             final int modeIndex = i;
             panel.add(new DGButton(MODE_TEXTS[i]) {{
@@ -101,7 +103,9 @@ public class P2PRoomDialog extends BaseDG {
 
     private void onWaitSelect(JPanel panel, P2PBase p2p) {
         panel.removeAll();
-        panel.add(new DGDesc(TEXT_WAIT_SELECT));
+        panel.add(new DGDesc(TEXT_WAIT_SELECT) {{
+            setFont(new java.awt.Font("Malgun Gothic", java.awt.Font.PLAIN, 12)); // 폰트 크기 절반으로 축소
+        }});
         panel.revalidate();
         panel.repaint();
         p2p.addCallback("mode:", (mode)-> {

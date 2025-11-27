@@ -774,12 +774,13 @@ public class P2PBattleScene extends BattleScene {
     private void showDisconnectDialog() {
         if(bCloseByDisconnect) return;
         bCloseByDisconnect = true;
-    // 메인메뉴 스타일의 다이얼로그 생성
+        
+        // 메인메뉴 스타일의 다이얼로그 생성
         javax.swing.JDialog dialog = new javax.swing.JDialog(m_frame, true);
         dialog.setUndecorated(true);
         dialog.setDefaultCloseOperation(javax.swing.JDialog.DISPOSE_ON_CLOSE);
         dialog.setResizable(false);
-        dialog.setSize(400, 300);
+        dialog.setSize(500, 350); // 크기 증가하여 잘림 방지
         dialog.setLocationRelativeTo(m_frame);
         dialog.setFocusable(true);
         
@@ -790,23 +791,21 @@ public class P2PBattleScene extends BattleScene {
             javax.swing.BorderFactory.createLineBorder(tetris.util.Theme.MenuTitle(), 2),
             javax.swing.BorderFactory.createEmptyBorder(20, 20, 20, 20)
         ));
-        // 제목 라벨
-        javax.swing.JLabel titleLabel = new javax.swing.JLabel("서버 연결 오류", javax.swing.SwingConstants.CENTER);
-        titleLabel.setFont(new java.awt.Font("Malgun Gothic", java.awt.Font.BOLD, 20));
-        titleLabel.setForeground(tetris.util.Theme.MenuTitle());
-        titleLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 15, 0));
         
-        // 중앙 패널 (승자 정보 + 설명)
+        // 제목 라벨
+        javax.swing.JLabel titleLabel = new javax.swing.JLabel("연결 끊김", javax.swing.SwingConstants.CENTER);
+        titleLabel.setFont(new java.awt.Font("Malgun Gothic", java.awt.Font.BOLD, 24));
+        titleLabel.setForeground(tetris.util.Theme.MenuTitle());
+        titleLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(10, 0, 20, 0));
+        
+        // 중앙 패널 (설명)
         javax.swing.JPanel centerPanel = new javax.swing.JPanel();
         centerPanel.setOpaque(false);
-        centerPanel.setLayout(new java.awt.GridLayout(3, 1, 0, 10));
+        centerPanel.setLayout(new java.awt.GridLayout(2, 1, 0, 15));
         
-        javax.swing.JLabel description = new javax.swing.JLabel();
-        description.setFont(new java.awt.Font("Malgun Gothic", java.awt.Font.BOLD, 18));
-        
+        javax.swing.JLabel description = new javax.swing.JLabel("상대방과의 연결이 끊어졌습니다.", javax.swing.SwingConstants.CENTER);
+        description.setFont(new java.awt.Font("Malgun Gothic", java.awt.Font.BOLD, 16));
         description.setForeground(new java.awt.Color(255, 215, 0)); // Gold color
-        description.setText("상대방과 연결이 끊어졌습니다.");
-        description.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         
         centerPanel.add(description);
         centerPanel.add(new javax.swing.JLabel()); // 빈 공간
@@ -819,15 +818,32 @@ public class P2PBattleScene extends BattleScene {
         // 메인 메뉴로 돌아가기 버튼
         javax.swing.JButton mainMenuButton = new javax.swing.JButton("메인 메뉴로 돌아가기");
         mainMenuButton.setFont(new java.awt.Font("Malgun Gothic", java.awt.Font.BOLD, 14));
-        mainMenuButton.setPreferredSize(new java.awt.Dimension(250, 35));
+        mainMenuButton.setPreferredSize(new java.awt.Dimension(280, 40));
         mainMenuButton.setBackground(tetris.util.Theme.MenuButton());
         mainMenuButton.setForeground(java.awt.Color.WHITE);
         mainMenuButton.setFocusPainted(false);
         mainMenuButton.setBorderPainted(true);
         mainMenuButton.setBorder(javax.swing.BorderFactory.createRaisedBevelBorder());
         mainMenuButton.addActionListener(e -> {
-            ((javax.swing.JDialog)dialogPanel.getTopLevelAncestor()).dispose();
+            dialog.dispose();
             exit(true);
+        });
+        
+        // 호버 효과
+        mainMenuButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                if (mainMenuButton.isEnabled()) {
+                    mainMenuButton.setBackground(new java.awt.Color(120, 120, 200));
+                }
+            }
+            
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                if (mainMenuButton.isEnabled()) {
+                    mainMenuButton.setBackground(tetris.util.Theme.MenuButton());
+                }
+            }
         });
         
         buttonPanel.add(mainMenuButton);
