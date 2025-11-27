@@ -2,9 +2,12 @@ package tetris.scene.battle;
 
 import java.awt.Color;
 import java.util.Timer;
+import java.util.Queue;
+import java.util.LinkedList;
 
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
+import javax.swing.JLabel;
 
 import com.google.gson.Gson;
 
@@ -101,7 +104,36 @@ public class P2PBattleScene extends BattleScene {
     boolean bCloseByGameOver = false;
     boolean bCloseByDisconnect = false;
 
+    /**
+     * 최대 허용 지연 시간 (밀리초)
+     * 
+     * 기준 설정 근거:
+     * - R82 요구사항: 키 입력 → 화면 표시까지 지연 200ms 이하
+     * - 게임 플레이에 영향을 주지 않는 수준의 지연 허용
+     * - 이 값을 초과하면 게임 경험 저하
+     * 
+     * 연결 끊김과의 관계:
+     * - 지연 100ms 미만: 정상 (초록색 표시)
+     * - 지연 100-150ms: 주의 (노란색 표시)
+     * - 지연 150-200ms: 경고 (주황색 표시)
+     * - 지연 200ms 이상: 위험 (빨간색 표시)
+     * - 지연이 지속적으로 200ms 초과 (최근 3개 샘플 모두 초과): 연결 끊김 처리
+     * - P2PBase.TIMEOUT_MS(5000ms) 초과: 연결 끊김 처리
+     * 
+     * 지연(랙)과 연결 끊김의 구분:
+     * - 지연(랙): 일시적 높은 지연 (100-200ms) - 게임은 계속 진행, UI에 경고 표시
+     * - 연결 끊김: 
+     *   * 지속적 높은 지연 (최근 3개 샘플 모두 200ms 초과)
+     *   * 또는 P2PBase.TIMEOUT_MS(5000ms) 이상 응답 없음
+     *   * → 연결 종료 처리 및 사용자 알림
+     */
     final long MAX_LATENCY_MS = 200;
+    
+    // 지연 시간 모니터링 관련 필드
+    private long currentLatency = 0;
+    private long averageLatency = 0;
+    private Queue<Long> latencyHistory = new LinkedList<>();
+    private static final int LATENCY_HISTORY_SIZE = 10;
 
     // 블럭 타입 매핑
     final char[] blockTypes = { 'I','J','L','O','S','T','Z' };
@@ -115,8 +147,8 @@ public class P2PBattleScene extends BattleScene {
         this.inputHandler2 = new InputHandler(frame, new EmptyCallback(), 2); 
         this.blockManager2.resetBlock();
 
-        // 매니저 설정을 덮어씌운 후 다시 호출해야함
-        super.setupLayout(frame);
+        // setupLayout은 BattleScene 생성자에서 호출되며, 
+        // P2PBattleScene의 오버라이드된 setupLayout이 실행됨
 
         this.p2p = p2p;
 
@@ -438,14 +470,46 @@ public class P2PBattleScene extends BattleScene {
     }
 
     private void handleLatency(long latency) {
-        //System.out.println("지연 시간: " + latency + " ms");
-        if(latency > MAX_LATENCY_MS) {
-            // 지연 시간이 높을 때 처리
-            SwingUtilities.invokeLater(() -> {
-                showDisconnectDialog();
-            });
+        currentLatency = latency;
+        
+        // 지연 히스토리 관리
+        latencyHistory.offer(latency);
+        if (latencyHistory.size() > LATENCY_HISTORY_SIZE) {
+            latencyHistory.poll();
         }
+        
+        // 평균 지연 시간 계산
+        if (!latencyHistory.isEmpty()) {
+            averageLatency = (long) latencyHistory.stream()
+                .mapToLong(Long::longValue)
+                .average()
+                .orElse(0);
+        } else {
+            averageLatency = latency;
+        }
+        
+        // 연결 끊김 판단: 지속적으로 높은 지연만 연결 끊김 처리
+        // 기준: 최근 3개 이상의 샘플이 모두 MAX_LATENCY_MS(200ms) 초과
+        // 이는 일시적 지연과 실제 연결 문제를 구분하기 위함
+        // 참고: P2PBase.TIMEOUT_MS(5000ms) 초과 시에도 연결 끊김 처리됨
+        if (latency > MAX_LATENCY_MS && averageLatency > MAX_LATENCY_MS && latencyHistory.size() >= 3) {
+            boolean allHighLatency = latencyHistory.stream()
+                .allMatch(l -> l > MAX_LATENCY_MS);
+            if (allHighLatency) {
+                System.out.println("연결 끊김 판단: 지속적 높은 지연 (" + averageLatency + "ms 평균)");
+                SwingUtilities.invokeLater(() -> {
+                    showDisconnectDialog();
+                });
+            }
+        }
+
+        System.out.println(String.format("네트워크 지연: %dms (평균: %dms)", 
+                    currentLatency, averageLatency));
+        
+        
     }
+    
+    
 
     class EmptyCallback implements InputHandler.InputCallback, GameStateManager.StateChangeCallback {
         @Override
@@ -688,7 +752,7 @@ public class P2PBattleScene extends BattleScene {
     }
 
     private void showDisconnectDialog() {
-        if(bCloseByDisconnect || bCloseByGameOver) return;
+        if(bCloseByDisconnect) return;
         bCloseByDisconnect = true;
     // 메인메뉴 스타일의 다이얼로그 생성
         javax.swing.JDialog dialog = new javax.swing.JDialog(m_frame, true);
