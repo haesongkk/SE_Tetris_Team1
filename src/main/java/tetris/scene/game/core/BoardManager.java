@@ -25,6 +25,7 @@ public class BoardManager {
     private ItemManager itemManager; // 아이템 모드 관리자 (null이면 일반 모드)
     private Object gameScene; // GameScene 참조 (아이템 효과용)
     private Object blockManager; // BlockManager 참조 (아이템 효과용)
+    private int playerNumber = 0; // 배틀 모드에서 플레이어 번호 (0=Player1, 1=Player2)
     
     public BoardManager() {
         initializeBoard();
@@ -528,21 +529,16 @@ public class BoardManager {
                         // (VISION_BLOCK, CLEANUP 아이템들은 바닥 착지 시에만 활성화)
                         if (itemBlock.getItemType() == ItemEffectType.LINE_CLEAR ||
                             itemBlock.getItemType() == ItemEffectType.SPEED_UP ||
-                            itemBlock.getItemType() == ItemEffectType.SPEED_DOWN) {
+                            itemBlock.getItemType() == ItemEffectType.SPEED_DOWN ||
+                            itemBlock.getItemType() == ItemEffectType.VISION_BLOCK) {
                             System.out.println("🎯 Activating " + itemBlock.getItemType().getDisplayName() + " item effect in cleared line at (" + col + "," + row + ")");
                             
-                            // 아이템 효과 생성 및 활성화
-                            ItemEffect effect = ItemEffectFactory.createEffect(itemBlock.getItemType());
-                            if (effect != null) {
-                                ItemEffectContext context = new ItemEffectContext(
-                                    getBoard(), col, row
-                                );
-                                // 필요한 컨텍스트 정보 설정
-                                context.setBoardManager(this);
-                                context.setBlockManager(blockManager);
-                                context.setGameScene(gameScene);
-                                
-                                itemManager.activateItemEffect(effect, context);
+                            // BattleScene인지 확인하여 새로운 시스템 사용
+                            if (gameScene != null && gameScene.getClass().getSimpleName().equals("BattleScene")) {
+                                handleBattleModeItemActivation(itemBlock, col, row);
+                            } else {
+                                // 기존 시스템 사용 (레귤러 모드)
+                                handleRegularModeItemActivation(itemBlock, col, row);
                             }
                         } else {
                             System.out.println("⏭️ Skipping " + itemBlock.getItemType().getDisplayName() + 
@@ -772,6 +768,90 @@ public class BoardManager {
         }
         
         System.out.println("Column compaction completed");
+    }
+    
+    /**
+     * 배틀 모드에서 아이템 효과를 활성화합니다
+     */
+    private void handleBattleModeItemActivation(ItemBlock itemBlock, int col, int row) {
+        try {
+            // BattleScene에서 BattleItemManager 가져오기
+            Object battleItemManager = gameScene.getClass()
+                .getMethod("getBattleItemManager")
+                .invoke(gameScene);
+                
+            if (battleItemManager != null) {
+                // 현재 플레이어 확인
+                int currentPlayerNum = determinePlayerNumber(); // 0-based
+                Object sourcePlayer = null;
+                
+                // Player 열거형의 fromInternalId 메서드 사용
+                Class<?> playerClass = Class.forName("tetris.scene.battle.Player");
+                Object[] playerValues = (Object[]) playerClass.getMethod("values").invoke(null);
+                
+                for (Object player : playerValues) {
+                    int internalId = (Integer) player.getClass().getMethod("getInternalId").invoke(player);
+                    if (internalId == currentPlayerNum) {
+                        sourcePlayer = player;
+                        break;
+                    }
+                }
+                
+                if (sourcePlayer != null) {
+                    // BattleItemManager의 applyItemEffect 호출
+                    battleItemManager.getClass()
+                        .getMethod("applyItemEffect", playerClass, 
+                                  Class.forName("tetris.scene.game.items.ItemEffectType"), int.class, int.class)
+                        .invoke(battleItemManager, sourcePlayer, itemBlock.getItemType(), col, row);
+                        
+                    System.out.println("✅ Battle mode item effect applied successfully");
+                } else {
+                    System.err.println("❌ Could not determine source player for battle item effect");
+                }
+            } else {
+                System.err.println("❌ BattleItemManager not found in BattleScene");
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Failed to apply battle mode item effect: " + e.getMessage());
+            e.printStackTrace();
+            
+            // 실패 시 기존 시스템으로 폴백
+            handleRegularModeItemActivation(itemBlock, col, row);
+        }
+    }
+    
+    /**
+     * 레귤러 모드에서 아이템 효과를 활성화합니다 (기존 방식)
+     */
+    private void handleRegularModeItemActivation(ItemBlock itemBlock, int col, int row) {
+        ItemEffect effect = ItemEffectFactory.createEffect(itemBlock.getItemType());
+        if (effect != null) {
+            ItemEffectContext context = new ItemEffectContext(
+                getBoard(), col, row
+            );
+            // 필요한 컨텍스트 정보 설정
+            context.setBoardManager(this);
+            context.setBlockManager(blockManager);
+            context.setGameScene(gameScene);
+            
+            itemManager.activateItemEffect(effect, context);
+        }
+    }
+    
+    /**
+     * 현재 플레이어 번호를 반환합니다
+     */
+    private int determinePlayerNumber() {
+        return this.playerNumber;
+    }
+    
+    /**
+     * 배틀모드에서 이 BoardManager의 플레이어 번호를 설정합니다
+     * @param playerNumber 플레이어 번호 (0=Player1, 1=Player2)
+     */
+    public void setPlayerNumber(int playerNumber) {
+        this.playerNumber = playerNumber;
+        System.out.println("PlayerNumber set in BoardManager: " + (playerNumber + 1));
     }
 
 }

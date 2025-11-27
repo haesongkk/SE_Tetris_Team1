@@ -19,9 +19,9 @@ import java.util.Stack;
 
 /**
  * Local Battle scene - GameScene × 2
- * 각 플레이어가 독립적인 GameScene 로직을 가짐
+ * 새로운 배틀 전용 아이템 시스템 적용
  */
-public class BattleScene extends Scene {
+public class BattleScene extends Scene implements BattleGameInterface {
     private static final int GAME_HEIGHT = 20;
     private static final int GAME_WIDTH = 10;
     private static final int PREVIEW_SIZE = 4;
@@ -77,6 +77,9 @@ public class BattleScene extends Scene {
     
     // 게임 오버 상태 (어느 한쪽이라도 게임 오버되면 양쪽 모두 종료)
     protected boolean isGameOver = false;
+    
+    // 배틀 전용 아이템 매니저
+    protected BattleItemManager battleItemManager;
 
     public BattleScene(JFrame frame, String gameMode) {
         super(frame);
@@ -141,6 +144,13 @@ public class BattleScene extends Scene {
         
         setupLayout(frame);
         setupTimers();
+        
+        // 배틀 전용 아이템 매니저 초기화
+        this.battleItemManager = new BattleItemManager(this);
+        
+        // 플레이어 번호 설정
+        boardManager1.setPlayerNumber(Player.PLAYER_1.getInternalId());
+        boardManager2.setPlayerNumber(Player.PLAYER_2.getInternalId());
     }
     
     /**
@@ -1594,5 +1604,141 @@ public class BattleScene extends Scene {
         });
         
         return button;
+    }
+    
+    // ========== BattleGameInterface 구현 ==========
+    
+    @Override
+    public void setPlayerFallSpeed(Player player, double speed) {
+        if (player == Player.PLAYER_1) {
+            setFallSpeed1(speed);
+        } else if (player == Player.PLAYER_2) {
+            setFallSpeed2(speed);
+        }
+    }
+    
+    @Override
+    public double getPlayerFallSpeed(Player player) {
+        if (player == Player.PLAYER_1) {
+            return getFallSpeed1();
+        } else if (player == Player.PLAYER_2) {
+            return getFallSpeed2();
+        }
+        return 1000.0; // 기본값
+    }
+    
+    @Override
+    public void setPlayerSpeedItemActive(Player player, boolean active) {
+        if (player == Player.PLAYER_1) {
+            setSpeedItemActive1(active);
+        } else if (player == Player.PLAYER_2) {
+            setSpeedItemActive2(active);
+        }
+    }
+    
+    @Override
+    public void setPlayerVisionBlock(Player player, boolean active) {
+        if (player == Player.PLAYER_1) {
+            setVisionBlockActive1(active);
+        } else if (player == Player.PLAYER_2) {
+            setVisionBlockActive2(active);
+        }
+    }
+    
+    @Override
+    public boolean isPlayerVisionBlocked(Player player) {
+        if (player == Player.PLAYER_1) {
+            return isVisionBlockActive1();
+        } else if (player == Player.PLAYER_2) {
+            return isVisionBlockActive2();
+        }
+        return false;
+    }
+    
+    @Override
+    public boolean isGameActive() {
+        return !isGameOver;
+    }
+    
+    @Override
+    public boolean isPlayerGameOver(Player player) {
+        if (player == Player.PLAYER_1) {
+            return gameStateManager1.isGameOver();
+        } else if (player == Player.PLAYER_2) {
+            return gameStateManager2.isGameOver();
+        }
+        return false;
+    }
+    
+    @Override
+    public void repaintGame() {
+        repaint();
+    }
+    
+    // ========== 속도 관련 헬퍼 메서드들 ==========
+    
+    private void setFallSpeed1(double speed) {
+        if (fallTimer1 != null) {
+            fallTimer1.setDelay((int) speed);
+        }
+    }
+    
+    private void setFallSpeed2(double speed) {
+        if (fallTimer2 != null) {
+            fallTimer2.setDelay((int) speed);
+        }
+    }
+    
+    private double getFallSpeed1() {
+        if (fallTimer1 != null) {
+            return fallTimer1.getDelay();
+        }
+        return 1000.0;
+    }
+    
+    private double getFallSpeed2() {
+        if (fallTimer2 != null) {
+            return fallTimer2.getDelay();
+        }
+        return 1000.0;
+    }
+    
+    // 속도 아이템 활성화 상태 (현재는 시각적 표시용)
+    private boolean speedItemActive1 = false;
+    private boolean speedItemActive2 = false;
+    
+    private void setSpeedItemActive1(boolean active) {
+        this.speedItemActive1 = active;
+    }
+    
+    private void setSpeedItemActive2(boolean active) {
+        this.speedItemActive2 = active;
+    }
+    
+    // 시야 차단 관련 상태
+    private boolean visionBlockActive1 = false;
+    private boolean visionBlockActive2 = false;
+    
+    private void setVisionBlockActive1(boolean active) {
+        this.visionBlockActive1 = active;
+    }
+    
+    private void setVisionBlockActive2(boolean active) {
+        this.visionBlockActive2 = active;
+    }
+    
+    private boolean isVisionBlockActive1() {
+        return visionBlockActive1;
+    }
+    
+    private boolean isVisionBlockActive2() {
+        return visionBlockActive2;
+    }
+    
+    /**
+     * BattleItemManager에 접근하기 위한 getter 메서드
+     */
+    public BattleItemManager getBattleItemManager() {
+        return battleItemManager;
     }
 }
