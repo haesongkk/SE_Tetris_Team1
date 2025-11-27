@@ -8,6 +8,7 @@ import java.util.LinkedList;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import javax.swing.JLabel;
+import javax.swing.JLayeredPane;
 
 import com.google.gson.Gson;
 
@@ -137,6 +138,9 @@ public class P2PBattleScene extends BattleScene {
 
     // 블럭 타입 매핑
     final char[] blockTypes = { 'I','J','L','O','S','T','Z' };
+    
+    // 네트워크 상태 표시 UI
+    private NetworkStatusDisplay networkStatusDisplay;
 
     public P2PBattleScene(JFrame frame, String gameMode, P2PBase p2p) {
         super(frame, gameMode);
@@ -151,6 +155,17 @@ public class P2PBattleScene extends BattleScene {
         // P2PBattleScene의 오버라이드된 setupLayout이 실행됨
 
         this.p2p = p2p;
+        
+        // 네트워크 상태 표시 UI 초기화
+        networkStatusDisplay = new NetworkStatusDisplay();
+        networkStatusDisplay.setBounds(10, 10, 250, 60);
+        networkStatusDisplay.setVisible(true);
+        
+        // JLayeredPane에 추가 (PALETTE_LAYER로 설정하여 게임 위에 표시)
+        JLayeredPane layeredPane = frame.getLayeredPane();
+        layeredPane.add(networkStatusDisplay, JLayeredPane.PALETTE_LAYER);
+        layeredPane.revalidate();
+        layeredPane.repaint();
 
         // 게임 상태 전송 타이머 시작
         writeTimer = new Timer();
@@ -471,6 +486,11 @@ public class P2PBattleScene extends BattleScene {
 
     private void handleLatency(long latency) {
         currentLatency = latency;
+        
+        // NetworkStatusDisplay 업데이트
+        if (networkStatusDisplay != null) {
+            networkStatusDisplay.updateLatency(latency);
+        }
         
         // 지연 히스토리 관리
         latencyHistory.offer(latency);
@@ -836,6 +856,15 @@ public class P2PBattleScene extends BattleScene {
             writeTimer.purge(); // 완전히 정리
         }
         
+        // NetworkStatusDisplay 제거
+        if (networkStatusDisplay != null) {
+            JLayeredPane layeredPane = m_frame.getLayeredPane();
+            layeredPane.remove(networkStatusDisplay);
+            layeredPane.revalidate();
+            layeredPane.repaint();
+            networkStatusDisplay = null;
+        }
+        
         if(exitWithDisconnect) {
             // 연결 끊김: p2p를 release하고 새로운 연결 시작
             MainMenuScene nextScene = new MainMenuScene(m_frame);
@@ -869,6 +898,16 @@ public class P2PBattleScene extends BattleScene {
             writeTimer.cancel(); 
             writeTimer.purge(); // 완전히 정리
         }
+        
+        // NetworkStatusDisplay 제거
+        if (networkStatusDisplay != null) {
+            JLayeredPane layeredPane = m_frame.getLayeredPane();
+            layeredPane.remove(networkStatusDisplay);
+            layeredPane.revalidate();
+            layeredPane.repaint();
+            networkStatusDisplay = null;
+        }
+        
         super.exitToMenu();
     }
 
