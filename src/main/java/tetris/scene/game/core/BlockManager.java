@@ -352,7 +352,7 @@ public class BlockManager {
     private void placeBlockPermanently() {
         System.out.println("Placing block permanently at x=" + x + ", y=" + y);
         
-        // 아이템 블록인 경우 시각적 효과는 배치 전에 활성화 (속도, 시야 차단 등)
+        // 아이템 블록인 경우 시각적 효과는 배치 전에 활성화 (배틀/일반 모드 구분)
         if (currentBlock instanceof ItemBlock) {
             ItemBlock itemBlock = (ItemBlock) currentBlock;
             activateVisualItemEffects(itemBlock);
@@ -366,13 +366,11 @@ public class BlockManager {
         lastPlacedX = x;
         lastPlacedY = y;
         
-        // 아이템 블록인 경우 효과 활성화
+        // 아이템 블록인 경우 보드 조작 효과만 활성화 (시각적 효과는 이미 위에서 처리됨)
         if (currentBlock instanceof ItemBlock) {
             ItemBlock itemBlock = (ItemBlock) currentBlock;
             // 보드 조작 효과 (LINE_CLEAR, CLEANUP)
             activateBoardManipulationEffects(itemBlock);
-            // 시각적 효과 (SPEED_UP, SPEED_DOWN, VISION_BLOCK)
-            activateVisualItemEffects(itemBlock);
         }
         
         // 블록이 떨어질 때 점수 추가
@@ -671,20 +669,35 @@ public class BlockManager {
     
     /**
      * 시각적 아이템 효과를 활성화합니다 (블록 배치 전 실행).
-     * SPEED_UP, SPEED_DOWN, VISION_BLOCK 등의 효과
+     * 배틀모드: 모든 시각적 효과 즉시 활성화
+     * 일반모드: VISION_BLOCK만 즉시 활성화, 속도 아이템은 라인 클리어 시에만
      */
     private void activateVisualItemEffects(ItemBlock itemBlock) {
         if (itemBlock == null || itemManager == null) {
             return;
         }
         
+        // 배틀 모드 여부 확인
+        boolean isBattleMode = (gameScene != null && gameScene.getClass().getSimpleName().equals("BattleScene"));
+        
         // 바닥 착지 시에 처리하는 아이템 타입들
         ItemEffectType itemType = itemBlock.getItemType();
-        if (itemType == ItemEffectType.VISION_BLOCK ||
-            itemType == ItemEffectType.SPEED_UP ||
-            itemType == ItemEffectType.SPEED_DOWN) {
-            
-            System.out.println("🎯 Activating Visual ItemBlock with " + itemBlock.getItemType().getDisplayName() + " (before placement)");
+        
+        // 배틀모드에서는 모든 시각적 효과 즉시 활성화
+        // 일반모드에서는 VISION_BLOCK만 즉시 활성화 (속도 아이템은 라인 클리어 시에만)
+        boolean shouldActivateImmediately = false;
+        
+        if (itemType == ItemEffectType.VISION_BLOCK) {
+            // 시야차단은 배틀/일반 모드 모두 즉시 활성화
+            shouldActivateImmediately = true;
+        } else if (isBattleMode && (itemType == ItemEffectType.SPEED_UP || itemType == ItemEffectType.SPEED_DOWN)) {
+            // 속도 아이템은 배틀모드에서만 즉시 활성화
+            shouldActivateImmediately = true;
+        }
+        
+        if (shouldActivateImmediately) {
+            System.out.println("🎯 Activating Visual ItemBlock with " + itemBlock.getItemType().getDisplayName() + 
+                             " (mode: " + (isBattleMode ? "BATTLE" : "NORMAL") + ", immediate activation)");
             
             // 아이템 효과 생성
             ItemEffect effect = ItemEffectFactory.createEffect(itemBlock.getItemType());
@@ -706,6 +719,7 @@ public class BlockManager {
                 context.setBoardManager(boardManager);
                 context.setScoreManager(scoreManager);
                 context.setGameScene(gameScene);
+                context.setPlayerNumber(boardManager.getPlayerNumber()); // BoardManager로부터 플레이어 번호 설정
                 
                 // 아이템 효과 활성화
                 itemManager.activateItemEffect(effect, context);
@@ -714,6 +728,9 @@ public class BlockManager {
             } else {
                 System.out.println("❌ Failed to create visual item effect for " + itemBlock.getItemType());
             }
+        } else {
+            System.out.println("⏳ Visual ItemBlock with " + itemBlock.getItemType().getDisplayName() + 
+                             " will activate on line clear (mode: " + (isBattleMode ? "BATTLE" : "NORMAL") + ")");
         }
     }
     
@@ -753,6 +770,7 @@ public class BlockManager {
                 context.setBoardManager(boardManager);
                 context.setScoreManager(scoreManager);
                 context.setGameScene(gameScene);
+                context.setPlayerNumber(boardManager.getPlayerNumber()); // BoardManager로부터 플레이어 번호 설정
                 
                 // 아이템 효과 활성화
                 itemManager.activateItemEffect(effect, context);
