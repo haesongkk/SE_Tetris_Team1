@@ -1357,6 +1357,14 @@ public class BattleScene extends Scene {
                                null, 0, 0, false, false, new java.util.HashSet<>());
             }
             
+            // 양쪽 중 하나라도 일시정지 상태이면 PAUSED 오버레이 표시
+            // (P2P 대전에서 양쪽 동기화를 위해 필요)
+            if (renderMgr != null && (gameStateManager1.isPaused() || gameStateManager2.isPaused()) && 
+                !gameStateManager1.isGameOver() && !gameStateManager2.isGameOver()) {
+                int cellSize = renderMgr.getCellSize();
+                renderPauseOverlayOnBoard(g2, cellSize);
+            }
+            
             // 시간제한 모드일 때 기존 시간 표시 영역을 덮어쓰기
             if ("time_limit".equals(gameMode)) {
                 int cellSize = renderMgr.getCellSize();
@@ -1594,5 +1602,50 @@ public class BattleScene extends Scene {
         });
         
         return button;
+    }
+    
+    /**
+     * 게임 보드에 일시정지 오버레이를 렌더링합니다.
+     * (RenderManager와 별도로 BattleScene에서 사용)
+     */
+    private void renderPauseOverlayOnBoard(Graphics2D g2d, int cellSize) {
+        // 게임 영역에 반투명 오버레이
+        g2d.setColor(new Color(0, 0, 0, 150)); // 반투명 검은색
+        g2d.fillRect(cellSize, cellSize, GAME_WIDTH * cellSize, GAME_HEIGHT * cellSize);
+        
+        // PAUSED 텍스트
+        g2d.setColor(Color.WHITE);
+        g2d.setFont(new Font("Arial", Font.BOLD, 48));
+        FontMetrics fm = g2d.getFontMetrics();
+        String pausedText = "PAUSED";
+        int textWidth = fm.stringWidth(pausedText);
+        int textHeight = fm.getHeight();
+        
+        // 게임 영역 중앙에 텍스트 배치
+        int gameAreaCenterX = cellSize + (GAME_WIDTH * cellSize) / 2;
+        int gameAreaCenterY = cellSize + (GAME_HEIGHT * cellSize) / 2;
+        
+        int textX = gameAreaCenterX - textWidth / 2;
+        int textY = gameAreaCenterY + textHeight / 4; // 텍스트 베이스라인 조정
+        
+        g2d.drawString(pausedText, textX, textY);
+        
+        // 부가 안내 텍스트
+        g2d.setFont(new Font("Arial", Font.PLAIN, 16));
+        FontMetrics smallFm = g2d.getFontMetrics();
+        String instructionText = "Press P to resume";
+        int instructionWidth = smallFm.stringWidth(instructionText);
+        int instructionX = gameAreaCenterX - instructionWidth / 2;
+        int instructionY = textY + 60; // PAUSED 텍스트 아래 60px
+        
+        g2d.drawString(instructionText, instructionX, instructionY);
+        
+        // Q 키로 메뉴로 돌아가기 안내 텍스트
+        String exitText = "Press Q to return to menu";
+        int exitWidth = smallFm.stringWidth(exitText);
+        int exitX = gameAreaCenterX - exitWidth / 2;
+        int exitY = instructionY + 25; // 재개 안내 텍스트 아래 25px
+        
+        g2d.drawString(exitText, exitX, exitY);
     }
 }
