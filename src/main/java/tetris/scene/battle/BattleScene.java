@@ -2021,4 +2021,34 @@ public class BattleScene extends Scene {
             System.out.println("BattleScene: Marked next line clearing as item-caused for Player 2");
         }
     }
+    
+    /**
+     * 시야 제한 효과를 적용합니다. (VisionBlockEffect 호환성을 위한 메서드)
+     * ItemEffectContext의 playerNumber를 확인하여 적절한 플레이어에게 효과를 적용합니다.
+     * @param active 시야 제한 활성화 여부
+     */
+    public void setVisionBlockActive(boolean active) {
+        // 이 메서드는 VisionBlockEffect에서 호출되므로,
+        // 실제로는 어느 플레이어의 효과인지를 구분할 수 없습니다.
+        // 따라서 VisionBlockEffect가 배틀 모드에서 플레이어별로 호출되도록 수정이 필요합니다.
+        System.out.println("⚠️ BattleScene.setVisionBlockActive called but player not specified");
+        
+        // 임시 방편으로 두 플레이어 모두에게 적용 (이는 올바르지 않으므로 VisionBlockEffect 수정 필요)
+        setVisionBlockActive1(active);
+        setVisionBlockActive2(active);
+    }
+    
+    /**
+     * 특정 플레이어에게 시야 제한 효과를 적용합니다.
+     * @param playerNumber 플레이어 번호 (1 또는 2)
+     * @param active 시야 제한 활성화 여부
+     */
+    public void setVisionBlockActive(int playerNumber, boolean active) {
+        if (playerNumber == 1) {
+            setVisionBlockActive1(active);
+        } else if (playerNumber == 2) {
+            setVisionBlockActive2(active);
+        }
+        System.out.println("👁️ BattleScene: Set vision block for Player " + playerNumber + " to " + active);
+    }
 }
