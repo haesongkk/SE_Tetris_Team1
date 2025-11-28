@@ -12,8 +12,10 @@ import java.util.Map;
 public class VisionBlockEffect extends AbstractItemEffect {
     private static final long EFFECT_DURATION = 5000; // 5초간 시야 제한
     private Object gameScene;
+    private int playerNumber = 0; // 배틀 모드에서 아이템을 발동한 플레이어 번호
+    private int targetPlayerNumber = 0; // 배틀 모드에서 실제 효과를 받는 플레이어 번호
     // 원본 색상을 저장하는 맵 (위치키 -> 색상)
-    private Map<String, Color> originalColors = new HashMap<>();
+    private final Map<String, Color> originalColors = new HashMap<>();
     
     public VisionBlockEffect() {
         super(ItemEffectType.VISION_BLOCK, EFFECT_DURATION);
@@ -22,6 +24,7 @@ public class VisionBlockEffect extends AbstractItemEffect {
     @Override
     protected void doActivate(ItemEffectContext context) {
         this.gameScene = context.getGameScene();
+        this.playerNumber = context.getPlayerNumber(); // 플레이어 번호 저장
         
         if (gameScene == null) {
             System.out.println("Vision block effect: GameScene is null");
@@ -33,19 +36,33 @@ public class VisionBlockEffect extends AbstractItemEffect {
             saveOriginalColor(context);
             
             // 시야 제한 효과 활성화
-            // 게임 보드의 중앙 4칸(인덱스 3-6)을 가림
-            gameScene.getClass()
-                .getMethod("setVisionBlockActive", boolean.class)
-                .invoke(gameScene, true);
+            // BattleScene인지 확인하여 플레이어별로 처리
+            String gameSceneClass = gameScene.getClass().getSimpleName();
             
-            System.out.println("Vision block effect activated for " + 
-                             (EFFECT_DURATION / 1000) + " seconds");
+            if ("BattleScene".equals(gameSceneClass) && playerNumber > 0) {
+                // 배틀 모드: 상대방에게 시야 제한 적용 (1P가 발동시 2P에게, 2P가 발동시 1P에게)
+                this.targetPlayerNumber = (playerNumber == 1) ? 2 : 1;
+                gameScene.getClass()
+                    .getMethod("setVisionBlockActive", int.class, boolean.class)
+                    .invoke(gameScene, targetPlayerNumber, true);
+                System.out.println("Vision block effect activated by Player " + playerNumber + " → affecting Player " + targetPlayerNumber + " in BattleScene for " + 
+                                 (EFFECT_DURATION / 1000) + " seconds");
+            } else {
+                // 일반 모드: 자신에게 시야 제한 적용 (기존 방식)
+                this.targetPlayerNumber = 0; // 일반 모드에서는 플레이어 구분 없음
+                gameScene.getClass()
+                    .getMethod("setVisionBlockActive", boolean.class)
+                    .invoke(gameScene, true);
+                System.out.println("Vision block effect activated in " + gameSceneClass + " for " + 
+                                 (EFFECT_DURATION / 1000) + " seconds");
+            }
             
             // 아이템 셀을 일반 블록으로 변경
             convertItemCellToNormal(context);
                              
         } catch (Exception e) {
             System.out.println("Failed to apply vision block effect: " + e.getMessage());
+            e.printStackTrace();
             // 효과 적용 실패 시 즉시 비활성화
             isActive = false;
         }
@@ -84,11 +101,21 @@ public class VisionBlockEffect extends AbstractItemEffect {
         
         try {
             // 시야 제한 효과 비활성화
-            gameScene.getClass()
-                .getMethod("setVisionBlockActive", boolean.class)
-                .invoke(gameScene, false);
+            String gameSceneClass = gameScene.getClass().getSimpleName();
             
-            System.out.println("Vision block effect ended");
+            if ("BattleScene".equals(gameSceneClass) && targetPlayerNumber > 0) {
+                // 배틀 모드: 효과를 받았던 플레이어의 시야 제한 해제
+                gameScene.getClass()
+                    .getMethod("setVisionBlockActive", int.class, boolean.class)
+                    .invoke(gameScene, targetPlayerNumber, false);
+                System.out.println("Vision block effect ended for Player " + targetPlayerNumber + " in BattleScene (activated by Player " + playerNumber + ")");
+            } else {
+                // 일반 모드: 기존 방식 사용
+                gameScene.getClass()
+                    .getMethod("setVisionBlockActive", boolean.class)
+                    .invoke(gameScene, false);
+                System.out.println("Vision block effect ended in " + gameSceneClass);
+            }
             
             // 원본 색상 정보 정리
             originalColors.clear();
