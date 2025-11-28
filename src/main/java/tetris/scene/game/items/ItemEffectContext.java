@@ -11,6 +11,7 @@ public class ItemEffectContext {
     private Object blockManager;
     private Object boardManager;
     private Object scoreManager;
+    private int playerNumber = 1; // 기본값은 1 (일반 게임에서는 항상 1)
     
     public ItemEffectContext(int[][] board, int itemX, int itemY) {
         this.board = board;
@@ -72,5 +73,13 @@ public class ItemEffectContext {
     
     public void setScoreManager(Object scoreManager) {
         this.scoreManager = scoreManager;
+    }
+    
+    public int getPlayerNumber() {
+        return playerNumber;
+    }
+    
+    public void setPlayerNumber(int playerNumber) {
+        this.playerNumber = playerNumber;
     }
 }

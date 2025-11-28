@@ -18,12 +18,19 @@ public class LineClearEffect extends AbstractItemEffect {
         
         System.out.println("Line clear effect activated at row " + itemY);
         
-        // ItemGameScene에 아이템으로 인한 줄 삭제임을 알림
+        // ItemGameScene/BattleScene에 아이템으로 인한 줄 삭제임을 알림
         Object gameScene = context.getGameScene();
         if (gameScene != null) {
             try {
-                gameScene.getClass().getMethod("markItemLineClear").invoke(gameScene);
-                System.out.println("LINE_CLEAR item: Marked as item-caused line clearing");
+                // 플레이어 번호가 있으면 특정 플레이어를 마킹, 없으면 일반 마킹
+                int playerNumber = context.getPlayerNumber();
+                if (playerNumber > 0) {
+                    gameScene.getClass().getMethod("markItemLineClear", int.class).invoke(gameScene, playerNumber);
+                    System.out.println("LINE_CLEAR item: Marked as item-caused line clearing for Player " + playerNumber);
+                } else {
+                    gameScene.getClass().getMethod("markItemLineClear").invoke(gameScene);
+                    System.out.println("LINE_CLEAR item: Marked as item-caused line clearing (no player specified)");
+                }
             } catch (Exception e) {
                 System.out.println("LINE_CLEAR item: Failed to mark item line clear: " + e.getMessage());
             }
