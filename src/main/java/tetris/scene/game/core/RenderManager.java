@@ -61,7 +61,7 @@ public class RenderManager {
      */
     public void render(Graphics2D g2d, int panelWidth, int panelHeight, 
                       LineBlinkEffect lineBlinkEffect, Block lastBlock, int lastBlockX, int lastBlockY, boolean visionBlockActive,
-                      boolean cleanupBlinkingActive, java.util.Set<java.awt.Point> cleanupBlinkingCells) {
+                      boolean cleanupBlinkingActive, java.util.Set<java.awt.Point> cleanupBlinkingCells, boolean skipTimeBoard) {
         // 안티알리아싱 설정
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         
@@ -91,7 +91,7 @@ public class RenderManager {
         renderNextBlockPreview(g2d);
         
         // 점수판 렌더링
-        renderScoreBoard(g2d);
+        renderScoreBoard(g2d, skipTimeBoard);
         
         // 일시정지 오버레이 렌더링
         if (gameStateManager.isPaused()) {
@@ -572,22 +572,24 @@ public class RenderManager {
     /**
      * 점수판을 렌더링합니다.
      */
-    private void renderScoreBoard(Graphics2D g2d) {
+    private void renderScoreBoard(Graphics2D g2d, boolean skipTimeBoard) {
         // 점수판 위치 계산 (다음 블록 미리보기 아래)
         int previewX = (GAME_WIDTH + 2) * CELL_SIZE + 20;
         int previewY = CELL_SIZE + 20;
         int previewAreaSize = PREVIEW_SIZE * PREVIEW_CELL_SIZE;
         
         int scoreBoardX = previewX;
-        int scoreBoardY = previewY + previewAreaSize + 30; // 미리보기 아래 30px 간격
+        int scoreBoardY = previewY + previewAreaSize + 10; // 미리보기 아래 30px 간격
         int scoreBoardWidth = previewAreaSize;
         int scoreBoardHeight = 120; // 점수판 높이
 
         // ScoreManager의 drawScoreBoard 메서드 사용
         scoreManager.drawScoreBoard(g2d, scoreBoardX, scoreBoardY, scoreBoardWidth, scoreBoardHeight);
         
-        // 시간 표시 (점수판 아래)
-        renderTimeBoard(g2d, scoreBoardX, scoreBoardY + scoreBoardHeight + 10, scoreBoardWidth, 50);
+        // 시간 표시 (점수판 아래) - skipTimeBoard가 true면 건너뛰기
+        if (!skipTimeBoard) {
+            renderTimeBoard(g2d, scoreBoardX, scoreBoardY + scoreBoardHeight + 10, scoreBoardWidth, 50);
+        }
     }
     
     /**
@@ -605,19 +607,19 @@ public class RenderManager {
 
         // "TIME" 라벨
         g2d.setColor(Color.WHITE);
-        g2d.setFont(new Font("Arial", Font.BOLD, 12));
+        g2d.setFont(new Font("Arial", Font.BOLD, 10)); // 폰트 크기 줄임 (12 -> 10)
         FontMetrics fm = g2d.getFontMetrics();
         String timeLabel = "TIME";
         int labelWidth = fm.stringWidth(timeLabel);
-        g2d.drawString(timeLabel, x + (width - labelWidth) / 2, y + 20);
+        g2d.drawString(timeLabel, x + (width - labelWidth) / 2, y + 15); // 위치 조정 (20 -> 15)
 
         // 현재 시간 표시
         int elapsedSeconds = gameStateManager.getElapsedTimeInSeconds();
         String timeText = formatTime(elapsedSeconds);
-        g2d.setFont(new Font("Arial", Font.BOLD, 16));
+        g2d.setFont(new Font("Arial", Font.BOLD, 14)); // 폰트 크기 줄임 (16 -> 14)
         fm = g2d.getFontMetrics();
         int timeWidth = fm.stringWidth(timeText);
-        g2d.drawString(timeText, x + (width - timeWidth) / 2, y + 40);
+        g2d.drawString(timeText, x + (width - timeWidth) / 2, y + 28); // 위치 조정 (40 -> 28)
     }
     
     /**
