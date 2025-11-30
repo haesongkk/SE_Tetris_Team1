@@ -10,6 +10,8 @@ public class SpeedDownEffect extends AbstractItemEffect {
     private static final long EFFECT_DURATION = 5000; // 5초
     private Object gameScene;
     private double originalSpeed = 1.0;
+    private int playerNumber = 0; // 배틀 모드에서 아이템을 발동한 플레이어 번호
+    private int targetPlayerNumber = 0; // 배틀 모드에서 실제 효과를 받는 플레이어 번호
     
     public SpeedDownEffect() {
         super(ItemEffectType.SPEED_DOWN, EFFECT_DURATION);
@@ -18,6 +20,9 @@ public class SpeedDownEffect extends AbstractItemEffect {
     @Override
     protected void doActivate(ItemEffectContext context) {
         this.gameScene = context.getGameScene();
+        this.playerNumber = context.getPlayerNumber(); // 플레이어 번호 저장
+        
+        System.out.println("🔍 [SpeedDownEffect] doActivate called - playerNumber: " + playerNumber + ", gameScene: " + (gameScene != null ? gameScene.getClass().getSimpleName() : "null"));
         
         if (gameScene == null) {
             System.out.println("Speed down effect: GameScene is null");
@@ -25,31 +30,65 @@ public class SpeedDownEffect extends AbstractItemEffect {
         }
         
         try {
-            // 속도 아이템 활성화 상태 설정
-            gameScene.getClass()
-                .getMethod("setSpeedItemActive", boolean.class)
-                .invoke(gameScene, true);
+            // BattleScene인지 확인하여 플레이어별로 처리
+            String gameSceneClass = gameScene.getClass().getSimpleName();
+            boolean isBattleMode = gameSceneClass.equals("BattleScene") || gameSceneClass.equals("P2PBattleScene");
             
-            // 현재 속도 저장
-            Object fallSpeed = gameScene.getClass()
-                .getMethod("getFallSpeed")
-                .invoke(gameScene);
+            System.out.println("🔍 [SpeedDownEffect] gameSceneClass: " + gameSceneClass + ", isBattleMode: " + isBattleMode);
             
-            if (fallSpeed instanceof Number) {
-                originalSpeed = ((Number) fallSpeed).doubleValue();
+            if (isBattleMode && playerNumber > 0) {
+                // 배틀 모드: 상대방에게 속도 감소 적용 (1P가 발동시 2P에게, 2P가 발동시 1P에게)
+                this.targetPlayerNumber = (playerNumber == 1) ? 2 : 1;
+                
+                // 원래 속도 저장
+                Object fallSpeed = gameScene.getClass()
+                    .getMethod("getFallSpeed", int.class)
+                    .invoke(gameScene, targetPlayerNumber);
+                
+                if (fallSpeed instanceof Number) {
+                    originalSpeed = ((Number) fallSpeed).doubleValue();
+                }
+                
+                // ✅ 속도 감소: 1500ms (느리게)
+                double newSpeed = 1500.0;
+                gameScene.getClass()
+                    .getMethod("setFallSpeed", int.class, double.class)
+                    .invoke(gameScene, targetPlayerNumber, newSpeed);
+                gameScene.getClass()
+                    .getMethod("setSpeedItemActive", int.class, boolean.class)
+                    .invoke(gameScene, targetPlayerNumber, true);
+                
+                System.out.println("⚡ Speed down effect activated by Player " + playerNumber + " → affecting Player " + targetPlayerNumber + " in " + gameSceneClass + ": " + originalSpeed + "ms -> " + newSpeed + "ms delay (매우 느림) for " + (EFFECT_DURATION / 1000) + " seconds");
+            } else {
+                // 일반 모드: 자신에게 속도 감소 적용 (기존 방식)
+                this.targetPlayerNumber = 0; // 일반 모드에서는 플레이어 구분 없음
+                
+                // 속도 아이템 활성화 상태 설정
+                gameScene.getClass()
+                    .getMethod("setSpeedItemActive", boolean.class)
+                    .invoke(gameScene, true);
+                
+                // 현재 속도 저장
+                Object fallSpeed = gameScene.getClass()
+                    .getMethod("getFallSpeed")
+                    .invoke(gameScene);
+                
+                if (fallSpeed instanceof Number) {
+                    originalSpeed = ((Number) fallSpeed).doubleValue();
+                }
+                
+                // 속도를 느리게 설정 (1500ms)
+                double newSpeed = 1500.0;
+                gameScene.getClass()
+                    .getMethod("setFallSpeed", double.class)
+                    .invoke(gameScene, newSpeed);
+                
+                System.out.println("Speed down effect activated in " + gameSceneClass + ": " + originalSpeed + "ms -> " + newSpeed + "ms delay (매우 느림) for " + (EFFECT_DURATION / 1000) + " seconds");
             }
-            
-            // 속도를 느리게 설정 (1500ms)
-            double newSpeed = 1500.0;
-            gameScene.getClass()
-                .getMethod("setFallSpeed", double.class)
-                .invoke(gameScene, newSpeed);
-            
-            System.out.println("Speed down effect: " + originalSpeed + "ms -> " + newSpeed + "ms delay (매우 느림)" + 
-                             " for " + (EFFECT_DURATION / 1000) + " seconds");
                              
         } catch (Exception e) {
             System.out.println("Failed to apply speed down effect: " + e.getMessage());
+            e.printStackTrace();
             // 효과 적용 실패 시 즉시 비활성화
             isActive = false;
         }
@@ -62,17 +101,35 @@ public class SpeedDownEffect extends AbstractItemEffect {
         }
         
         try {
-            // 속도 아이템 활성화 상태 해제
-            gameScene.getClass()
-                .getMethod("setSpeedItemActive", boolean.class)
-                .invoke(gameScene, false);
+            // BattleScene인지 확인하여 플레이어별로 처리
+            String gameSceneClass = gameScene.getClass().getSimpleName();
+            boolean isBattleMode = gameSceneClass.equals("BattleScene") || gameSceneClass.equals("P2PBattleScene");
             
-            // 원래 속도로 복원
-            gameScene.getClass()
-                .getMethod("setFallSpeed", double.class)
-                .invoke(gameScene, originalSpeed);
-            
-            System.out.println("Speed down effect ended: restored to " + originalSpeed);
+            if (isBattleMode && targetPlayerNumber > 0) {
+                // 배틀 모드: 효과를 받았던 플레이어의 속도 복원
+                gameScene.getClass()
+                    .getMethod("setSpeedItemActive", int.class, boolean.class)
+                    .invoke(gameScene, targetPlayerNumber, false);
+                
+                // 원래 속도로 복원
+                gameScene.getClass()
+                    .getMethod("setFallSpeed", int.class, double.class)
+                    .invoke(gameScene, targetPlayerNumber, originalSpeed);
+                
+                System.out.println("Speed down effect ended for Player " + targetPlayerNumber + " in BattleScene (activated by Player " + playerNumber + "): restored to " + originalSpeed);
+            } else {
+                // 일반 모드: 기존 방식 사용
+                gameScene.getClass()
+                    .getMethod("setSpeedItemActive", boolean.class)
+                    .invoke(gameScene, false);
+                
+                // 원래 속도로 복원
+                gameScene.getClass()
+                    .getMethod("setFallSpeed", double.class)
+                    .invoke(gameScene, originalSpeed);
+                
+                System.out.println("Speed down effect ended in " + gameSceneClass + ": restored to " + originalSpeed);
+            }
             
         } catch (Exception e) {
             System.out.println("Failed to restore original speed: " + e.getMessage());

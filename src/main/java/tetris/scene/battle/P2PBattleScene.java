@@ -54,6 +54,10 @@ class SerializedGameState {
 
     // 일시정지 플래그 (상태)
     boolean pauseFlag;
+    
+    // 낙하 속도 (아이템 효과 동기화용)
+    int fallSpeed1; // Player 1 Timer delay 값 (밀리초)
+    int fallSpeed2; // Player 2 Timer delay 값 (밀리초)
 
 }
 
@@ -289,6 +293,18 @@ public class P2PBattleScene extends BattleScene {
         scoreManager2.setDifficultyMultiplier(state.difficultyMultiplier);
         repaint();
         gameStateManager2.setFixedElapsedTime(state.elapsedSeconds);
+        
+        // 상대방의 낙하 속도 동기화 (속도 아이템 효과 반영)
+        // 서버가 보낸 Player 1 속도를 클라이언트의 Player 2에게 적용
+        // 서버가 보낸 Player 2 속도를 클라이언트의 Player 1에게 적용
+        if (state.fallSpeed1 > 0) {
+            System.out.println("📥 [P2P Deserialize] Received fallSpeed1: " + state.fallSpeed1 + "ms, applying to local Player 2");
+            setFallSpeed(2, state.fallSpeed1); // 상대방의 P1 속도 -> 내 P2
+        }
+        if (state.fallSpeed2 > 0) {
+            System.out.println("📥 [P2P Deserialize] Received fallSpeed2: " + state.fallSpeed2 + "ms, applying to local Player 1");
+            setFallSpeed(1, state.fallSpeed2); // 상대방의 P2 속도 -> 내 P1
+        }
 
         if(state.gameOverFlag && !this.isGameOver) {
             this.handleGameOver(2); // 2P 패배 처리
@@ -451,6 +467,12 @@ public class P2PBattleScene extends BattleScene {
 
         state.gameOverFlag = this.isGameOver;
         state.pauseFlag = gameStateManager1.isPaused();
+        
+        // 양쪽 플레이어의 낙하 속도 전송 (속도 아이템 효과 동기화)
+        state.fallSpeed1 = (int) getFallSpeed(1);
+        state.fallSpeed2 = (int) getFallSpeed(2);
+        System.out.println("📤 [P2P Serialize] Sending fallSpeed1: " + state.fallSpeed1 + "ms, fallSpeed2: " + state.fallSpeed2 + "ms");
+        
         if(prevPauseState != gameStateManager1.isPaused()) gameStateManager2.togglePause();
         prevPauseState = gameStateManager1.isPaused();
 
@@ -523,8 +545,7 @@ public class P2PBattleScene extends BattleScene {
             }
         }
 
-        System.out.println(String.format("네트워크 지연: %dms (평균: %dms)", 
-                    currentLatency, averageLatency));
+        // System.out.println(String.format("네트워크 지연: %dms (평균: %dms)", currentLatency, averageLatency));
         
         
     }

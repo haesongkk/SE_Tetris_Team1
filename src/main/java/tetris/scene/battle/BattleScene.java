@@ -34,7 +34,7 @@ public class BattleScene extends Scene {
     // ═══════════════════════════════════════════════════════════════
     // 1P (왼쪽) - 완전한 GameScene 복제
     // ═══════════════════════════════════════════════════════════════
-    protected final BoardManager boardManager1;
+    public final BoardManager boardManager1;
     protected final BlockManager blockManager1;
     protected final ScoreManager scoreManager1;
     protected final tetris.scene.game.core.UIManager uiManager1;
@@ -47,7 +47,7 @@ public class BattleScene extends Scene {
     // ═══════════════════════════════════════════════════════════════
     // 2P (오른쪽) - 완전한 GameScene 복제
     // ═══════════════════════════════════════════════════════════════
-    protected final BoardManager boardManager2;
+    public final BoardManager boardManager2;
     protected final BlockManager blockManager2;
     protected final ScoreManager scoreManager2;
     protected final tetris.scene.game.core.UIManager uiManager2;
@@ -77,6 +77,20 @@ public class BattleScene extends Scene {
     
     // 게임 오버 상태 (어느 한쪽이라도 게임 오버되면 양쪽 모두 종료)
     protected boolean isGameOver = false;
+    
+    // 아이템으로 인한 줄 삭제 추적
+    private boolean isItemLineClear1 = false; // Player 1의 아이템으로 인한 줄 삭제인지 추적
+    private boolean isItemLineClear2 = false; // Player 2의 아이템으로 인한 줄 삭제인지 추적
+    
+    // 시야 차단 관련 상태
+    private boolean visionBlockActive1 = false;
+    private boolean visionBlockActive2 = false;
+    
+    // 청소 블링킹 효과 (각 플레이어별로 개별 관리)
+    private java.util.Set<java.awt.Point> cleanupBlinkingCells1 = new java.util.HashSet<>(); // Player 1
+    private java.util.Set<java.awt.Point> cleanupBlinkingCells2 = new java.util.HashSet<>(); // Player 2
+    private boolean cleanupBlinkingActive1 = false; // Player 1 청소 블링킹 활성 상태
+    private boolean cleanupBlinkingActive2 = false; // Player 2 청소 블링킹 활성 상태
 
     public BattleScene(JFrame frame, String gameMode) {
         super(frame);
@@ -89,6 +103,7 @@ public class BattleScene extends Scene {
         // 1P 초기화 (GameScene과 동일)
         // ═══════════════════════════════════════════════════════════════
         this.boardManager1 = new BoardManager();
+        boardManager1.setPlayerNumber(1); // Player 1 설정
         this.scoreManager1 = new ScoreManager(difficulty);
         this.blockManager1 = new BlockManager(GAME_WIDTH, GAME_HEIGHT, boardManager1, scoreManager1, difficulty);
         this.uiManager1 = new tetris.scene.game.core.UIManager();
@@ -116,6 +131,7 @@ public class BattleScene extends Scene {
         // 2P 초기화 (GameScene과 동일)
         // ═══════════════════════════════════════════════════════════════
         this.boardManager2 = new BoardManager();
+        boardManager2.setPlayerNumber(2); // Player 2 설정
         this.scoreManager2 = new ScoreManager(difficulty);
         this.blockManager2 = new BlockManager(GAME_WIDTH, GAME_HEIGHT, boardManager2, scoreManager2, difficulty);
         this.uiManager2 = new tetris.scene.game.core.UIManager();
@@ -217,6 +233,10 @@ public class BattleScene extends Scene {
                     System.out.println("Time limit timer resumed");
                 }
             }
+            
+            // 퍼즈 상태 변경 시 화면 다시 그리기
+            System.out.println("🎨 Player 1 pause toggled - requesting repaint. isPaused: " + isPaused);
+            repaint();
         }
         
         @Override
@@ -290,6 +310,10 @@ public class BattleScene extends Scene {
                     System.out.println("Time limit timer resumed");
                 }
             }
+            
+            // 퍼즈 상태 변경 시 화면 다시 그리기
+            System.out.println("🎨 Player 2 pause toggled - requesting repaint. isPaused: " + isPaused);
+            repaint();
         }
         
         @Override
@@ -327,20 +351,27 @@ public class BattleScene extends Scene {
                 scoreManager1.addScore(totalClearedLines);
                 System.out.println("Player 1 cleared " + totalClearedLines + " lines! (" + completedLines + " completed + " + bombLines + " bomb lines)");
                 
-                // 아이템 모드일 때 ItemManager에 줄 삭제 알림 (총 삭제 줄 수)
-                if (itemManager1 != null) {
-                    itemManager1.onLinesCleared(totalClearedLines);
-                    
-                    // 아이템 블록 생성 조건 확인 - 다음 블록 생성 시 아이템 블록으로 변환하도록 플래그 설정
-                    if (itemManager1.shouldCreateItemBlock()) {
-                        System.out.println("Player 1: Item block will be created on next block generation!");
+                // LINE_CLEAR 아이템으로 인한 줄 삭제인지 확인
+                if (isItemLineClear1) {
+                    System.out.println("Player 1: LINE_CLEAR item caused " + totalClearedLines + " lines to be cleared - NOT counting for item generation or attack blocks");
+                    isItemLineClear1 = false; // 플래그 리셋
+                } else {
+                    // 아이템 모드일 때 ItemManager에 줄 삭제 알림 (총 삭제 줄 수)
+                    if (itemManager1 != null) {
+                        System.out.println("Player 1: Notifying ItemManager of " + totalClearedLines + " lines cleared (natural line clearing)");
+                        itemManager1.onLinesCleared(totalClearedLines);
+                        
+                        // 아이템 블록 생성 조건 확인 - 다음 블록 생성 시 아이템 블록으로 변환하도록 플래그 설정
+                        if (itemManager1.shouldCreateItemBlock()) {
+                            System.out.println("Player 1: Item block will be created on next block generation!");
+                        }
                     }
-                }
-                
-                // 일반 완성된 줄이 2줄 이상일 때만 상대방에게 공격 블록 생성 (아이템 줄은 제외)
-                if (completedLines >= 2) {
-                    generateAttackBlocks(fullLines, 2); // Player 2가 공격받음
-                    System.out.println("Player 1: Generated attack blocks based on " + completedLines + " completed lines (bomb lines excluded)");
+                    
+                    // 일반 완성된 줄이 2줄 이상일 때만 상대방에게 공격 블록 생성 (자연스러운 줄 삭제만)
+                    if (completedLines >= 2) {
+                        generateAttackBlocks(fullLines, 2); // Player 2가 공격받음
+                        System.out.println("Player 1: Generated attack blocks based on " + completedLines + " completed lines (bomb lines excluded)");
+                    }
                 }
             }
             
@@ -402,20 +433,27 @@ public class BattleScene extends Scene {
                 scoreManager2.addScore(totalClearedLines);
                 System.out.println("Player 2 cleared " + totalClearedLines + " lines! (" + completedLines + " completed + " + bombLines + " bomb lines)");
                 
-                // 아이템 모드일 때 ItemManager에 줄 삭제 알림 (총 삭제 줄 수)
-                if (itemManager2 != null) {
-                    itemManager2.onLinesCleared(totalClearedLines);
-                    
-                    // 아이템 블록 생성 조건 확인 - 다음 블록 생성 시 아이템 블록으로 변환하도록 플래그 설정
-                    if (itemManager2.shouldCreateItemBlock()) {
-                        System.out.println("Player 2: Item block will be created on next block generation!");
+                // LINE_CLEAR 아이템으로 인한 줄 삭제인지 확인
+                if (isItemLineClear2) {
+                    System.out.println("Player 2: LINE_CLEAR item caused " + totalClearedLines + " lines to be cleared - NOT counting for item generation or attack blocks");
+                    isItemLineClear2 = false; // 플래그 리셋
+                } else {
+                    // 아이템 모드일 때 ItemManager에 줄 삭제 알림 (총 삭제 줄 수)
+                    if (itemManager2 != null) {
+                        System.out.println("Player 2: Notifying ItemManager of " + totalClearedLines + " lines cleared (natural line clearing)");
+                        itemManager2.onLinesCleared(totalClearedLines);
+                        
+                        // 아이템 블록 생성 조건 확인 - 다음 블록 생성 시 아이템 블록으로 변환하도록 플래그 설정
+                        if (itemManager2.shouldCreateItemBlock()) {
+                            System.out.println("Player 2: Item block will be created on next block generation!");
+                        }
                     }
-                }
-                
-                // 일반 완성된 줄이 2줄 이상일 때만 상대방에게 공격 블록 생성 (아이템 줄은 제외)
-                if (completedLines >= 2) {
-                    generateAttackBlocks(fullLines, 1); // Player 1이 공격받음
-                    System.out.println("Player 2: Generated attack blocks based on " + completedLines + " completed lines (bomb lines excluded)");
+                    
+                    // 일반 완성된 줄이 2줄 이상일 때만 상대방에게 공격 블록 생성 (자연스러운 줄 삭제만)
+                    if (completedLines >= 2) {
+                        generateAttackBlocks(fullLines, 1); // Player 1이 공격받음
+                        System.out.println("Player 2: Generated attack blocks based on " + completedLines + " completed lines (bomb lines excluded)");
+                    }
                 }
             }
             
@@ -624,12 +662,26 @@ public class BattleScene extends Scene {
             int[][] board = boardMgr.getBoard();
             Color[][] boardColors = boardMgr.getBoardColors();
             int[][] boardTypes = boardMgr.getBoardTypes();
+            boolean[][] itemCells = boardMgr.getItemCells();
             
+            // 아이템 블록 정보는 개별적으로 이동해야 함
             for (int row = 0; row < GAME_HEIGHT - 1; row++) {
                 for (int col = 0; col < GAME_WIDTH; col++) {
                     board[row][col] = board[row + 1][col];
                     boardColors[row][col] = boardColors[row + 1][col];
                     boardTypes[row][col] = boardTypes[row + 1][col];
+                    itemCells[row][col] = itemCells[row + 1][col];
+                    
+                    // 아이템 블록 정보도 함께 이동
+                    if (itemCells[row + 1][col]) {
+                        tetris.scene.game.blocks.ItemBlock itemBlockInfo = boardMgr.getItemBlockInfo(col, row + 1);
+                        if (itemBlockInfo != null) {
+                            System.out.println("🔄 Moving item block info from (" + col + "," + (row + 1) + ") to (" + col + "," + row + ")");
+                            boardMgr.setItemBlockInfo(col, row, itemBlockInfo);
+                        }
+                    } else {
+                        boardMgr.setItemBlockInfo(col, row, null);
+                    }
                 }
             }
             
@@ -644,6 +696,9 @@ public class BattleScene extends Scene {
                     boardColors[GAME_HEIGHT - 1][col] = Color.BLACK;
                     boardTypes[GAME_HEIGHT - 1][col] = -1;
                 }
+                // 아래줄은 방해블록이므로 아이템 셀이 아님
+                itemCells[GAME_HEIGHT - 1][col] = false;
+                boardMgr.setItemBlockInfo(col, GAME_HEIGHT - 1, null);
             }
         }
     }
@@ -723,6 +778,8 @@ public class BattleScene extends Scene {
         // 점멸 효과 전용 타이머 (GameScene의 blinkTimer와 동일하게 50ms마다 실행)
         blinkTimer = new Timer(BLINK_INTERVAL_MS, e -> {
             if (!isGameOver) {
+                boolean needsRepaint = false;
+                
                 // 일시정지되지 않은 플레이어만 점멸 효과 업데이트
                 if (!gameStateManager1.isPaused()) {
                     lineBlinkEffect1.update();
@@ -735,8 +792,7 @@ public class BattleScene extends Scene {
                                 blockManager1.generateNextBlock();
                                 System.out.println("Player 1: Generated next block after WeightItemBlock disappeared");
                             }
-                            repaint();
-                            return;
+                            needsRepaint = true;
                         }
                     }
                 }
@@ -751,12 +807,19 @@ public class BattleScene extends Scene {
                                 blockManager2.generateNextBlock();
                                 System.out.println("Player 2: Generated next block after WeightItemBlock disappeared");
                             }
-                            repaint();
-                            return;
+                            needsRepaint = true;
                         }
                     }
                 }
-                repaint();
+                
+                // 청소 블링킹이 활성화되어 있으면 항상 화면 갱신 (점멸 애니메이션을 위해)
+                if (cleanupBlinkingActive1 || cleanupBlinkingActive2) {
+                    needsRepaint = true;
+                }
+                
+                if (needsRepaint) {
+                    repaint();
+                }
             }
         });
         
@@ -1334,6 +1397,20 @@ public class BattleScene extends Scene {
         return container;
     }
 
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        
+        // 전체 화면 퍼즈 오버레이 렌더링
+        if ((gameStateManager1.isPaused() || gameStateManager2.isPaused()) && 
+            !gameStateManager1.isGameOver() && !gameStateManager2.isGameOver()) {
+            System.out.println("🎨 Rendering main BattleScene pause overlay");
+            Graphics2D g2d = (Graphics2D) g.create();
+            renderPauseOverlayFallback(g2d);
+            g2d.dispose();
+        }
+    }
+
     private class GameBoardPanel extends JPanel {
         private final int playerNum;
         private final LineBlinkEffect lineBlinkEffect;
@@ -1350,19 +1427,39 @@ public class BattleScene extends Scene {
             Graphics2D g2 = (Graphics2D) g.create();
             
             // RenderManager를 사용하여 GameScene과 100% 동일하게 렌더링
-            // LineBlinkEffect를 RenderManager에 전달하여 점멸 효과가 제대로 렌더링되도록 함
+            // LineBlinkEffect와 청소 블링킹을 RenderManager에 전달하여 점멸 효과가 제대로 렌더링되도록 함
             RenderManager renderMgr = (playerNum == 1) ? renderManager1 : renderManager2;
             if (renderMgr != null) {
+                // 각 플레이어별 청소 블링킹 상태 확인
+                boolean cleanupActive = (playerNum == 1) ? cleanupBlinkingActive1 : cleanupBlinkingActive2;
+                java.util.Set<java.awt.Point> cleanupCells = (playerNum == 1) ? cleanupBlinkingCells1 : cleanupBlinkingCells2;
+                
                 renderMgr.render(g2, getWidth(), getHeight(), lineBlinkEffect, 
-                               null, 0, 0, false, false, new java.util.HashSet<>());
+                               null, 0, 0, false, cleanupActive, cleanupCells);
             }
             
             // 양쪽 중 하나라도 일시정지 상태이면 PAUSED 오버레이 표시
             // (P2P 대전에서 양쪽 동기화를 위해 필요)
-            if (renderMgr != null && (gameStateManager1.isPaused() || gameStateManager2.isPaused()) && 
-                !gameStateManager1.isGameOver() && !gameStateManager2.isGameOver()) {
-                int cellSize = renderMgr.getCellSize();
-                renderPauseOverlayOnBoard(g2, cellSize);
+            boolean isPaused1 = gameStateManager1.isPaused();
+            boolean isPaused2 = gameStateManager2.isPaused();
+            boolean isGameOver1 = gameStateManager1.isGameOver();
+            boolean isGameOver2 = gameStateManager2.isGameOver();
+            
+            if ((isPaused1 || isPaused2) && !isGameOver1 && !isGameOver2) {
+                // System.out.println("🔍 DEBUG PAUSE: isPaused1=" + isPaused1 + ", isPaused2=" + isPaused2 + 
+                //                    ", isGameOver1=" + isGameOver1 + ", isGameOver2=" + isGameOver2 + 
+                //                    ", renderMgr=" + (renderMgr != null ? "NOT_NULL" : "NULL"));
+                
+                if (renderMgr != null) {
+                    // RenderManager를 통한 퍼즈 화면 렌더링
+                    int cellSize = renderMgr.getCellSize();
+                    // System.out.println("🎨 Rendering pause overlay with cellSize: " + cellSize);
+                    renderPauseOverlayOnBoard(g2, cellSize);
+                } else {
+                    // RenderManager가 null인 경우 대안 퍼즈 화면 렌더링
+                    System.out.println("🎨 Rendering fallback pause overlay");
+                    renderPauseOverlayFallback(g2);
+                }
             }
             
             // 시간제한 모드일 때 기존 시간 표시 영역을 덮어쓰기
@@ -1455,7 +1552,42 @@ public class BattleScene extends Scene {
             Stack<AttackBlock> currentStack = (playerNum == 1) ? attackQueue1 : attackQueue2;
             drawAttackQueue(g2, currentStack, previewX, attackBoardY + 10, previewCellSize, attackBoardWidth, attackBoardHeight);
             
+            // 시야 제한 효과 렌더링 (일반모드와 동일한 효과 적용)
+            if ((playerNum == 1 && visionBlockActive1) || (playerNum == 2 && visionBlockActive2)) {
+                renderVisionBlockEffect(g2);
+            }
+            
             g2.dispose();
+        }
+        
+        /**
+         * 일반모드와 동일한 시야 차단 효과를 렌더링합니다.
+         * 게임 보드의 중앙 4x20 영역을 완전 불투명한 검정색으로 가립니다.
+         */
+        private void renderVisionBlockEffect(Graphics2D g2) {
+            RenderManager renderMgr = (playerNum == 1) ? renderManager1 : renderManager2;
+            if (renderMgr == null) return;
+            
+            int cellSize = renderMgr.getCellSize();
+            
+            // 게임 보드 중앙 영역 계산 (일반모드와 동일)
+            int boardStartX = cellSize;  // 보드 시작 X 위치 (경계 고려)
+            int boardStartY = cellSize;  // 보드 시작 Y 위치 (경계 고려)
+            
+            // 중앙 4x20 영역을 가림 (10x20 보드의 중간 부분)
+            int coverWidth = 4 * cellSize;   // 4블록 너비
+            int coverHeight = 20 * cellSize;  // 20블록 높이 (전체 높이)
+            int coverX = boardStartX + 3 * cellSize;  // 좌측에서 3블록 떨어진 위치 (중앙)
+            int coverY = boardStartY;  // 상단부터 시작
+            
+            // 완전 불투명 검정 오버레이로 시야 차단 (일반모드와 동일)
+            g2.setColor(new Color(0, 0, 0, 255)); // 완전 불투명 검정
+            g2.fillRect(coverX, coverY, coverWidth, coverHeight);
+            
+            // 시야 차단 효과 경계선 (일반모드와 동일)
+            g2.setColor(new Color(255, 0, 0, 100)); // 반투명 빨강 경계선
+            g2.setStroke(new BasicStroke(2));
+            g2.drawRect(coverX, coverY, coverWidth, coverHeight);
         }
     }
     
@@ -1647,5 +1779,347 @@ public class BattleScene extends Scene {
         int exitY = instructionY + 25; // 재개 안내 텍스트 아래 25px
         
         g2d.drawString(exitText, exitX, exitY);
+    }
+    
+    /**
+     * RenderManager가 null인 경우 대안 퍼즈 화면을 렌더링합니다.
+     */
+    private void renderPauseOverlayFallback(Graphics2D g2d) {
+        // 전체 화면에 반투명 오버레이
+        g2d.setColor(new Color(0, 0, 0, 150)); // 반투명 검은색
+        g2d.fillRect(0, 0, getWidth(), getHeight());
+        
+        // PAUSED 텍스트
+        g2d.setColor(Color.WHITE);
+        g2d.setFont(new Font("Arial", Font.BOLD, 48));
+        FontMetrics fm = g2d.getFontMetrics();
+        String pausedText = "PAUSED";
+        int textWidth = fm.stringWidth(pausedText);
+        int textHeight = fm.getHeight();
+        
+        // 화면 중앙에 텍스트 배치
+        int screenCenterX = getWidth() / 2;
+        int screenCenterY = getHeight() / 2;
+        
+        int textX = screenCenterX - textWidth / 2;
+        int textY = screenCenterY + textHeight / 4; // 텍스트 베이스라인 조정
+        
+        g2d.drawString(pausedText, textX, textY);
+        
+        // 부가 안내 텍스트
+        g2d.setFont(new Font("Arial", Font.PLAIN, 16));
+        FontMetrics smallFm = g2d.getFontMetrics();
+        String instructionText = "Press P to resume";
+        int instructionWidth = smallFm.stringWidth(instructionText);
+        int instructionX = screenCenterX - instructionWidth / 2;
+        int instructionY = textY + 60; // PAUSED 텍스트 아래 60px
+        
+        g2d.drawString(instructionText, instructionX, instructionY);
+        
+        // Q 키로 메뉴로 돌아가기 안내 텍스트
+        String exitText = "Press Q to return to menu";
+        int exitWidth = smallFm.stringWidth(exitText);
+        int exitX = screenCenterX - exitWidth / 2;
+        int exitY = instructionY + 25; // 재개 안내 텍스트 아래 25px
+        
+        g2d.drawString(exitText, exitX, exitY);
+    }
+    
+    // ========== 상대방 아이템 효과 처리 메서드들 ==========
+    
+    /**
+     * 상대방에게 낙하속도 증가 효과 적용
+     */
+    public void applySpeedUpToOpponent(int sourcePlayer) {
+        System.out.println("🚀 applySpeedUpToOpponent called by Player " + sourcePlayer);
+        
+        if (sourcePlayer == 1) {
+            // Player 2의 속도를 빠르게
+            if (fallTimer2 != null) {
+                fallTimer2.setDelay(400);
+            }
+            System.out.println("🚀 Player 1이 Player 2에게 낙하속도 증가 적용!");
+        } else {
+            // Player 1의 속도를 빠르게  
+            if (fallTimer1 != null) {
+                fallTimer1.setDelay(400);
+            }
+            System.out.println("🚀 Player 2가 Player 1에게 낙하속도 증가 적용!");
+        }
+        
+        // 5초 후 원래 속도로 복구
+        Timer restoreTimer = new Timer(5000, e -> {
+            GameSettings.Difficulty difficulty = GameSettings.getInstance().getDifficulty();
+            int normalSpeed = getInitialDelay(difficulty);
+            if (sourcePlayer == 1) {
+                if (fallTimer2 != null) {
+                    fallTimer2.setDelay(normalSpeed);
+                }
+                System.out.println("🔄 Player 2 속도 복구 완료");
+            } else {
+                if (fallTimer1 != null) {
+                    fallTimer1.setDelay(normalSpeed);
+                }
+                System.out.println("🔄 Player 1 속도 복구 완료");
+            }
+        });
+        restoreTimer.setRepeats(false);
+        restoreTimer.start();
+    }
+    
+    /**
+     * 상대방에게 낙하속도 감소 효과 적용
+     */
+    public void applySpeedDownToOpponent(int sourcePlayer) {
+        System.out.println("🐌 applySpeedDownToOpponent called by Player " + sourcePlayer);
+        
+        if (sourcePlayer == 1) {
+            // Player 2의 속도를 느리게
+            if (fallTimer2 != null) {
+                fallTimer2.setDelay(1500);
+            }
+            System.out.println("🐌 Player 1이 Player 2에게 낙하속도 감소 적용!");
+        } else {
+            // Player 1의 속도를 느리게
+            if (fallTimer1 != null) {
+                fallTimer1.setDelay(1500);
+            }
+            System.out.println("🐌 Player 2가 Player 1에게 낙하속도 감소 적용!");
+        }
+        
+        // 5초 후 원래 속도로 복구
+        Timer restoreTimer = new Timer(5000, e -> {
+            GameSettings.Difficulty difficulty = GameSettings.getInstance().getDifficulty();
+            int normalSpeed = getInitialDelay(difficulty);
+            if (sourcePlayer == 1) {
+                if (fallTimer2 != null) {
+                    fallTimer2.setDelay(normalSpeed);
+                }
+                System.out.println("🔄 Player 2 속도 복구 완료");
+            } else {
+                if (fallTimer1 != null) {
+                    fallTimer1.setDelay(normalSpeed);
+                }
+                System.out.println("🔄 Player 1 속도 복구 완료");
+            }
+        });
+        restoreTimer.setRepeats(false);
+        restoreTimer.start();
+    }
+    
+    /**
+     * 상대방에게 시야제한 효과 적용
+     */
+    public void applyVisionBlockToOpponent(int sourcePlayer) {
+        System.out.println("👁️ applyVisionBlockToOpponent called by Player " + sourcePlayer);
+        
+        if (sourcePlayer == 1) {
+            setVisionBlockActive2(true);
+            System.out.println("👁️ Player 1이 Player 2에게 시야제한 적용!");
+        } else {
+            setVisionBlockActive1(true);
+            System.out.println("👁️ Player 2가 Player 1에게 시야제한 적용!");
+        }
+        
+        // 3초 후 시야제한 해제
+        Timer restoreTimer = new Timer(3000, e -> {
+            if (sourcePlayer == 1) {
+                setVisionBlockActive2(false);
+                System.out.println("🔄 Player 2 시야제한 해제!");
+            } else {
+                setVisionBlockActive1(false);
+                System.out.println("🔄 Player 1 시야제한 해제!");
+            }
+            repaint();
+        });
+        restoreTimer.setRepeats(false);
+        restoreTimer.start();
+        repaint();
+    }
+    
+    // ========== 시야 차단 관련 헬퍼 메서드들 ==========
+    
+    private void setVisionBlockActive1(boolean active) {
+        this.visionBlockActive1 = active;
+        System.out.println("🔍 DEBUG: Player 1 vision block set to " + active);
+        repaint();
+    }
+    
+    private void setVisionBlockActive2(boolean active) {
+        this.visionBlockActive2 = active;
+        System.out.println("🔍 DEBUG: Player 2 vision block set to " + active);
+        repaint();
+    }
+    
+    // ========== 청소 블링킹 관련 메서드들 ==========
+    
+    /**
+     * Player 1의 청소 블링킹 효과를 시작합니다.
+     * @param cells 블링킹할 셀 좌표들
+     */
+    public void startCleanupBlinking1(java.util.Set<java.awt.Point> cells) {
+        if (cells.isEmpty()) return;
+        cleanupBlinkingCells1.clear();
+        cleanupBlinkingCells1.addAll(cells);
+        cleanupBlinkingActive1 = true;
+        System.out.println("🧹 Player 1 cleanup blinking started for " + cells.size() + " cells");
+    }
+    
+    /**
+     * Player 2의 청소 블링킹 효과를 시작합니다.
+     * @param cells 블링킹할 셀 좌표들
+     */
+    public void startCleanupBlinking2(java.util.Set<java.awt.Point> cells) {
+        if (cells.isEmpty()) return;
+        cleanupBlinkingCells2.clear();
+        cleanupBlinkingCells2.addAll(cells);
+        cleanupBlinkingActive2 = true;
+        System.out.println("🧹 Player 2 cleanup blinking started for " + cells.size() + " cells");
+    }
+    
+    /**
+     * Player 1의 청소 블링킹 효과를 중지합니다.
+     */
+    public void stopCleanupBlinking1() {
+        cleanupBlinkingActive1 = false;
+        cleanupBlinkingCells1.clear();
+        System.out.println("🚫 Player 1 cleanup blinking stopped");
+    }
+    
+    /**
+     * Player 2의 청소 블링킹 효과를 중지합니다.
+     */
+    public void stopCleanupBlinking2() {
+        cleanupBlinkingActive2 = false;
+        cleanupBlinkingCells2.clear();
+        System.out.println("🚫 Player 2 cleanup blinking stopped");
+    }
+    
+    /**
+     * LINE_CLEAR 아이템이 사용되었음을 표시합니다.
+     * 이후 줄 삭제는 아이템으로 인한 것으로 간주되어 아이템 생성 카운트와 방해블록 생성에서 제외됩니다.
+     */
+    public void markItemLineClear() {
+        // 현재 활성화된 플레이어의 아이템 줄 삭제 플래그를 설정
+        // LineClearEffect에서 호출되므로 어느 플레이어의 효과인지 확인 필요
+        // 일단 둘 다 설정하고, 실제 줄 삭제 시 해당 플레이어만 처리
+        isItemLineClear1 = true;
+        isItemLineClear2 = true;
+        System.out.println("BattleScene: Marked next line clearing as item-caused for both players");
+    }
+    
+    /**
+     * 특정 플레이어의 LINE_CLEAR 아이템이 사용되었음을 표시합니다.
+     * @param playerNumber 플레이어 번호 (1 또는 2)
+     */
+    public void markItemLineClear(int playerNumber) {
+        if (playerNumber == 1) {
+            isItemLineClear1 = true;
+            System.out.println("BattleScene: Marked next line clearing as item-caused for Player 1");
+        } else if (playerNumber == 2) {
+            isItemLineClear2 = true;
+            System.out.println("BattleScene: Marked next line clearing as item-caused for Player 2");
+        }
+    }
+    
+    /**
+     * 시야 제한 효과를 적용합니다. (VisionBlockEffect 호환성을 위한 메서드)
+     * ItemEffectContext의 playerNumber를 확인하여 적절한 플레이어에게 효과를 적용합니다.
+     * @param active 시야 제한 활성화 여부
+     */
+    public void setVisionBlockActive(boolean active) {
+        // 이 메서드는 VisionBlockEffect에서 호출되므로,
+        // 실제로는 어느 플레이어의 효과인지를 구분할 수 없습니다.
+        // 따라서 VisionBlockEffect가 배틀 모드에서 플레이어별로 호출되도록 수정이 필요합니다.
+        System.out.println("⚠️ BattleScene.setVisionBlockActive called but player not specified");
+        
+        // 임시 방편으로 두 플레이어 모두에게 적용 (이는 올바르지 않으므로 VisionBlockEffect 수정 필요)
+        setVisionBlockActive1(active);
+        setVisionBlockActive2(active);
+    }
+    
+    /**
+     * 특정 플레이어에게 시야 제한 효과를 적용합니다.
+     * @param playerNumber 플레이어 번호 (1 또는 2)
+     * @param active 시야 제한 활성화 여부
+     */
+    public void setVisionBlockActive(int playerNumber, boolean active) {
+        if (playerNumber == 1) {
+            setVisionBlockActive1(active);
+        } else if (playerNumber == 2) {
+            setVisionBlockActive2(active);
+        }
+        System.out.println("👁️ BattleScene: Set vision block for Player " + playerNumber + " to " + active);
+    }
+    
+    // ========== 속도 아이템 관련 메서드들 ==========
+    
+    /**
+     * 속도 아이템 효과 활성화 상태를 설정합니다 (단일 플레이어 모드 호환성)
+     * @param active 활성화 여부
+     */
+    public void setSpeedItemActive(boolean active) {
+        // VisionBlockEffect와 동일한 패턴으로 처리
+        System.out.println("⚠️ BattleScene.setSpeedItemActive called but player not specified");
+        // 양쪽 모두에게 적용하지 않도록 수정 필요
+    }
+    
+    /**
+     * 특정 플레이어에게 속도 아이템 효과 활성화 상태를 설정합니다.
+     * @param playerNumber 플레이어 번호 (1 또는 2)
+     * @param active 활성화 여부
+     */
+    public void setSpeedItemActive(int playerNumber, boolean active) {
+        System.out.println("⚡ BattleScene: Set speed item active for Player " + playerNumber + " to " + active);
+        // 현재는 로그만 남김 (필요시 상태 추적 가능)
+    }
+    
+    /**
+     * 현재 낙하 속도를 반환합니다 (단일 플레이어 모드 호환성)
+     * @return 현재 낙하 속도 (밀리초 단위 딜레이)
+     */
+    public double getFallSpeed() {
+        System.out.println("⚠️ BattleScene.getFallSpeed called but player not specified");
+        // 기본값 반환
+        return 800.0;
+    }
+    
+    /**
+     * 특정 플레이어의 현재 낙하 속도를 반환합니다.
+     * @param playerNumber 플레이어 번호 (1 또는 2)
+     * @return 현재 낙하 속도 (밀리초 단위 딜레이)
+     */
+    public double getFallSpeed(int playerNumber) {
+        Timer timer = (playerNumber == 1) ? fallTimer1 : fallTimer2;
+        if (timer != null) {
+            return timer.getDelay();
+        }
+        return 800.0; // 기본값
+    }
+    
+    /**
+     * 낙하 속도를 설정합니다 (단일 플레이어 모드 호환성)
+     * @param speed 새로운 낙하 속도 (밀리초 단위 딜레이)
+     */
+    public void setFallSpeed(double speed) {
+        System.out.println("⚠️ BattleScene.setFallSpeed called but player not specified");
+        // 양쪽 모두에게 적용하지 않도록 수정 필요
+    }
+    
+    /**
+     * 특정 플레이어의 낙하 속도를 설정합니다.
+     * @param playerNumber 플레이어 번호 (1 또는 2)
+     * @param speed 새로운 낙하 속도 (밀리초 단위 딜레이)
+     */
+    public void setFallSpeed(int playerNumber, double speed) {
+        Timer timer = (playerNumber == 1) ? fallTimer1 : fallTimer2;
+        if (timer != null) {
+            int oldDelay = timer.getDelay();
+            int delay = Math.max(10, (int) Math.round(speed)); // 최소 10ms로 제한 완화
+            timer.setDelay(delay);
+            System.out.println("⚡ BattleScene.setFallSpeed: Player " + playerNumber + " speed changed from " + oldDelay + "ms to " + delay + "ms (requested: " + speed + "ms)");
+        } else {
+            System.out.println("⚠️ BattleScene.setFallSpeed: Timer is null for Player " + playerNumber);
+        }
     }
 }
