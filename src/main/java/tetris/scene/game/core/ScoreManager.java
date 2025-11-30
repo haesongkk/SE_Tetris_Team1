@@ -217,34 +217,34 @@ public class ScoreManager {
 
         // 점수 정보 표시
         g2d.setColor(Color.WHITE);
-        g2d.setFont(new Font("Arial", Font.BOLD, 12));
+        g2d.setFont(new Font("Arial", Font.BOLD, 10)); // 폰트 크기 줄임 (12 -> 10)
         FontMetrics fm = g2d.getFontMetrics();
 
         // "SCORE" 라벨
         String scoreLabel = "SCORE";
         int labelWidth = fm.stringWidth(scoreLabel);
-        g2d.drawString(scoreLabel, scoreBoardX + (scoreBoardWidth - labelWidth) / 2, scoreBoardY + 20);
+        g2d.drawString(scoreLabel, scoreBoardX + (scoreBoardWidth - labelWidth) / 2, scoreBoardY + 15); // 위치 조정 (20 -> 15)
 
         // 현재 점수
-        g2d.setFont(new Font("Arial", Font.BOLD, 16));
+        g2d.setFont(new Font("Arial", Font.BOLD, 14)); // 폰트 크기 줄임 (16 -> 14)
         fm = g2d.getFontMetrics();
         String scoreText = String.format("%,d", score);
         int scoreWidth = fm.stringWidth(scoreText);
-        g2d.drawString(scoreText, scoreBoardX + (scoreBoardWidth - scoreWidth) / 2, scoreBoardY + 45);
+        g2d.drawString(scoreText, scoreBoardX + (scoreBoardWidth - scoreWidth) / 2, scoreBoardY + 32); // 위치 조정 (45 -> 32)
         
         // 배율 정보 표시 (디버깅용)
-        g2d.setFont(new Font("Arial", Font.PLAIN, 10));
+        g2d.setFont(new Font("Arial", Font.PLAIN, 8)); // 폰트 크기 줄임 (10 -> 8)
         fm = g2d.getFontMetrics();
         
         // 속도 배율
         String speedMultiplierText = String.format("Speed: %.1fx", speedMultiplier);
         int speedMultiplierWidth = fm.stringWidth(speedMultiplierText);
-        g2d.drawString(speedMultiplierText, scoreBoardX + (scoreBoardWidth - speedMultiplierWidth) / 2, scoreBoardY + 65);
+        g2d.drawString(speedMultiplierText, scoreBoardX + (scoreBoardWidth - speedMultiplierWidth) / 2, scoreBoardY + 50); // 위치 조정 (65 -> 50)
         
         // 난이도 배율
         String difficultyMultiplierText = String.format("Difficulty: %.1fx", difficultyMultiplier);
         int difficultyMultiplierWidth = fm.stringWidth(difficultyMultiplierText);
-        g2d.drawString(difficultyMultiplierText, scoreBoardX + (scoreBoardWidth - difficultyMultiplierWidth) / 2, scoreBoardY + 78);
+        g2d.drawString(difficultyMultiplierText, scoreBoardX + (scoreBoardWidth - difficultyMultiplierWidth) / 2, scoreBoardY + 62); // 위치 조정 (78 -> 62)
         
     }
 }

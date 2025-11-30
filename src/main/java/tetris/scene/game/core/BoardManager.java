@@ -25,6 +25,7 @@ public class BoardManager {
     private ItemManager itemManager; // 아이템 모드 관리자 (null이면 일반 모드)
     private Object gameScene; // GameScene 참조 (아이템 효과용)
     private Object blockManager; // BlockManager 참조 (아이템 효과용)
+    private int playerNumber = 1; // 플레이어 번호 (BattleScene에서 설정, 기본값은 1)
     
     public BoardManager() {
         initializeBoard();
@@ -438,6 +439,20 @@ public class BoardManager {
     }
     
     /**
+     * 플레이어 번호를 가져옵니다.
+     */
+    public int getPlayerNumber() {
+        return playerNumber;
+    }
+    
+    /**
+     * 플레이어 번호를 설정합니다 (BattleScene에서 사용).
+     */
+    public void setPlayerNumber(int playerNumber) {
+        this.playerNumber = playerNumber;
+    }
+    
+    /**
      * 특정 위치가 폭탄 셀인지 확인합니다.
      */
     public boolean isBombCell(int x, int y) {
@@ -524,25 +539,39 @@ public class BoardManager {
                 for (int col = 0; col < GAME_WIDTH; col++) {
                     if (itemCells[row][col] && itemBlockInfo[row][col] != null) {
                         ItemBlock itemBlock = itemBlockInfo[row][col];
-                        // 줄 삭제 시에는 LINE_CLEAR와 SPEED 아이템들 활성화
-                        // (VISION_BLOCK, CLEANUP 아이템들은 바닥 착지 시에만 활성화)
+                        // 줄 삭제 시에는 LINE_CLEAR, SPEED 아이템들 활성화
+                        // (CLEANUP, VISION_BLOCK 아이템들은 바닥 착지 시에만 활성화)
                         if (itemBlock.getItemType() == ItemEffectType.LINE_CLEAR ||
                             itemBlock.getItemType() == ItemEffectType.SPEED_UP ||
                             itemBlock.getItemType() == ItemEffectType.SPEED_DOWN) {
                             System.out.println("🎯 Activating " + itemBlock.getItemType().getDisplayName() + " item effect in cleared line at (" + col + "," + row + ")");
                             
-                            // 아이템 효과 생성 및 활성화
-                            ItemEffect effect = ItemEffectFactory.createEffect(itemBlock.getItemType());
-                            if (effect != null) {
-                                ItemEffectContext context = new ItemEffectContext(
-                                    getBoard(), col, row
-                                );
-                                // 필요한 컨텍스트 정보 설정
-                                context.setBoardManager(this);
-                                context.setBlockManager(blockManager);
-                                context.setGameScene(gameScene);
-                                
-                                itemManager.activateItemEffect(effect, context);
+                            // 배틀 모드 체크
+                            boolean isBattle = isBattleMode();
+                            boolean isOpponentItem = isOpponentTargetItem(itemBlock.getItemType());
+                            System.out.println("🔍 Battle mode: " + isBattle + ", Opponent target item: " + isOpponentItem);
+                            
+                            // 배틀 모드에서 상대방 효과 아이템인지 확인
+                            if (isBattle && isOpponentItem) {
+                                System.out.println("⚔️ Applying effect to opponent!");
+                                // 상대방에게 효과 적용
+                                applyItemEffectToOpponent(itemBlock, col, row);
+                            } else {
+                                System.out.println("🔄 Applying normal item effect to self");
+                                // 일반 아이템 효과 생성 및 활성화
+                                ItemEffect effect = ItemEffectFactory.createEffect(itemBlock.getItemType());
+                                if (effect != null) {
+                                    ItemEffectContext context = new ItemEffectContext(
+                                        getBoard(), col, row
+                                    );
+                                    // 필요한 컨텍스트 정보 설정
+                                    context.setBoardManager(this);
+                                    context.setBlockManager(blockManager);
+                                    context.setGameScene(gameScene);
+                                    context.setPlayerNumber(playerNumber); // 플레이어 번호 설정
+                                    
+                                    itemManager.activateItemEffect(effect, context);
+                                }
                             }
                         } else {
                             System.out.println("⏭️ Skipping " + itemBlock.getItemType().getDisplayName() + 
@@ -551,6 +580,80 @@ public class BoardManager {
                     }
                 }
             }
+        }
+    }
+    
+    /**
+     * 배틀 모드인지 확인
+     */
+    private boolean isBattleMode() {
+        boolean result = gameScene != null && gameScene.getClass().getSimpleName().equals("BattleScene");
+        System.out.println("🔍 isBattleMode check: gameScene=" + (gameScene != null ? gameScene.getClass().getSimpleName() : "null") + ", result=" + result);
+        return result;
+    }
+    
+    /**
+     * 상대방을 대상으로 하는 아이템인지 확인
+     */
+    private boolean isOpponentTargetItem(ItemEffectType itemType) {
+        return itemType == ItemEffectType.SPEED_UP || 
+               itemType == ItemEffectType.SPEED_DOWN;
+    }
+    
+    /**
+     * 배틀 모드에서 상대방에게 아이템 효과 적용
+     */
+    private void applyItemEffectToOpponent(ItemBlock itemBlock, int col, int row) {
+        System.out.println("🎯 applyItemEffectToOpponent called for " + itemBlock.getItemType().getDisplayName());
+        
+        try {
+            // 현재 플레이어 번호 확인 (1 또는 2)
+            int currentPlayer = determinePlayerNumber();
+            
+            System.out.println("🎯 Player " + currentPlayer + " using " + itemBlock.getItemType().getDisplayName() + " → affects opponent");
+            
+            // BattleScene의 상대방 효과 메서드 호출
+            switch (itemBlock.getItemType()) {
+                case SPEED_UP:
+                    System.out.println("🚀 Calling applySpeedUpToOpponent");
+                    gameScene.getClass()
+                        .getMethod("applySpeedUpToOpponent", int.class)
+                        .invoke(gameScene, currentPlayer);
+                    break;
+                    
+                case SPEED_DOWN:
+                    System.out.println("🐌 Calling applySpeedDownToOpponent");
+                    gameScene.getClass()
+                        .getMethod("applySpeedDownToOpponent", int.class)
+                        .invoke(gameScene, currentPlayer);
+                    break;
+                    
+                default:
+                    System.out.println("⚠️ Unknown opponent target item: " + itemBlock.getItemType());
+                    break;
+            }
+            
+        } catch (Exception e) {
+            System.err.println("❌ Failed to apply opponent effect: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * 현재 플레이어 번호 확인 (1 또는 2)
+     */
+    private int determinePlayerNumber() {
+        // BattleScene에서 boardManager1이면 1, boardManager2이면 2
+        try {
+            Object boardManager1 = gameScene.getClass().getField("boardManager1").get(gameScene);
+            if (boardManager1 == this) {
+                return 1;
+            } else {
+                return 2;
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to determine player number: " + e.getMessage());
+            return 1; // 기본값
         }
     }
     
@@ -682,6 +785,26 @@ public class BoardManager {
             System.out.println("Set board color at (" + x + ", " + y + ") to " + color);
         } else {
             System.out.println("Invalid coordinates for setBoardColor: (" + x + ", " + y + ")");
+        }
+    }
+    
+    /**
+     * 지정된 위치에 아이템 블록 정보를 설정합니다.
+     * @param x x 좌표
+     * @param y y 좌표
+     * @param itemBlock 설정할 아이템 블록 (null이면 제거)
+     */
+    public void setItemBlockInfo(int x, int y, tetris.scene.game.blocks.ItemBlock itemBlock) {
+        if (y >= 0 && y < GAME_HEIGHT && x >= 0 && x < GAME_WIDTH) {
+            itemBlockInfo[y][x] = itemBlock;
+            itemCells[y][x] = (itemBlock != null);
+            if (itemBlock != null) {
+                System.out.println("Set item block info at (" + x + ", " + y + ") with " + itemBlock.getItemType().getDisplayName());
+            } else {
+                System.out.println("Cleared item block info at (" + x + ", " + y + ")");
+            }
+        } else {
+            System.out.println("Invalid coordinates for setItemBlockInfo: (" + x + ", " + y + ")");
         }
     }
     

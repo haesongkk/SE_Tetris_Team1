@@ -620,7 +620,7 @@ public class GameScene extends Scene implements InputHandler.InputCallback, Game
             if (renderManager != null) {
                 renderManager.render(g2d, getWidth(), getHeight(), timerManager.getLineBlinkEffect(), 
                                    lastBlock, lastBlockX, lastBlockY, visionBlockActive,
-                                   cleanupBlinkingActive, cleanupBlinkingCells);
+                                   cleanupBlinkingActive, cleanupBlinkingCells, false);
             }
         }
     }

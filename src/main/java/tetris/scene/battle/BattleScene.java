@@ -157,6 +157,9 @@ public class BattleScene extends Scene {
         
         setupLayout(frame);
         setupTimers();
+        
+        // 테스트용: 공격 블록 10줄 미리 채우기 (화면 확인용)
+        fillTestAttackBlocks();
     }
     
     /**
@@ -166,6 +169,49 @@ public class BattleScene extends Scene {
         if (gameMode == null) return false;
         return gameMode.equals("item") || gameMode.equals("아이템 모드") || 
                gameMode.toLowerCase().contains("item") || gameMode.contains("아이템");
+    }
+    
+    /**
+     * 테스트용: 공격 블록 10줄을 미리 채워넣어서 화면에서 확인할 수 있도록 합니다.
+     */
+    private void fillTestAttackBlocks() {
+        System.out.println("테스트용 공격 블록 10줄 생성 중...");
+        
+        // Player 1과 Player 2 모두에게 10줄씩 공격 블록 추가
+        for (int line = 0; line < 10; line++) {
+            // 각 줄마다 다른 패턴으로 생성
+            boolean[] pattern = new boolean[GAME_WIDTH];
+            Color[] colors = new Color[GAME_WIDTH];
+            int[] blockTypes = new int[GAME_WIDTH];
+            
+            // 랜덤하게 1~2개의 구멍 생성
+            int holeCount = 1 + (int)(Math.random() * 2); // 1-2개
+            java.util.Set<Integer> holes = new java.util.HashSet<>();
+            for (int h = 0; h < holeCount; h++) {
+                holes.add((int)(Math.random() * GAME_WIDTH));
+            }
+            
+            // 패턴 생성
+            for (int col = 0; col < GAME_WIDTH; col++) {
+                if (holes.contains(col)) {
+                    // 구멍
+                    pattern[col] = false;
+                    colors[col] = Color.BLACK;
+                    blockTypes[col] = 0;
+                } else {
+                    // 방해 블록
+                    pattern[col] = true;
+                    colors[col] = Color.GRAY;
+                    blockTypes[col] = 8; // 방해블록 타입
+                }
+            }
+            
+            // Player 1과 Player 2에게 각각 추가
+            attackQueue1.push(new AttackBlock(GAME_WIDTH, pattern, colors, blockTypes));
+            attackQueue2.push(new AttackBlock(GAME_WIDTH, pattern.clone(), colors.clone(), blockTypes.clone()));
+        }
+        
+        System.out.println("테스트용 공격 블록 생성 완료: Player 1 = " + attackQueue1.size() + "줄, Player 2 = " + attackQueue2.size() + "줄");
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -1356,14 +1402,14 @@ public class BattleScene extends Scene {
         int frameWidth = m_frame.getWidth();
         
         // 배틀 모드: 두 보드가 좌우로 배치되므로 너비를 절반으로 나눔
-        int availableWidth = (frameWidth - 150) / 2; // 간격과 여백을 더 크게 고려 (100 -> 150)
-        int availableHeight = frameHeight - 100; // 상하 여백 고려
+        int availableWidth = (frameWidth - 200) / 2; // 간격과 여백을 더 크게 고려 (150 -> 200)
+        int availableHeight = frameHeight - 150; // 상하 여백을 더 크게 고려 (100 -> 150)
         
-        // 셀 크기 계산 (보드 크기 + 미리보기 영역 + 공격 블록 표시 영역 고려)
-        int cellSizeByHeight = availableHeight / (GAME_HEIGHT + 2);
-        int cellSizeByWidth = availableWidth / (GAME_WIDTH + 2 + PREVIEW_SIZE + 4); // 보드 + 미리보기 + 공격블록 여유공간
+        // 셀 크기 계산 (보드 크기 + 미리보기 영역 + 공격 블록 표시 영역 + 텍스트 영역 고려)
+        int cellSizeByHeight = availableHeight / (GAME_HEIGHT + 4); // 높이 여백 증가 (2 -> 4)
+        int cellSizeByWidth = availableWidth / (GAME_WIDTH + 2 + PREVIEW_SIZE + 6); // 너비 여백 증가 (4 -> 6)
         int cellSize = Math.min(cellSizeByHeight, cellSizeByWidth);
-        cellSize = Math.max(15, Math.min(cellSize, 35)); // 15~35 사이로 제한
+        cellSize = Math.max(12, Math.min(cellSize, 30)); // 크기 범위 조정 (15~35 -> 12~30)
         
         int previewCellSize = cellSize * 2 / 3; // 셀 크기의 2/3
         
@@ -1379,16 +1425,40 @@ public class BattleScene extends Scene {
             );
         }
 
-        // 패널 크기 설정 (공격 블록 표시 영역도 고려)
-        final int PREVIEW_MARGIN = 40;
-        final int ATTACK_DISPLAY_MARGIN = 60; // 공격 블록 표시 영역을 위한 추가 여백
-        int previewWidth = PREVIEW_SIZE * previewCellSize + PREVIEW_MARGIN;
-        int attackDisplayWidth = ATTACK_DISPLAY_MARGIN; // 공격 표시 영역 너비
+        // 패널 크기 설정 (해상도별 조건부 크기 조정)
+        int currentFrameHeight = m_frame.getHeight();
+        int currentFrameWidth = m_frame.getWidth();
+        // 작은 화면 판단: 높이 ≤ 600 또는 너비 ≤ 1024 (1024x768 등 포함)
+        boolean isSmallScreen = currentFrameHeight <= 600 || currentFrameWidth <= 1024;
         
-        gamePanel.setPreferredSize(new Dimension(
-            (GAME_WIDTH + 2) * cellSize + previewWidth + attackDisplayWidth, // 공격 표시 영역 추가
-            (GAME_HEIGHT + 4) * cellSize // 높이도 조금 더 여유롭게 (2 -> 4)
-        ));
+        final int PREVIEW_MARGIN = 60;
+        int previewWidth = PREVIEW_SIZE * previewCellSize + PREVIEW_MARGIN;
+        
+        int totalWidth, totalHeight;
+        if (isSmallScreen) {
+            // 작은 화면: 공격 블록이 오른쪽으로 이동하므로 너비 증가, 높이는 기본값
+            int attackDisplayWidth = PREVIEW_SIZE * previewCellSize + 20; // 공격 표시 영역이 오른쪽으로
+            totalWidth = (GAME_WIDTH + 2) * cellSize + previewWidth + attackDisplayWidth;
+            totalHeight = (GAME_HEIGHT + 4) * cellSize; // 높이는 적당히
+        } else {
+            // 큰 화면: 기존 방식 (공격 블록이 아래쪽에 배치되므로 높이 증가)
+            final int ATTACK_DISPLAY_MARGIN = 80;
+            totalWidth = (GAME_WIDTH + 2) * cellSize + previewWidth + ATTACK_DISPLAY_MARGIN;
+            totalHeight = (GAME_HEIGHT + 6) * cellSize; // 아래쪽 공간 확보
+        }
+        
+        // 화면 크기를 초과하지 않도록 제한 (여백 50px 확보)
+        int maxAllowedWidth = currentFrameWidth - 100; // 좌우 50px 여백
+        int maxAllowedHeight = currentFrameHeight - 100; // 상하 50px 여백
+        
+        totalWidth = Math.min(totalWidth, maxAllowedWidth);
+        totalHeight = Math.min(totalHeight, maxAllowedHeight);
+        
+        System.out.println("DEBUG Panel Size: " + currentFrameWidth + "x" + currentFrameHeight + 
+                          " -> Panel: " + totalWidth + "x" + totalHeight + 
+                          " (cellSize=" + cellSize + ", isSmall=" + isSmallScreen + ")");
+        
+        gamePanel.setPreferredSize(new Dimension(totalWidth, totalHeight));
         gamePanel.setBackground(Color.BLACK);
 
         wrapper.add(gamePanel, new GridBagConstraints());
@@ -1434,8 +1504,10 @@ public class BattleScene extends Scene {
                 boolean cleanupActive = (playerNum == 1) ? cleanupBlinkingActive1 : cleanupBlinkingActive2;
                 java.util.Set<java.awt.Point> cleanupCells = (playerNum == 1) ? cleanupBlinkingCells1 : cleanupBlinkingCells2;
                 
+                // 시간제한 모드에서는 TIME 패널을 건너뛰고 TIME LIMIT 패널만 표시
+                boolean skipTimeBoard = "time_limit".equals(gameMode);
                 renderMgr.render(g2, getWidth(), getHeight(), lineBlinkEffect, 
-                               null, 0, 0, false, cleanupActive, cleanupCells);
+                               null, 0, 0, false, cleanupActive, cleanupCells, skipTimeBoard);
             }
             
             // 양쪽 중 하나라도 일시정지 상태이면 PAUSED 오버레이 표시
@@ -1446,14 +1518,14 @@ public class BattleScene extends Scene {
             boolean isGameOver2 = gameStateManager2.isGameOver();
             
             if ((isPaused1 || isPaused2) && !isGameOver1 && !isGameOver2) {
-                // System.out.println("🔍 DEBUG PAUSE: isPaused1=" + isPaused1 + ", isPaused2=" + isPaused2 + 
-                //                    ", isGameOver1=" + isGameOver1 + ", isGameOver2=" + isGameOver2 + 
-                //                    ", renderMgr=" + (renderMgr != null ? "NOT_NULL" : "NULL"));
+                System.out.println("🔍 DEBUG PAUSE: isPaused1=" + isPaused1 + ", isPaused2=" + isPaused2 + 
+                                   ", isGameOver1=" + isGameOver1 + ", isGameOver2=" + isGameOver2 + 
+                                   ", renderMgr=" + (renderMgr != null ? "NOT_NULL" : "NULL"));
                 
                 if (renderMgr != null) {
                     // RenderManager를 통한 퍼즈 화면 렌더링
                     int cellSize = renderMgr.getCellSize();
-                    // System.out.println("🎨 Rendering pause overlay with cellSize: " + cellSize);
+                    System.out.println("🎨 Rendering pause overlay with cellSize: " + cellSize);
                     renderPauseOverlayOnBoard(g2, cellSize);
                 } else {
                     // RenderManager가 null인 경우 대안 퍼즈 화면 렌더링
@@ -1462,35 +1534,37 @@ public class BattleScene extends Scene {
                 }
             }
             
-            // 시간제한 모드일 때 기존 시간 표시 영역을 덮어쓰기
+            // 시간제한 모드일 때 시간 표시 (별도 변수명 사용하여 겹침 방지)
+            int timeLimitBoardY = 0, timeLimitBoardHeight = 0; // 시간제한 표시 위치 저장용
             if ("time_limit".equals(gameMode)) {
                 int cellSize = renderMgr.getCellSize();
                 int previewCellSize = renderMgr.getPreviewCellSize();
                 int previewX = (GAME_WIDTH + 2) * cellSize + 20;
                 int previewY = cellSize + 20;
                 int previewAreaSize = PREVIEW_SIZE * previewCellSize;
-                int scoreBoardY = previewY + previewAreaSize + 30;
-                int scoreBoardHeight = 120;
-                int timeBoardY = scoreBoardY + scoreBoardHeight + 10;
-                int timeBoardHeight = 50;
+                // RenderManager와 동일한 위치/크기 사용
+                int scoreBoardY = previewY + previewAreaSize + 10; // RenderManager와 동일 (10px 간격)
+                int scoreBoardHeight = 120; // RenderManager와 동일 (120px 높이)
+                timeLimitBoardY = scoreBoardY + scoreBoardHeight + 10; // TIME LIMIT 패널 Y 위치 (10px 간격)
+                timeLimitBoardHeight = 30; // 시간제한 표시 높이 저장
                 int timeBoardWidth = PREVIEW_SIZE * previewCellSize;
                 
                 // 기존 시간 보드 영역을 배경색으로 지우기
                 g2.setColor(new Color(40, 40, 40)); // 배경색
-                g2.fillRect(previewX, timeBoardY, timeBoardWidth, timeBoardHeight);
+                g2.fillRect(previewX, timeLimitBoardY, timeBoardWidth, timeLimitBoardHeight);
                 
                 // 시간제한 보드 테두리 그리기
                 g2.setColor(new Color(100, 100, 100));
                 g2.setStroke(new BasicStroke(2));
-                g2.drawRect(previewX, timeBoardY, timeBoardWidth, timeBoardHeight);
+                g2.drawRect(previewX, timeLimitBoardY, timeBoardWidth, timeLimitBoardHeight);
                 
                 // TIME LIMIT 라벨
                 g2.setColor(Color.WHITE);
-                g2.setFont(new Font("Arial", Font.BOLD, 12));
+                g2.setFont(new Font("Arial", Font.BOLD, 10)); // 폰트 크기 줄임 (12 -> 10)
                 FontMetrics fm = g2.getFontMetrics();
                 String timeLabel = "TIME LIMIT";
                 int labelWidth = fm.stringWidth(timeLabel);
-                g2.drawString(timeLabel, previewX + (timeBoardWidth - labelWidth) / 2, timeBoardY + 20);
+                g2.drawString(timeLabel, previewX + (timeBoardWidth - labelWidth) / 2, timeLimitBoardY + 15); // 위치 조정 (20 -> 15)
                 
                 // 남은 시간 표시
                 int minutes = remainingTimeSeconds / 60;
@@ -1504,10 +1578,10 @@ public class BattleScene extends Scene {
                     g2.setColor(Color.WHITE);
                 }
                 
-                g2.setFont(new Font("Arial", Font.BOLD, 16));
+                g2.setFont(new Font("Arial", Font.BOLD, 14)); // 폰트 크기 줄임 (16 -> 14)
                 fm = g2.getFontMetrics();
                 int timeWidth = fm.stringWidth(timeText);
-                g2.drawString(timeText, previewX + (timeBoardWidth - timeWidth) / 2, timeBoardY + 40);
+                g2.drawString(timeText, previewX + (timeBoardWidth - timeWidth) / 2, timeLimitBoardY + 25); // 위치 조정하고 변수명 수정
             }
             
             // 1P/2P 표시 추가 (타이머 아래)
@@ -1516,41 +1590,107 @@ public class BattleScene extends Scene {
             g2.setFont(new Font("Arial", Font.BOLD, 16));
             String playerText = (playerNum == 1) ? "1P" : "2P";
             
-            // RenderManager에서 동적으로 계산된 셀 크기 가져오기
+            // RenderManager와 정확히 동일한 위치 계산 사용
             int cellSize = renderMgr.getCellSize();
             int previewCellSize = renderMgr.getPreviewCellSize();
             int previewX = (GAME_WIDTH + 2) * cellSize + 20;
             int previewY = cellSize + 20;
             int previewAreaSize = PREVIEW_SIZE * previewCellSize;
-            int scoreBoardY = previewY + previewAreaSize + 30;
-            int scoreBoardHeight = 120;
-            int timeBoardY = scoreBoardY + scoreBoardHeight + 10;
-            int timeBoardHeight = 50;
             
-            // 타이머 보드 아래에 1P/2P 라벨 표시
+            // RenderManager의 renderScoreBoard()와 동일한 계산
+            int scoreBoardY = previewY + previewAreaSize + 30; // RenderManager와 동일 (30px 간격)
+            int scoreBoardHeight = 120; // RenderManager와 동일 (120px 높이)
+            int timeBoardY = scoreBoardY + scoreBoardHeight + 10; // RenderManager와 동일 (10px 간격) 
+            int timeBoardHeight = 50; // RenderManager와 동일 (50px 높이)
+            
+            // 1P/2P 라벨은 아래에서 올바른 위치에 그려집니다
             int labelX = previewX;
-            int labelY = timeBoardY + timeBoardHeight + 25; // 타이머 아래 25px 간격
-            g2.drawString(playerText, labelX, labelY);
             
             // ═══════════════════════════════════════════════════════════════
-            // 공격 대기 블록 표시 영역 (1P/2P 라벨 아래)
+            // 공격 대기 블록 표시 영역 위치 계산 (해상도별 조건부 배치)
             // ═══════════════════════════════════════════════════════════════
-            int attackBoardY = labelY + 30; // 라벨 아래 30px 간격
-            int attackBoardWidth = PREVIEW_SIZE * previewCellSize + 40; // 너비를 20px 더 증가
-            int attackBoardHeight = 250; // 높이를 50px 더 증가
+            int frameHeight = m_frame.getHeight();
+            int frameWidth = m_frame.getWidth();
+            // 작은 화면 판단: 높이 ≤ 600 또는 너비 ≤ 1024 (1024x768 등 포함)
+            boolean isSmallScreen = frameHeight <= 600 || frameWidth <= 1024;
+            System.out.println("DEBUG: Frame size = " + frameWidth + "x" + frameHeight + ", isSmallScreen = " + isSmallScreen);
+            
+            // 화면 높이의 1/4로 동적 크기 계산 (작은 화면에서는 더 컴팩트하게)
+            int dynamicAttackBoardHeight;
+            if (isSmallScreen) {
+                // 작은 화면: 높이를 더 작게 설정 (frameHeight / 5 또는 최소 120px)
+                dynamicAttackBoardHeight = Math.max(120, frameHeight / 5);
+            } else {
+                dynamicAttackBoardHeight = frameHeight / 4;
+            }
+            // 화면별 최소/최대 크기 제한
+            if (isSmallScreen) {
+                // 작은 화면: 120px~200px 범위
+                dynamicAttackBoardHeight = Math.max(dynamicAttackBoardHeight, 120);
+                dynamicAttackBoardHeight = Math.min(dynamicAttackBoardHeight, 200);
+            } else {
+                // 큰 화면: 180px~300px 범위 (기존 방식)
+                dynamicAttackBoardHeight = Math.max(dynamicAttackBoardHeight, 180);
+                dynamicAttackBoardHeight = Math.min(dynamicAttackBoardHeight, 300);
+            }
+            
+            int attackBoardX, attackBoardY, attackBoardWidth, attackBoardHeight;
+            int playerLabelX, playerLabelY;
+            
+            if (isSmallScreen) {
+                // 작은 화면: 공격 블록 표시를 오른쪽 위로 이동, 가로 크기도 넉넉하게
+                attackBoardWidth = Math.max(80, 2 * previewCellSize + 60); // 10개 블록에 충분한 크기
+                attackBoardHeight = dynamicAttackBoardHeight;
+                System.out.println("DEBUG: Small screen - attackBoardWidth=" + attackBoardWidth + ", attackBoardHeight=" + attackBoardHeight);
+                
+                // 미리보기 영역 옆쪽(오른쪽)에 배치
+                attackBoardX = previewX + previewAreaSize + 10; // 미리보기 오른쪽으로
+                attackBoardY = previewY; // 미리보기와 같은 높이에서 시작
+                
+                // 1P/2P 라벨도 공격 블록 영역 위쪽에 배치
+                playerLabelX = attackBoardX;
+                playerLabelY = attackBoardY - 5;
+                
+            } else {
+                // 큰 화면: 기존 방식대로 아래쪽에 배치
+                int finalTimeBoardY, finalTimeBoardHeight;
+                
+                if ("time_limit".equals(gameMode)) {
+                    // 시간제한 모드: 시간제한 표시가 실제로 그려진 위치 사용
+                    finalTimeBoardY = timeLimitBoardY;
+                    finalTimeBoardHeight = timeLimitBoardHeight;
+                } else {
+                    // 일반 모드: RenderManager에서 그려진 기본 타임보드 위치 사용
+                    finalTimeBoardY = timeBoardY;
+                    finalTimeBoardHeight = timeBoardHeight;
+                }
+                
+                // 실제 타임보드 끝 지점에서 시작하여 공격 블록 영역 배치
+                playerLabelY = finalTimeBoardY + finalTimeBoardHeight + 20;
+                playerLabelX = labelX;
+                
+                attackBoardX = previewX - 10;
+                attackBoardY = playerLabelY + 15;
+                attackBoardWidth = Math.max(140, PREVIEW_SIZE * previewCellSize + 80); // 큰 화면에서도 넉넉하게
+                attackBoardHeight = dynamicAttackBoardHeight; // 동적 높이 사용
+                System.out.println("DEBUG: Large screen - attackBoardWidth=" + attackBoardWidth + ", attackBoardHeight=" + attackBoardHeight);
+            }
+            
+            // 1P/2P 라벨 그리기
+            g2.drawString(playerText, playerLabelX, playerLabelY);
             
             // 공격 대기 블록 프레임 그리기
             g2.setColor(new Color(60, 60, 60)); // 어두운 회색 배경
-            g2.fillRect(previewX - 10, attackBoardY, attackBoardWidth, attackBoardHeight);
+            g2.fillRect(attackBoardX, attackBoardY, attackBoardWidth, attackBoardHeight);
             
             // 프레임 테두리
             g2.setColor(new Color(100, 100, 100));
             g2.setStroke(new BasicStroke(2));
-            g2.drawRect(previewX - 10, attackBoardY, attackBoardWidth, attackBoardHeight);
+            g2.drawRect(attackBoardX, attackBoardY, attackBoardWidth, attackBoardHeight);
             
             // 공격 블록 스택 내용 표시
             Stack<AttackBlock> currentStack = (playerNum == 1) ? attackQueue1 : attackQueue2;
-            drawAttackQueue(g2, currentStack, previewX, attackBoardY + 10, previewCellSize, attackBoardWidth, attackBoardHeight);
+            drawAttackQueue(g2, currentStack, attackBoardX + 5, attackBoardY + 10, previewCellSize, attackBoardWidth, attackBoardHeight);
             
             // 시야 제한 효과 렌더링 (일반모드와 동일한 효과 적용)
             if ((playerNum == 1 && visionBlockActive1) || (playerNum == 2 && visionBlockActive2)) {
@@ -1599,13 +1739,29 @@ public class BattleScene extends Scene {
         Shape originalClip = g2.getClip();
         g2.setClip(startX, startY, maxWidth - 10, maxHeight - 20);
         
-        // 셀 크기를 더 크게 조정 (원래 크기의 절반 사용)
-        int blockCellSize = Math.min(cellSize / 2, (maxWidth - 20) / 10); // 더 크게 표시
+        // 공격 블록 표시 영역 크기에 맞춰 동적으로 블록 크기 계산
+        // 최대 10줄을 표시할 수 있도록 세로 크기 고려
+        int availableHeight = maxHeight - 40; // 상하 여백 40px 고려
+        int availableWidth = maxWidth - 20;   // 좌우 여백 20px 고려
+        
+        // 10줄을 표시할 수 있는 최대 블록 크기 계산 (줄 간격 3px 고려)
+        int maxBlockSizeByHeight = (availableHeight - (10 - 1) * 3) / 10; // 10줄 + 9개 간격
+        // 가로 10개 블록이 들어갈 수 있는 블록 크기 계산
+        int maxBlockSizeByWidth = availableWidth / 10;
+        
+        // 두 제약 조건 중 작은 값을 사용하되, 최소 4px, 최대 12px로 제한 (더 작게)
+        int blockCellSize = Math.max(4, Math.min(Math.min(maxBlockSizeByHeight, maxBlockSizeByWidth), 12));
+        
+        System.out.println("DEBUG: Panel size - maxWidth=" + maxWidth + ", maxHeight=" + maxHeight);
+        System.out.println("DEBUG: Available - width=" + availableWidth + ", height=" + availableHeight);
+        System.out.println("DEBUG: Max block size - byHeight=" + maxBlockSizeByHeight + ", byWidth=" + maxBlockSizeByWidth);
+        System.out.println("DEBUG: Final blockCellSize=" + blockCellSize);
         
         // 대기 중인 공격 블록들을 미리보기로 표시
-        int y = startY + 10; // 텍스트가 없어진 만큼 위쪽에서 시작
+        int y = startY + 10; // 시작 위치
         int count = 0;
-        int maxBlocks = Math.min(4, (maxHeight - 20) / (blockCellSize + 3)); // 텍스트 영역이 줄어든만큼 조정
+        int maxBlocks = Math.min(10, availableHeight / (blockCellSize + 3)); // 최대 10줄까지
+        System.out.println("DEBUG: Will display " + maxBlocks + " blocks out of " + stack.size());
         
         for (AttackBlock attackBlock : stack) {
             if (count >= maxBlocks) break;
@@ -2050,76 +2206,5 @@ public class BattleScene extends Scene {
             setVisionBlockActive2(active);
         }
         System.out.println("👁️ BattleScene: Set vision block for Player " + playerNumber + " to " + active);
-    }
-    
-    // ========== 속도 아이템 관련 메서드들 ==========
-    
-    /**
-     * 속도 아이템 효과 활성화 상태를 설정합니다 (단일 플레이어 모드 호환성)
-     * @param active 활성화 여부
-     */
-    public void setSpeedItemActive(boolean active) {
-        // VisionBlockEffect와 동일한 패턴으로 처리
-        System.out.println("⚠️ BattleScene.setSpeedItemActive called but player not specified");
-        // 양쪽 모두에게 적용하지 않도록 수정 필요
-    }
-    
-    /**
-     * 특정 플레이어에게 속도 아이템 효과 활성화 상태를 설정합니다.
-     * @param playerNumber 플레이어 번호 (1 또는 2)
-     * @param active 활성화 여부
-     */
-    public void setSpeedItemActive(int playerNumber, boolean active) {
-        System.out.println("⚡ BattleScene: Set speed item active for Player " + playerNumber + " to " + active);
-        // 현재는 로그만 남김 (필요시 상태 추적 가능)
-    }
-    
-    /**
-     * 현재 낙하 속도를 반환합니다 (단일 플레이어 모드 호환성)
-     * @return 현재 낙하 속도 (밀리초 단위 딜레이)
-     */
-    public double getFallSpeed() {
-        System.out.println("⚠️ BattleScene.getFallSpeed called but player not specified");
-        // 기본값 반환
-        return 800.0;
-    }
-    
-    /**
-     * 특정 플레이어의 현재 낙하 속도를 반환합니다.
-     * @param playerNumber 플레이어 번호 (1 또는 2)
-     * @return 현재 낙하 속도 (밀리초 단위 딜레이)
-     */
-    public double getFallSpeed(int playerNumber) {
-        Timer timer = (playerNumber == 1) ? fallTimer1 : fallTimer2;
-        if (timer != null) {
-            return timer.getDelay();
-        }
-        return 800.0; // 기본값
-    }
-    
-    /**
-     * 낙하 속도를 설정합니다 (단일 플레이어 모드 호환성)
-     * @param speed 새로운 낙하 속도 (밀리초 단위 딜레이)
-     */
-    public void setFallSpeed(double speed) {
-        System.out.println("⚠️ BattleScene.setFallSpeed called but player not specified");
-        // 양쪽 모두에게 적용하지 않도록 수정 필요
-    }
-    
-    /**
-     * 특정 플레이어의 낙하 속도를 설정합니다.
-     * @param playerNumber 플레이어 번호 (1 또는 2)
-     * @param speed 새로운 낙하 속도 (밀리초 단위 딜레이)
-     */
-    public void setFallSpeed(int playerNumber, double speed) {
-        Timer timer = (playerNumber == 1) ? fallTimer1 : fallTimer2;
-        if (timer != null) {
-            int oldDelay = timer.getDelay();
-            int delay = Math.max(10, (int) Math.round(speed)); // 최소 10ms로 제한 완화
-            timer.setDelay(delay);
-            System.out.println("⚡ BattleScene.setFallSpeed: Player " + playerNumber + " speed changed from " + oldDelay + "ms to " + delay + "ms (requested: " + speed + "ms)");
-        } else {
-            System.out.println("⚠️ BattleScene.setFallSpeed: Timer is null for Player " + playerNumber);
-        }
     }
 }
