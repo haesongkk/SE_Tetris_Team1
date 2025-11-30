@@ -2207,4 +2207,75 @@ public class BattleScene extends Scene {
         }
         System.out.println("👁️ BattleScene: Set vision block for Player " + playerNumber + " to " + active);
     }
+    
+    // ========== 속도 아이템 관련 메서드들 ==========
+    
+    /**
+     * 속도 아이템 효과 활성화 상태를 설정합니다 (단일 플레이어 모드 호환성)
+     * @param active 활성화 여부
+     */
+    public void setSpeedItemActive(boolean active) {
+        // VisionBlockEffect와 동일한 패턴으로 처리
+        System.out.println("⚠️ BattleScene.setSpeedItemActive called but player not specified");
+        // 양쪽 모두에게 적용하지 않도록 수정 필요
+    }
+    
+    /**
+     * 특정 플레이어에게 속도 아이템 효과 활성화 상태를 설정합니다.
+     * @param playerNumber 플레이어 번호 (1 또는 2)
+     * @param active 활성화 여부
+     */
+    public void setSpeedItemActive(int playerNumber, boolean active) {
+        System.out.println("⚡ BattleScene: Set speed item active for Player " + playerNumber + " to " + active);
+        // 현재는 로그만 남김 (필요시 상태 추적 가능)
+    }
+    
+    /**
+     * 현재 낙하 속도를 반환합니다 (단일 플레이어 모드 호환성)
+     * @return 현재 낙하 속도 (밀리초 단위 딜레이)
+     */
+    public double getFallSpeed() {
+        System.out.println("⚠️ BattleScene.getFallSpeed called but player not specified");
+        // 기본값 반환
+        return 800.0;
+    }
+    
+    /**
+     * 특정 플레이어의 현재 낙하 속도를 반환합니다.
+     * @param playerNumber 플레이어 번호 (1 또는 2)
+     * @return 현재 낙하 속도 (밀리초 단위 딜레이)
+     */
+    public double getFallSpeed(int playerNumber) {
+        Timer timer = (playerNumber == 1) ? fallTimer1 : fallTimer2;
+        if (timer != null) {
+            return timer.getDelay();
+        }
+        return 800.0; // 기본값
+    }
+    
+    /**
+     * 낙하 속도를 설정합니다 (단일 플레이어 모드 호환성)
+     * @param speed 새로운 낙하 속도 (밀리초 단위 딜레이)
+     */
+    public void setFallSpeed(double speed) {
+        System.out.println("⚠️ BattleScene.setFallSpeed called but player not specified");
+        // 양쪽 모두에게 적용하지 않도록 수정 필요
+    }
+    
+    /**
+     * 특정 플레이어의 낙하 속도를 설정합니다.
+     * @param playerNumber 플레이어 번호 (1 또는 2)
+     * @param speed 새로운 낙하 속도 (밀리초 단위 딜레이)
+     */
+    public void setFallSpeed(int playerNumber, double speed) {
+        Timer timer = (playerNumber == 1) ? fallTimer1 : fallTimer2;
+        if (timer != null) {
+            int oldDelay = timer.getDelay();
+            int delay = Math.max(10, (int) Math.round(speed)); // 최소 10ms로 제한 완화
+            timer.setDelay(delay);
+            System.out.println("⚡ BattleScene.setFallSpeed: Player " + playerNumber + " speed changed from " + oldDelay + "ms to " + delay + "ms (requested: " + speed + "ms)");
+        } else {
+            System.out.println("⚠️ BattleScene.setFallSpeed: Timer is null for Player " + playerNumber);
+        }
+    }
 }
