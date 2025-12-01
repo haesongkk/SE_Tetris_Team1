@@ -40,27 +40,12 @@ public class SpeedUpEffect extends AbstractItemEffect {
                 // 배틀 모드: 상대방에게 속도 증가 적용 (1P가 발동시 2P에게, 2P가 발동시 1P에게)
                 this.targetPlayerNumber = (playerNumber == 1) ? 2 : 1;
                 
-                // 원래 속도 저장
-                Object fallSpeed = gameScene.getClass()
-                    .getMethod("getFallSpeed", int.class)
-                    .invoke(gameScene, targetPlayerNumber);
-                
-                if (fallSpeed instanceof Number) {
-                    originalSpeed = ((Number) fallSpeed).doubleValue();
-                }
-                
-                // ✅ 속도 증가: 300ms (빠르게, 체감 가능)
-                double newSpeed = 300.0;
+                // BattleScene의 applySpeedUpToOpponent 메서드 호출 (네트워크 동기화 포함)
                 gameScene.getClass()
-                    .getMethod("setFallSpeed", int.class, double.class)
-                    .invoke(gameScene, targetPlayerNumber, newSpeed);
+                    .getMethod("applySpeedUpToOpponent", int.class)
+                    .invoke(gameScene, playerNumber);
                 
-                // 속도 아이템 활성화 상태 설정
-                gameScene.getClass()
-                    .getMethod("setSpeedItemActive", int.class, boolean.class)
-                    .invoke(gameScene, targetPlayerNumber, true);
-                
-                System.out.println("⚡ Speed up effect activated by Player " + playerNumber + " → affecting Player " + targetPlayerNumber + " in " + gameSceneClass + ": " + originalSpeed + "ms -> " + newSpeed + "ms delay (매우 빠름) for " + (EFFECT_DURATION / 1000) + " seconds");
+                System.out.println("⚡ Speed up effect activated by Player " + playerNumber + " → affecting Player " + targetPlayerNumber + " in " + gameSceneClass + " for " + (EFFECT_DURATION / 1000) + " seconds");
             } else {
                 // 일반 모드: 자신에게 속도 증가 적용 (기존 방식)
                 this.targetPlayerNumber = 0; // 일반 모드에서는 플레이어 구분 없음
@@ -108,17 +93,9 @@ public class SpeedUpEffect extends AbstractItemEffect {
             boolean isBattleMode = gameSceneClass.equals("BattleScene") || gameSceneClass.equals("P2PBattleScene");
             
             if (isBattleMode && targetPlayerNumber > 0) {
-                // 배틀 모드: 효과를 받았던 플레이어의 속도 복원
-                gameScene.getClass()
-                    .getMethod("setSpeedItemActive", int.class, boolean.class)
-                    .invoke(gameScene, targetPlayerNumber, false);
-                
-                // 원래 속도로 복원
-                gameScene.getClass()
-                    .getMethod("setFallSpeed", int.class, double.class)
-                    .invoke(gameScene, targetPlayerNumber, originalSpeed);
-                
-                System.out.println("Speed up effect ended for Player " + targetPlayerNumber + " in BattleScene (activated by Player " + playerNumber + "): restored to " + originalSpeed);
+                // 배틀 모드: BattleScene.applySpeedUpToOpponent 내부의 타이머가 자동 복원
+                // 여기서는 아무것도 하지 않음 (중복 복원 방지)
+                System.out.println("Speed up effect ended for Player " + targetPlayerNumber + " in " + gameSceneClass + " (timer auto-restore)");
             } else {
                 // 일반 모드: 기존 방식 사용
                 gameScene.getClass()
