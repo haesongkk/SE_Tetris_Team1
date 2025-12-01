@@ -159,7 +159,7 @@ public class BattleScene extends Scene {
         setupTimers();
         
         // 테스트용: 공격 블록 10줄 미리 채우기 (화면 확인용)
-        fillTestAttackBlocks();
+        // fillTestAttackBlocks();
     }
     
     /**

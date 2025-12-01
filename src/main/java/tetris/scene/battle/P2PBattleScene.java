@@ -196,6 +196,26 @@ public class P2PBattleScene extends BattleScene {
         p2p.addCallback("attack-apply", (s) -> {
             attackQueue2.clear();
         });
+        
+        // 아이템 효과 네트워크 콜백 등록
+        // 메시지: 상대방이 나에게 효과를 적용
+        // → 내 화면의 Player 1(나 자신)에게 효과 적용
+        p2p.addCallback("item:speed-up:", (msg) -> {
+            // 상대방이 아이템 사용 → 나(Player 1)에게 효과
+            super.applySpeedUpToOpponent(2); // sourcePlayer=2 → Player 1에 적용
+            System.out.println("📥 [P2P] Received speed-up effect, applied to Player 1");
+        });
+        
+        p2p.addCallback("item:speed-down:", (msg) -> {
+            super.applySpeedDownToOpponent(2); // sourcePlayer=2 → Player 1에 적용
+            System.out.println("📥 [P2P] Received speed-down effect, applied to Player 1");
+        });
+        
+        p2p.addCallback("item:vision-block:", (msg) -> {
+            super.applyVisionBlockToOpponent(2); // sourcePlayer=2 → Player 1에 적용
+            System.out.println("📥 [P2P] Received vision-block effect, applied to Player 1");
+        });
+        
         p2p.setOnDisconnect(() -> {
             SwingUtilities.invokeLater(() -> {
                 showDisconnectDialog();
@@ -886,6 +906,9 @@ public class P2PBattleScene extends BattleScene {
             p2p.removeCallback("board:");
             p2p.removeCallback("attack-generate:");
             p2p.removeCallback("attack-apply");
+            p2p.removeCallback("item:speed-up:");
+            p2p.removeCallback("item:speed-down:");
+            p2p.removeCallback("item:vision-block:");
             p2p.setOnDisconnect(null); // onDisconnect 콜백 제거
         }
         if (writeTimer != null) { 
@@ -920,6 +943,50 @@ public class P2PBattleScene extends BattleScene {
     }
 
 
+    // 아이템 효과 메서드 오버라이드: 네트워크 전송 추가
+    @Override
+    public void applySpeedUpToOpponent(int sourcePlayer) {
+        System.out.println("🚀 [P2P] applySpeedUpToOpponent called by Player " + sourcePlayer);
+        
+        if (sourcePlayer == 1) {
+            // Player 1(나)이 발동 → Player 2(상대 화면)에게 적용
+            // 로컬: 내 화면의 Player 2(상대)에 적용
+            super.applySpeedUpToOpponent(sourcePlayer);
+            // 원격: 상대방에게 전송 → 상대방 화면의 Player 1(상대 자신)에 적용
+            p2p.send("item:speed-up:");
+            System.out.println("📤 Sent speed-up to opponent");
+        } else {
+            // sourcePlayer=2는 네트워크로 받은 경우만 해당
+            super.applySpeedUpToOpponent(sourcePlayer);
+        }
+    }
+    
+    @Override
+    public void applySpeedDownToOpponent(int sourcePlayer) {
+        System.out.println("🐌 [P2P] applySpeedDownToOpponent called by Player " + sourcePlayer);
+        
+        if (sourcePlayer == 1) {
+            super.applySpeedDownToOpponent(sourcePlayer);
+            p2p.send("item:speed-down:");
+            System.out.println("📤 Sent speed-down to opponent");
+        } else {
+            super.applySpeedDownToOpponent(sourcePlayer);
+        }
+    }
+    
+    @Override
+    public void applyVisionBlockToOpponent(int sourcePlayer) {
+        System.out.println("👁️ [P2P] applyVisionBlockToOpponent called by Player " + sourcePlayer);
+        
+        if (sourcePlayer == 1) {
+            super.applyVisionBlockToOpponent(sourcePlayer);
+            p2p.send("item:vision-block:");
+            System.out.println("📤 Sent vision-block to opponent");
+        } else {
+            super.applyVisionBlockToOpponent(sourcePlayer);
+        }
+    }
+
     // 게임 중 나가기 액션으로 인한 메인 메뉴 복귀 처리
     @Override
     protected void exitToMenu() {
@@ -928,6 +995,9 @@ public class P2PBattleScene extends BattleScene {
             p2p.removeCallback("board:");
             p2p.removeCallback("attack-generate:");
             p2p.removeCallback("attack-apply");
+            p2p.removeCallback("item:speed-up:");
+            p2p.removeCallback("item:speed-down:");
+            p2p.removeCallback("item:vision-block:");
             p2p.setOnDisconnect(null); 
             p2p.release();
         }

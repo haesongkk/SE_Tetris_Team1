@@ -36,16 +36,16 @@ public class VisionBlockEffect extends AbstractItemEffect {
             saveOriginalColor(context);
             
             // 시야 제한 효과 활성화
-            // BattleScene인지 확인하여 플레이어별로 처리
+            // BattleScene 또는 P2PBattleScene인지 확인하여 플레이어별로 처리
             String gameSceneClass = gameScene.getClass().getSimpleName();
             
-            if ("BattleScene".equals(gameSceneClass) && playerNumber > 0) {
+            if (("BattleScene".equals(gameSceneClass) || "P2PBattleScene".equals(gameSceneClass)) && playerNumber > 0) {
                 // 배틀 모드: 상대방에게 시야 제한 적용 (1P가 발동시 2P에게, 2P가 발동시 1P에게)
                 this.targetPlayerNumber = (playerNumber == 1) ? 2 : 1;
                 gameScene.getClass()
-                    .getMethod("setVisionBlockActive", int.class, boolean.class)
-                    .invoke(gameScene, targetPlayerNumber, true);
-                System.out.println("Vision block effect activated by Player " + playerNumber + " → affecting Player " + targetPlayerNumber + " in BattleScene for " + 
+                    .getMethod("applyVisionBlockToOpponent", int.class)
+                    .invoke(gameScene, playerNumber);
+                System.out.println("Vision block effect activated by Player " + playerNumber + " → affecting Player " + targetPlayerNumber + " in " + gameSceneClass + " for " + 
                                  (EFFECT_DURATION / 1000) + " seconds");
             } else {
                 // 일반 모드: 자신에게 시야 제한 적용 (기존 방식)
@@ -103,12 +103,19 @@ public class VisionBlockEffect extends AbstractItemEffect {
             // 시야 제한 효과 비활성화
             String gameSceneClass = gameScene.getClass().getSimpleName();
             
-            if ("BattleScene".equals(gameSceneClass) && targetPlayerNumber > 0) {
+            if (("BattleScene".equals(gameSceneClass) || "P2PBattleScene".equals(gameSceneClass)) && targetPlayerNumber > 0) {
                 // 배틀 모드: 효과를 받았던 플레이어의 시야 제한 해제
-                gameScene.getClass()
-                    .getMethod("setVisionBlockActive", int.class, boolean.class)
-                    .invoke(gameScene, targetPlayerNumber, false);
-                System.out.println("Vision block effect ended for Player " + targetPlayerNumber + " in BattleScene (activated by Player " + playerNumber + ")");
+                // BattleScene의 private 메서드를 직접 호출할 수 없으므로 리플렉션으로 접근
+                if (targetPlayerNumber == 1) {
+                    gameScene.getClass()
+                        .getDeclaredMethod("setVisionBlockActive1", boolean.class)
+                        .invoke(gameScene, false);
+                } else {
+                    gameScene.getClass()
+                        .getDeclaredMethod("setVisionBlockActive2", boolean.class)
+                        .invoke(gameScene, false);
+                }
+                System.out.println("Vision block effect ended for Player " + targetPlayerNumber + " in " + gameSceneClass + " (activated by Player " + playerNumber + ")");
             } else {
                 // 일반 모드: 기존 방식 사용
                 gameScene.getClass()
