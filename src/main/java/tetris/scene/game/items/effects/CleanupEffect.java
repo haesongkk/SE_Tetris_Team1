@@ -81,11 +81,11 @@ public class CleanupEffect extends AbstractItemEffect {
                 }
             }
             
-            // GameScene의 청소 블링킹 시작 (개별 셀 점멸, 줄 삭제와 동일한 900ms 지속시간)
+            // GameScene의 청소 블링킷 시작 (개별 셀 점멸, 줄 삭제와 동일한 900ms 지속시간)
             if (!blinkCells.isEmpty()) {
-                // BattleScene인지 확인하고 플레이어별 메서드 호출
+                // BattleScene 또는 P2PBattleScene인지 확인하고 플레이어별 메서드 호출
                 String gameSceneType = gameScene.getClass().getSimpleName();
-                if ("BattleScene".equals(gameSceneType)) {
+                if ("BattleScene".equals(gameSceneType) || "P2PBattleScene".equals(gameSceneType)) {
                     // BattleScene에서는 플레이어를 구분해야 함
                     int playerNumber = determinePlayerNumber(context);
                     if (playerNumber == 1) {
@@ -119,8 +119,8 @@ public class CleanupEffect extends AbstractItemEffect {
                     @Override
                     public void run() {
                         try {
-                            // BattleScene인지 확인하고 플레이어별 중지 메서드 호출
-                            if ("BattleScene".equals(gameSceneType)) {
+                            // BattleScene 또는 P2PBattleScene인지 확인하고 플레이어별 중지 메서드 호출
+                            if ("BattleScene".equals(gameSceneType) || "P2PBattleScene".equals(gameSceneType)) {
                                 int playerNumber = determinePlayerNumber(context);
                                 if (playerNumber == 1) {
                                     gameScene.getClass()
