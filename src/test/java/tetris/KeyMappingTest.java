@@ -255,9 +255,14 @@ public class KeyMappingTest {
             for (int i = 0; i < player1Keys.length; i++) {
                 for (int j = 0; j < player2Keys.length; j++) {
                     if (player1Keys[i] == player2Keys[j]) {
-                        // P키는 예외적으로 두 플레이어가 공유 가능 (일시정지)
+                        // P키와 Q키는 예외적으로 두 플레이어가 공유 가능 (일시정지, 종료)
                         if (player1Keys[i] == KeyEvent.VK_P) {
                             System.out.println("⚠️  P키(일시정지)는 두 플레이어가 공유: " + 
+                                GameSettings.getKeyName(player1Keys[i]));
+                            continue;
+                        }
+                        if (player1Keys[i] == KeyEvent.VK_Q) {
+                            System.out.println("⚠️  Q키(종료)는 두 플레이어가 공유: " + 
                                 GameSettings.getKeyName(player1Keys[i]));
                             continue;
                         }

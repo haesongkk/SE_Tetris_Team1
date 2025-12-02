@@ -39,7 +39,11 @@ public class P2PBase {
         isHandlingError = true; // handleNetworkError가 호출되지 않도록 설정
         
         if(onDisconnect != null) {
-            onDisconnect.run();
+            try {
+                onDisconnect.run();
+            } catch (Exception ex) {
+                System.err.println("P2P: onDisconnect 콜백 실행 중 오류: " + ex.getMessage());
+            }
             onDisconnect = null;
         }
         
@@ -101,8 +105,8 @@ public class P2PBase {
      * 네트워크 오류 발생 시 처리
      */
     private void handleNetworkError(IOException e) {
-        // 중복 오류 처리 방지
-        if (isHandlingError || !bRunning) {
+        // 중복 오류 처리 방지 - isHandlingError가 이미 true면 중복 호출이므로 무시
+        if (isHandlingError) {
             return;
         }
         
@@ -136,6 +140,7 @@ public class P2PBase {
                         // ping 전송 후 TIMEOUT_MS 이상 pong 미수신 시 연결 끊김으로 판단
                         if(currentTime - lastPingTime > TIMEOUT_MS) {
                             System.out.println("타임아웃 발생: " + TIMEOUT_MS + "ms 이상 응답 없음");
+                            handleNetworkError(new IOException("타임아웃"));
                             break;
                         } else { /* pong 대기 중 - 아직 타임아웃 아님 */}
 
@@ -146,31 +151,26 @@ public class P2PBase {
                     }
                 }
 
+                String message;
                 try { 
                     if (in == null) {
                         System.err.println("P2P: 입력 스트림이 null입니다");
                         handleNetworkError(new IOException("입력 스트림이 null입니다"));
                         break;
                     }
-                    if(!in.ready()) continue; 
-                } catch (IOException e) { 
-                    System.err.println("P2P: 입력 스트림 확인 중 오류 - " + e.getMessage());
-                    handleNetworkError(e);
-                    break; 
-                }
-                
-                String message = "";
-                try { 
+                    
+                    // readLine()은 블로킹이지만 소켓이 닫히면 null을 반환하거나 예외를 발생시킴
                     message = in.readLine(); 
+                    
+                    if(message == null) {
+                        System.out.println("P2P: 연결이 종료되었습니다 (null 메시지 수신)");
+                        handleNetworkError(new IOException("연결이 종료되었습니다"));
+                        break;
+                    }
                 } catch (IOException ex) { 
                     System.err.println("P2P: 메시지 읽기 중 오류 - " + ex.getMessage());
                     handleNetworkError(ex);
                     break; 
-                }
-                if(message == null) {
-                    System.out.println("P2P: 연결이 종료되었습니다 (null 메시지 수신)");
-                    handleNetworkError(new IOException("연결이 종료되었습니다"));
-                    break;
                 }
 
                 lastReceiveTime = System.currentTimeMillis();
