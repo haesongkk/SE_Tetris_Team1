@@ -8,6 +8,7 @@ import java.util.LinkedList;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import javax.swing.JLabel;
+import javax.swing.JLayeredPane;
 
 import com.google.gson.Gson;
 
@@ -53,6 +54,10 @@ class SerializedGameState {
 
     // 일시정지 플래그 (상태)
     boolean pauseFlag;
+    
+    // 낙하 속도 (아이템 효과 동기화용)
+    int fallSpeed1; // Player 1 Timer delay 값 (밀리초)
+    int fallSpeed2; // Player 2 Timer delay 값 (밀리초)
 
 }
 
@@ -137,6 +142,9 @@ public class P2PBattleScene extends BattleScene {
 
     // 블럭 타입 매핑
     final char[] blockTypes = { 'I','J','L','O','S','T','Z' };
+    
+    // 네트워크 상태 표시 UI
+    private NetworkStatusDisplay networkStatusDisplay;
 
     public P2PBattleScene(JFrame frame, String gameMode, P2PBase p2p) {
         super(frame, gameMode);
@@ -151,6 +159,17 @@ public class P2PBattleScene extends BattleScene {
         // P2PBattleScene의 오버라이드된 setupLayout이 실행됨
 
         this.p2p = p2p;
+        
+        // 네트워크 상태 표시 UI 초기화
+        networkStatusDisplay = new NetworkStatusDisplay();
+        networkStatusDisplay.setBounds(10, 10, 250, 60);
+        networkStatusDisplay.setVisible(true);
+        
+        // JLayeredPane에 추가 (PALETTE_LAYER로 설정하여 게임 위에 표시)
+        JLayeredPane layeredPane = frame.getLayeredPane();
+        layeredPane.add(networkStatusDisplay, JLayeredPane.PALETTE_LAYER);
+        layeredPane.revalidate();
+        layeredPane.repaint();
 
         // 게임 상태 전송 타이머 시작
         writeTimer = new Timer();
@@ -177,6 +196,26 @@ public class P2PBattleScene extends BattleScene {
         p2p.addCallback("attack-apply", (s) -> {
             attackQueue2.clear();
         });
+        
+        // 아이템 효과 네트워크 콜백 등록
+        // 메시지: 상대방이 나에게 효과를 적용
+        // → 내 화면의 Player 1(나 자신)에게 효과 적용
+        p2p.addCallback("item:speed-up:", (msg) -> {
+            // 상대방이 아이템 사용 → 나(Player 1)에게 효과
+            super.applySpeedUpToOpponent(2); // sourcePlayer=2 → Player 1에 적용
+            System.out.println("📥 [P2P] Received speed-up effect, applied to Player 1");
+        });
+        
+        p2p.addCallback("item:speed-down:", (msg) -> {
+            super.applySpeedDownToOpponent(2); // sourcePlayer=2 → Player 1에 적용
+            System.out.println("📥 [P2P] Received speed-down effect, applied to Player 1");
+        });
+        
+        p2p.addCallback("item:vision-block:", (msg) -> {
+            super.applyVisionBlockToOpponent(2); // sourcePlayer=2 → Player 1에 적용
+            System.out.println("📥 [P2P] Received vision-block effect, applied to Player 1");
+        });
+        
         p2p.setOnDisconnect(() -> {
             SwingUtilities.invokeLater(() -> {
                 showDisconnectDialog();
@@ -274,6 +313,18 @@ public class P2PBattleScene extends BattleScene {
         scoreManager2.setDifficultyMultiplier(state.difficultyMultiplier);
         repaint();
         gameStateManager2.setFixedElapsedTime(state.elapsedSeconds);
+        
+        // 상대방의 낙하 속도 동기화 (속도 아이템 효과 반영)
+        // 서버가 보낸 Player 1 속도를 클라이언트의 Player 2에게 적용
+        // 서버가 보낸 Player 2 속도를 클라이언트의 Player 1에게 적용
+        if (state.fallSpeed1 > 0) {
+            System.out.println("📥 [P2P Deserialize] Received fallSpeed1: " + state.fallSpeed1 + "ms, applying to local Player 2");
+            setFallSpeed(2, state.fallSpeed1); // 상대방의 P1 속도 -> 내 P2
+        }
+        if (state.fallSpeed2 > 0) {
+            System.out.println("📥 [P2P Deserialize] Received fallSpeed2: " + state.fallSpeed2 + "ms, applying to local Player 1");
+            setFallSpeed(1, state.fallSpeed2); // 상대방의 P2 속도 -> 내 P1
+        }
 
         if(state.gameOverFlag && !this.isGameOver) {
             this.handleGameOver(2); // 2P 패배 처리
@@ -436,6 +487,12 @@ public class P2PBattleScene extends BattleScene {
 
         state.gameOverFlag = this.isGameOver;
         state.pauseFlag = gameStateManager1.isPaused();
+        
+        // 양쪽 플레이어의 낙하 속도 전송 (속도 아이템 효과 동기화)
+        state.fallSpeed1 = (int) getFallSpeed(1);
+        state.fallSpeed2 = (int) getFallSpeed(2);
+        System.out.println("📤 [P2P Serialize] Sending fallSpeed1: " + state.fallSpeed1 + "ms, fallSpeed2: " + state.fallSpeed2 + "ms");
+        
         if(prevPauseState != gameStateManager1.isPaused()) gameStateManager2.togglePause();
         prevPauseState = gameStateManager1.isPaused();
 
@@ -472,6 +529,11 @@ public class P2PBattleScene extends BattleScene {
     private void handleLatency(long latency) {
         currentLatency = latency;
         
+        // NetworkStatusDisplay 업데이트
+        if (networkStatusDisplay != null) {
+            networkStatusDisplay.updateLatency(latency);
+        }
+        
         // 지연 히스토리 관리
         latencyHistory.offer(latency);
         if (latencyHistory.size() > LATENCY_HISTORY_SIZE) {
@@ -503,8 +565,7 @@ public class P2PBattleScene extends BattleScene {
             }
         }
 
-        System.out.println(String.format("네트워크 지연: %dms (평균: %dms)", 
-                    currentLatency, averageLatency));
+        // System.out.println(String.format("네트워크 지연: %dms (평균: %dms)", currentLatency, averageLatency));
         
         
     }
@@ -754,12 +815,13 @@ public class P2PBattleScene extends BattleScene {
     private void showDisconnectDialog() {
         if(bCloseByDisconnect) return;
         bCloseByDisconnect = true;
-    // 메인메뉴 스타일의 다이얼로그 생성
+        
+        // 메인메뉴 스타일의 다이얼로그 생성
         javax.swing.JDialog dialog = new javax.swing.JDialog(m_frame, true);
         dialog.setUndecorated(true);
         dialog.setDefaultCloseOperation(javax.swing.JDialog.DISPOSE_ON_CLOSE);
         dialog.setResizable(false);
-        dialog.setSize(400, 300);
+        dialog.setSize(500, 350); // 크기 증가하여 잘림 방지
         dialog.setLocationRelativeTo(m_frame);
         dialog.setFocusable(true);
         
@@ -770,23 +832,21 @@ public class P2PBattleScene extends BattleScene {
             javax.swing.BorderFactory.createLineBorder(tetris.util.Theme.MenuTitle(), 2),
             javax.swing.BorderFactory.createEmptyBorder(20, 20, 20, 20)
         ));
-        // 제목 라벨
-        javax.swing.JLabel titleLabel = new javax.swing.JLabel("서버 연결 오류", javax.swing.SwingConstants.CENTER);
-        titleLabel.setFont(new java.awt.Font("Malgun Gothic", java.awt.Font.BOLD, 20));
-        titleLabel.setForeground(tetris.util.Theme.MenuTitle());
-        titleLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 15, 0));
         
-        // 중앙 패널 (승자 정보 + 설명)
+        // 제목 라벨
+        javax.swing.JLabel titleLabel = new javax.swing.JLabel("연결 끊김", javax.swing.SwingConstants.CENTER);
+        titleLabel.setFont(new java.awt.Font("Malgun Gothic", java.awt.Font.BOLD, 24));
+        titleLabel.setForeground(tetris.util.Theme.MenuTitle());
+        titleLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(10, 0, 20, 0));
+        
+        // 중앙 패널 (설명)
         javax.swing.JPanel centerPanel = new javax.swing.JPanel();
         centerPanel.setOpaque(false);
-        centerPanel.setLayout(new java.awt.GridLayout(3, 1, 0, 10));
+        centerPanel.setLayout(new java.awt.GridLayout(2, 1, 0, 15));
         
-        javax.swing.JLabel description = new javax.swing.JLabel();
-        description.setFont(new java.awt.Font("Malgun Gothic", java.awt.Font.BOLD, 18));
-        
+        javax.swing.JLabel description = new javax.swing.JLabel("상대방과의 연결이 끊어졌습니다.", javax.swing.SwingConstants.CENTER);
+        description.setFont(new java.awt.Font("Malgun Gothic", java.awt.Font.BOLD, 16));
         description.setForeground(new java.awt.Color(255, 215, 0)); // Gold color
-        description.setText("상대방과 연결이 끊어졌습니다.");
-        description.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         
         centerPanel.add(description);
         centerPanel.add(new javax.swing.JLabel()); // 빈 공간
@@ -799,15 +859,32 @@ public class P2PBattleScene extends BattleScene {
         // 메인 메뉴로 돌아가기 버튼
         javax.swing.JButton mainMenuButton = new javax.swing.JButton("메인 메뉴로 돌아가기");
         mainMenuButton.setFont(new java.awt.Font("Malgun Gothic", java.awt.Font.BOLD, 14));
-        mainMenuButton.setPreferredSize(new java.awt.Dimension(250, 35));
+        mainMenuButton.setPreferredSize(new java.awt.Dimension(280, 40));
         mainMenuButton.setBackground(tetris.util.Theme.MenuButton());
         mainMenuButton.setForeground(java.awt.Color.WHITE);
         mainMenuButton.setFocusPainted(false);
         mainMenuButton.setBorderPainted(true);
         mainMenuButton.setBorder(javax.swing.BorderFactory.createRaisedBevelBorder());
         mainMenuButton.addActionListener(e -> {
-            ((javax.swing.JDialog)dialogPanel.getTopLevelAncestor()).dispose();
+            dialog.dispose();
             exit(true);
+        });
+        
+        // 호버 효과
+        mainMenuButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                if (mainMenuButton.isEnabled()) {
+                    mainMenuButton.setBackground(new java.awt.Color(120, 120, 200));
+                }
+            }
+            
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                if (mainMenuButton.isEnabled()) {
+                    mainMenuButton.setBackground(tetris.util.Theme.MenuButton());
+                }
+            }
         });
         
         buttonPanel.add(mainMenuButton);
@@ -829,11 +906,23 @@ public class P2PBattleScene extends BattleScene {
             p2p.removeCallback("board:");
             p2p.removeCallback("attack-generate:");
             p2p.removeCallback("attack-apply");
+            p2p.removeCallback("item:speed-up:");
+            p2p.removeCallback("item:speed-down:");
+            p2p.removeCallback("item:vision-block:");
             p2p.setOnDisconnect(null); // onDisconnect 콜백 제거
         }
         if (writeTimer != null) { 
             writeTimer.cancel(); 
             writeTimer.purge(); // 완전히 정리
+        }
+        
+        // NetworkStatusDisplay 제거
+        if (networkStatusDisplay != null) {
+            JLayeredPane layeredPane = m_frame.getLayeredPane();
+            layeredPane.remove(networkStatusDisplay);
+            layeredPane.revalidate();
+            layeredPane.repaint();
+            networkStatusDisplay = null;
         }
         
         if(exitWithDisconnect) {
@@ -854,6 +943,50 @@ public class P2PBattleScene extends BattleScene {
     }
 
 
+    // 아이템 효과 메서드 오버라이드: 네트워크 전송 추가
+    @Override
+    public void applySpeedUpToOpponent(int sourcePlayer) {
+        System.out.println("🚀 [P2P] applySpeedUpToOpponent called by Player " + sourcePlayer);
+        
+        if (sourcePlayer == 1) {
+            // Player 1(나)이 발동 → Player 2(상대 화면)에게 적용
+            // 로컬: 내 화면의 Player 2(상대)에 적용
+            super.applySpeedUpToOpponent(sourcePlayer);
+            // 원격: 상대방에게 전송 → 상대방 화면의 Player 1(상대 자신)에 적용
+            p2p.send("item:speed-up:");
+            System.out.println("📤 Sent speed-up to opponent");
+        } else {
+            // sourcePlayer=2는 네트워크로 받은 경우만 해당
+            super.applySpeedUpToOpponent(sourcePlayer);
+        }
+    }
+    
+    @Override
+    public void applySpeedDownToOpponent(int sourcePlayer) {
+        System.out.println("🐌 [P2P] applySpeedDownToOpponent called by Player " + sourcePlayer);
+        
+        if (sourcePlayer == 1) {
+            super.applySpeedDownToOpponent(sourcePlayer);
+            p2p.send("item:speed-down:");
+            System.out.println("📤 Sent speed-down to opponent");
+        } else {
+            super.applySpeedDownToOpponent(sourcePlayer);
+        }
+    }
+    
+    @Override
+    public void applyVisionBlockToOpponent(int sourcePlayer) {
+        System.out.println("👁️ [P2P] applyVisionBlockToOpponent called by Player " + sourcePlayer);
+        
+        if (sourcePlayer == 1) {
+            super.applyVisionBlockToOpponent(sourcePlayer);
+            p2p.send("item:vision-block:");
+            System.out.println("📤 Sent vision-block to opponent");
+        } else {
+            super.applyVisionBlockToOpponent(sourcePlayer);
+        }
+    }
+
     // 게임 중 나가기 액션으로 인한 메인 메뉴 복귀 처리
     @Override
     protected void exitToMenu() {
@@ -862,6 +995,9 @@ public class P2PBattleScene extends BattleScene {
             p2p.removeCallback("board:");
             p2p.removeCallback("attack-generate:");
             p2p.removeCallback("attack-apply");
+            p2p.removeCallback("item:speed-up:");
+            p2p.removeCallback("item:speed-down:");
+            p2p.removeCallback("item:vision-block:");
             p2p.setOnDisconnect(null); 
             p2p.release();
         }
@@ -869,6 +1005,16 @@ public class P2PBattleScene extends BattleScene {
             writeTimer.cancel(); 
             writeTimer.purge(); // 완전히 정리
         }
+        
+        // NetworkStatusDisplay 제거
+        if (networkStatusDisplay != null) {
+            JLayeredPane layeredPane = m_frame.getLayeredPane();
+            layeredPane.remove(networkStatusDisplay);
+            layeredPane.revalidate();
+            layeredPane.repaint();
+            networkStatusDisplay = null;
+        }
+        
         super.exitToMenu();
     }
 

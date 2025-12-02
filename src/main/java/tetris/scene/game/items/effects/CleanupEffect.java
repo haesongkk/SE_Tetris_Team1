@@ -81,13 +81,37 @@ public class CleanupEffect extends AbstractItemEffect {
                 }
             }
             
-            // GameScene의 청소 블링킹 시작 (개별 셀 점멸, 줄 삭제와 동일한 900ms 지속시간)
+            // GameScene의 청소 블링킷 시작 (개별 셀 점멸, 줄 삭제와 동일한 900ms 지속시간)
             if (!blinkCells.isEmpty()) {
-                gameScene.getClass()
-                    .getMethod("startCleanupBlinking", java.util.Set.class)
-                    .invoke(gameScene, blinkCells);
-                
-                System.out.println("Started cleanup blinking effect for " + blinkCells.size() + " cells around (" + centerX + ", " + centerY + ")");
+                // BattleScene 또는 P2PBattleScene인지 확인하고 플레이어별 메서드 호출
+                String gameSceneType = gameScene.getClass().getSimpleName();
+                if ("BattleScene".equals(gameSceneType) || "P2PBattleScene".equals(gameSceneType)) {
+                    // BattleScene에서는 플레이어를 구분해야 함
+                    int playerNumber = determinePlayerNumber(context);
+                    if (playerNumber == 1) {
+                        gameScene.getClass()
+                            .getMethod("startCleanupBlinking1", java.util.Set.class)
+                            .invoke(gameScene, blinkCells);
+                        System.out.println("Started Player 1 cleanup blinking effect for " + blinkCells.size() + " cells");
+                    } else if (playerNumber == 2) {
+                        gameScene.getClass()
+                            .getMethod("startCleanupBlinking2", java.util.Set.class)
+                            .invoke(gameScene, blinkCells);
+                        System.out.println("Started Player 2 cleanup blinking effect for " + blinkCells.size() + " cells");
+                    } else {
+                        // 플레이어 구분 실패시 기본적으로 Player 1 사용
+                        gameScene.getClass()
+                            .getMethod("startCleanupBlinking1", java.util.Set.class)
+                            .invoke(gameScene, blinkCells);
+                        System.out.println("⚠️ Player determination failed, using Player 1 for cleanup blinking");
+                    }
+                } else {
+                    // GeneralScene 등 다른 씬에서는 기존 메서드 사용
+                    gameScene.getClass()
+                        .getMethod("startCleanupBlinking", java.util.Set.class)
+                        .invoke(gameScene, blinkCells);
+                    System.out.println("Started cleanup blinking effect for " + blinkCells.size() + " cells");
+                }
                 
                 // 900ms 후에 블록 처리 수행 (줄 삭제와 동일한 타이밍)
                 java.util.Timer timer = new java.util.Timer();
@@ -95,10 +119,33 @@ public class CleanupEffect extends AbstractItemEffect {
                     @Override
                     public void run() {
                         try {
-                            gameScene.getClass()
-                                .getMethod("stopCleanupBlinking")
-                                .invoke(gameScene);
-                            System.out.println("Stopped cleanup blinking effect");
+                            // BattleScene 또는 P2PBattleScene인지 확인하고 플레이어별 중지 메서드 호출
+                            if ("BattleScene".equals(gameSceneType) || "P2PBattleScene".equals(gameSceneType)) {
+                                int playerNumber = determinePlayerNumber(context);
+                                if (playerNumber == 1) {
+                                    gameScene.getClass()
+                                        .getMethod("stopCleanupBlinking1")
+                                        .invoke(gameScene);
+                                    System.out.println("Stopped Player 1 cleanup blinking effect");
+                                } else if (playerNumber == 2) {
+                                    gameScene.getClass()
+                                        .getMethod("stopCleanupBlinking2")
+                                        .invoke(gameScene);
+                                    System.out.println("Stopped Player 2 cleanup blinking effect");
+                                } else {
+                                    // 플레이어 구분 실패시 기본적으로 Player 1 사용
+                                    gameScene.getClass()
+                                        .getMethod("stopCleanupBlinking1")
+                                        .invoke(gameScene);
+                                    System.out.println("⚠️ Player determination failed, stopped Player 1 cleanup blinking");
+                                }
+                            } else {
+                                // GeneralScene 등 다른 씬에서는 기존 메서드 사용
+                                gameScene.getClass()
+                                    .getMethod("stopCleanupBlinking")
+                                    .invoke(gameScene);
+                                System.out.println("Stopped cleanup blinking effect");
+                            }
                             
                             // 점멸 완료 후 블록 삭제 및 중력 적용
                             performBlockCleanup(context, centerX, centerY);
@@ -118,6 +165,38 @@ public class CleanupEffect extends AbstractItemEffect {
             // 에러가 발생하면 즉시 블록 처리 수행
             performBlockCleanup(context, centerX, centerY);
         }
+    }
+    
+    /**
+     * ItemEffectContext에서 플레이어 번호를 가져옵니다.
+     * @param context ItemEffectContext
+     * @return 1 (Player 1) 또는 2 (Player 2)
+     */
+    private int determinePlayerNumber(ItemEffectContext context) {
+        int playerNumber = context.getPlayerNumber();
+        
+        // 추가 디버그 정보
+        Object boardManager = context.getBoardManager();
+        Object gameScene = context.getGameScene();
+        
+        System.out.println("🔍 DEBUG CleanupEffect player determination:");
+        System.out.println("   - ItemEffectContext playerNumber: " + playerNumber);
+        
+        if (boardManager != null) {
+            try {
+                int bmPlayerNumber = (Integer) boardManager.getClass().getMethod("getPlayerNumber").invoke(boardManager);
+                System.out.println("   - BoardManager playerNumber: " + bmPlayerNumber);
+            } catch (Exception e) {
+                System.out.println("   - Failed to get BoardManager playerNumber: " + e.getMessage());
+            }
+        }
+        
+        if (gameScene != null) {
+            System.out.println("   - GameScene type: " + gameScene.getClass().getSimpleName());
+        }
+        
+        System.out.println("✅ Player number from ItemEffectContext: " + playerNumber);
+        return playerNumber;
     }
     
     /**
