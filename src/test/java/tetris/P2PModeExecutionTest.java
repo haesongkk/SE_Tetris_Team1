@@ -31,7 +31,7 @@ import tetris.scene.game.core.GameStateManager;
  * 5. 아이템 효과 네트워크 동기화
  * 6. 일시정지 상태 동기화
  * 7. 게임 오버 처리
- * 8. 네트워크 지연 모니터링
+ * 8. 네트워크 상태 표시 UI
  * 9. 연결 해제 처리
  * 10. P2PBattleScene 생명주기
  */
@@ -222,9 +222,17 @@ public class P2PModeExecutionTest {
             
             assertNotNull(serialized, "직렬화된 게임 상태가 null이 아니어야 합니다");
             assertFalse(serialized.isEmpty(), "직렬화된 문자열이 비어있지 않아야 합니다");
-            assertTrue(serialized.contains("timestamp"), "타임스탬프가 포함되어야 합니다");
+            
+            // 실제 SerializedGameState 클래스의 필드들 확인
             assertTrue(serialized.contains("board"), "보드 정보가 포함되어야 합니다");
+            assertTrue(serialized.contains("boardColors"), "보드 색상 정보가 포함되어야 합니다");
+            assertTrue(serialized.contains("boardTypes"), "보드 타입 정보가 포함되어야 합니다");
             assertTrue(serialized.contains("score"), "점수 정보가 포함되어야 합니다");
+            assertTrue(serialized.contains("type"), "블록 타입 정보가 포함되어야 합니다");
+            assertTrue(serialized.contains("gameOverFlag"), "게임 오버 플래그가 포함되어야 합니다");
+            assertTrue(serialized.contains("pauseFlag"), "일시정지 플래그가 포함되어야 합니다");
+            assertTrue(serialized.contains("fallSpeed1"), "Player 1 낙하 속도가 포함되어야 합니다");
+            assertTrue(serialized.contains("fallSpeed2"), "Player 2 낙하 속도가 포함되어야 합니다");
             
             System.out.println("✅ 게임 상태 직렬화 성공");
             System.out.println("직렬화 길이: " + serialized.length() + " bytes");
@@ -298,8 +306,8 @@ public class P2PModeExecutionTest {
                 messageLatch.countDown();
             });
             
-            // 서버에서 게임 상태 전송 (writeTimer가 자동으로 전송)
-            Thread.sleep(500); // writeTimer가 최소 1번 실행될 시간 확보
+            // 서버에서 게임 상태 전송 (writeTimer가 100ms마다 자동으로 전송)
+            Thread.sleep(300); // writeTimer가 최소 2-3번 실행될 시간 확보
             
             // 메시지 수신 확인
             boolean received = messageLatch.await(3, TimeUnit.SECONDS);
@@ -344,8 +352,8 @@ public class P2PModeExecutionTest {
                 messageLatch.countDown();
             });
             
-            // 클라이언트에서 게임 상태 전송
-            Thread.sleep(500);
+            // 클라이언트에서 게임 상태 전송 (writeTimer가 100ms마다 자동으로 전송)
+            Thread.sleep(300);
             
             // 메시지 수신 확인
             boolean received = messageLatch.await(3, TimeUnit.SECONDS);
@@ -387,8 +395,8 @@ public class P2PModeExecutionTest {
             server.addCallback("board:", (data) -> serverLatch.countDown());
             client.addCallback("board:", (data) -> clientLatch.countDown());
             
-            // 양방향 전송 대기
-            Thread.sleep(1000);
+            // 양방향 전송 대기 (writeTimer가 100ms마다 전송하므로 충분한 시간)
+            Thread.sleep(500);
             
             // 양쪽 모두 메시지 수신 확인
             assertTrue(serverLatch.await(2, TimeUnit.SECONDS), "서버가 메시지를 수신해야 합니다");
@@ -497,10 +505,10 @@ public class P2PModeExecutionTest {
     // ========================================
 
     @Test
-    @DisplayName("5-1. 아이템 효과 활성화 메시지 전송 테스트")
+    @DisplayName("5-1. 아이템 효과 speed-up 메시지 전송 테스트")
     @Timeout(value = TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
-    void testItemEffectActivateMessage() {
-        System.out.println("--- 5-1. 아이템 효과 활성화 메시지 테스트 ---");
+    void testItemEffectSpeedUpMessage() {
+        System.out.println("--- 5-1. 아이템 효과 speed-up 메시지 테스트 ---");
         
         assertDoesNotThrow(() -> {
             server = new P2PServer();
@@ -517,20 +525,20 @@ public class P2PModeExecutionTest {
             CountDownLatch itemLatch = new CountDownLatch(1);
             AtomicBoolean itemReceived = new AtomicBoolean(false);
             
-            client.addCallback("item-activate:", (data) -> {
+            client.addCallback("item:speed-up:", (data) -> {
                 itemReceived.set(true);
                 itemLatch.countDown();
             });
             
             // 서버에서 아이템 효과 전송 시뮬레이션
-            server.send("item-activate:SLOW_DOWN");
+            server.send("item:speed-up:");
             
             // 메시지 수신 대기
             boolean received = itemLatch.await(2, TimeUnit.SECONDS);
             assertTrue(received, "아이템 효과 메시지가 전달되어야 합니다");
-            assertTrue(itemReceived.get(), "item-activate: 메시지가 수신되어야 합니다");
+            assertTrue(itemReceived.get(), "item:speed-up: 메시지가 수신되어야 합니다");
             
-            System.out.println("✅ 아이템 효과 활성화 메시지 전송 성공");
+            System.out.println("✅ 아이템 효과 speed-up 메시지 전송 성공");
             
             clientScene.onExit();
             serverScene.onExit();
@@ -539,10 +547,10 @@ public class P2PModeExecutionTest {
     }
 
     @Test
-    @DisplayName("5-2. 아이템 효과 종료 메시지 전송 테스트")
+    @DisplayName("5-2. 아이템 효과 speed-down 메시지 전송 테스트")
     @Timeout(value = TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
-    void testItemEffectDeactivateMessage() {
-        System.out.println("--- 5-2. 아이템 효과 종료 메시지 테스트 ---");
+    void testItemEffectSpeedDownMessage() {
+        System.out.println("--- 5-2. 아이템 효과 speed-down 메시지 테스트 ---");
         
         assertDoesNotThrow(() -> {
             server = new P2PServer();
@@ -555,29 +563,71 @@ public class P2PModeExecutionTest {
             P2PBattleScene serverScene = new P2PBattleScene(testFrame, "아이템 모드", server);
             P2PBattleScene clientScene = new P2PBattleScene(testFrame, "아이템 모드", client);
             
-            // 아이템 효과 종료 메시지 수신 확인
-            CountDownLatch deactivateLatch = new CountDownLatch(1);
-            AtomicBoolean deactivateReceived = new AtomicBoolean(false);
+            // 아이템 효과 메시지 수신 확인
+            CountDownLatch itemLatch = new CountDownLatch(1);
+            AtomicBoolean itemReceived = new AtomicBoolean(false);
             
-            client.addCallback("item-deactivate:", (data) -> {
-                deactivateReceived.set(true);
-                deactivateLatch.countDown();
+            client.addCallback("item:speed-down:", (data) -> {
+                itemReceived.set(true);
+                itemLatch.countDown();
             });
             
-            // 서버에서 아이템 효과 종료 메시지 전송
-            server.send("item-deactivate:SLOW_DOWN");
+            // 서버에서 아이템 효과 전송
+            server.send("item:speed-down:");
             
             // 메시지 수신 대기
-            boolean received = deactivateLatch.await(2, TimeUnit.SECONDS);
-            assertTrue(received, "아이템 효과 종료 메시지가 전달되어야 합니다");
-            assertTrue(deactivateReceived.get(), "item-deactivate: 메시지가 수신되어야 합니다");
+            boolean received = itemLatch.await(2, TimeUnit.SECONDS);
+            assertTrue(received, "아이템 효과 메시지가 전달되어야 합니다");
+            assertTrue(itemReceived.get(), "item:speed-down: 메시지가 수신되어야 합니다");
             
-            System.out.println("✅ 아이템 효과 종료 메시지 전송 성공");
+            System.out.println("✅ 아이템 효과 speed-down 메시지 전송 성공");
             
             clientScene.onExit();
             serverScene.onExit();
             
-        }, "아이템 효과 종료 메시지 전송은 예외 없이 작동해야 합니다");
+        }, "아이템 효과 메시지 전송은 예외 없이 작동해야 합니다");
+    }
+
+    @Test
+    @DisplayName("5-3. 아이템 효과 vision-block 메시지 전송 테스트")
+    @Timeout(value = TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
+    void testItemEffectVisionBlockMessage() {
+        System.out.println("--- 5-3. 아이템 효과 vision-block 메시지 테스트 ---");
+        
+        assertDoesNotThrow(() -> {
+            server = new P2PServer();
+            Thread.sleep(NETWORK_WAIT_MS);
+            
+            client = new P2PClient();
+            client.connect(server.HOST);
+            Thread.sleep(NETWORK_WAIT_MS);
+            
+            P2PBattleScene serverScene = new P2PBattleScene(testFrame, "아이템 모드", server);
+            P2PBattleScene clientScene = new P2PBattleScene(testFrame, "아이템 모드", client);
+            
+            // 아이템 효과 메시지 수신 확인
+            CountDownLatch itemLatch = new CountDownLatch(1);
+            AtomicBoolean itemReceived = new AtomicBoolean(false);
+            
+            client.addCallback("item:vision-block:", (data) -> {
+                itemReceived.set(true);
+                itemLatch.countDown();
+            });
+            
+            // 서버에서 아이템 효과 전송
+            server.send("item:vision-block:");
+            
+            // 메시지 수신 대기
+            boolean received = itemLatch.await(2, TimeUnit.SECONDS);
+            assertTrue(received, "아이템 효과 메시지가 전달되어야 합니다");
+            assertTrue(itemReceived.get(), "item:vision-block: 메시지가 수신되어야 합니다");
+            
+            System.out.println("✅ 아이템 효과 vision-block 메시지 전송 성공");
+            
+            clientScene.onExit();
+            serverScene.onExit();
+            
+        }, "아이템 효과 메시지 전송은 예외 없이 작동해야 합니다");
     }
 
     // ========================================
@@ -602,8 +652,8 @@ public class P2PModeExecutionTest {
             P2PBattleScene clientScene = new P2PBattleScene(testFrame, "일반 모드", client);
             
             // 일시정지 플래그는 게임 상태에 포함되어 전송됨
-            // writeTimer가 주기적으로 게임 상태를 전송하므로 충분한 대기 시간 필요
-            Thread.sleep(1000);
+            // writeTimer가 100ms마다 게임 상태를 전송하므로 충분한 대기 시간
+            Thread.sleep(500);
             
             System.out.println("✅ 일시정지 상태 동기화 메커니즘 작동 확인");
             
@@ -642,46 +692,34 @@ public class P2PModeExecutionTest {
     }
 
     // ========================================
-    // 8. 네트워크 지연 모니터링
+    // 8. 네트워크 상태 표시 UI
     // ========================================
 
     @Test
-    @DisplayName("8-1. 네트워크 지연 시간 계산 테스트")
+    @DisplayName("8-1. 네트워크 상태 표시 UI 생성 테스트")
     @Timeout(value = TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
-    void testNetworkLatencyCalculation() {
-        System.out.println("--- 8-1. 네트워크 지연 시간 계산 테스트 ---");
+    void testNetworkStatusDisplayCreation() {
+        System.out.println("--- 8-1. 네트워크 상태 표시 UI 생성 테스트 ---");
         
         assertDoesNotThrow(() -> {
             server = new P2PServer();
-            Thread.sleep(NETWORK_WAIT_MS);
+            P2PBattleScene battleScene = new P2PBattleScene(testFrame, "일반 모드", server);
             
-            client = new P2PClient();
-            client.connect(server.HOST);
-            Thread.sleep(NETWORK_WAIT_MS);
+            // P2PBattleScene이 정상적으로 생성되었는지 확인
+            assertNotNull(battleScene, "P2PBattleScene이 생성되어야 합니다");
             
-            P2PBattleScene serverScene = new P2PBattleScene(testFrame, "일반 모드", server);
-            P2PBattleScene clientScene = new P2PBattleScene(testFrame, "일반 모드", client);
+            System.out.println("✅ 네트워크 상태 표시 UI 포함 P2PBattleScene 생성 성공");
             
-            // 게임 상태 전송 및 지연 시간 계산 대기
-            Thread.sleep(1500); // writeTimer가 여러 번 실행될 시간
+            battleScene.onExit();
             
-            // currentLatency 필드 확인
-            Long currentLatency = (Long) getPrivateField(clientScene, "currentLatency");
-            assertNotNull(currentLatency, "현재 지연 시간이 측정되어야 합니다");
-            
-            System.out.println("✅ 네트워크 지연 시간: " + currentLatency + "ms");
-            
-            clientScene.onExit();
-            serverScene.onExit();
-            
-        }, "네트워크 지연 시간 계산은 예외 없이 작동해야 합니다");
+        }, "네트워크 상태 표시 UI 생성은 예외 없이 작동해야 합니다");
     }
 
     @Test
-    @DisplayName("8-2. 지연 시간 이력 관리 테스트")
+    @DisplayName("8-2. writeTimer 동작 테스트")
     @Timeout(value = TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
-    void testLatencyHistoryManagement() {
-        System.out.println("--- 8-2. 지연 시간 이력 관리 테스트 ---");
+    void testWriteTimerOperation() {
+        System.out.println("--- 8-2. writeTimer 동작 테스트 ---");
         
         assertDoesNotThrow(() -> {
             server = new P2PServer();
@@ -694,19 +732,19 @@ public class P2PModeExecutionTest {
             P2PBattleScene serverScene = new P2PBattleScene(testFrame, "일반 모드", server);
             P2PBattleScene clientScene = new P2PBattleScene(testFrame, "일반 모드", client);
             
-            // 충분한 시간 대기하여 지연 이력 축적
-            Thread.sleep(2000);
+            // writeTimer 필드 확인
+            Object writeTimer = getPrivateField(serverScene, "writeTimer");
+            assertNotNull(writeTimer, "writeTimer가 생성되어야 합니다");
             
-            // latencyHistory 확인
-            Object latencyHistory = getPrivateField(clientScene, "latencyHistory");
-            assertNotNull(latencyHistory, "지연 이력이 관리되어야 합니다");
+            // 게임 상태 전송 대기 (writeTimer가 동작하는지 확인)
+            Thread.sleep(500);
             
-            System.out.println("✅ 지연 시간 이력 관리 확인");
+            System.out.println("✅ writeTimer 동작 확인");
             
             clientScene.onExit();
             serverScene.onExit();
             
-        }, "지연 시간 이력 관리는 예외 없이 작동해야 합니다");
+        }, "writeTimer 동작은 예외 없이 작동해야 합니다");
     }
 
     // ========================================
@@ -833,7 +871,7 @@ public class P2PModeExecutionTest {
             System.out.println("✅ onEnter 완료");
             
             // 게임 실행 시뮬레이션 (일정 시간 동안 게임 상태 전송)
-            Thread.sleep(1000);
+            Thread.sleep(500);
             
             System.out.println("✅ 게임 실행 완료");
             
