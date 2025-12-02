@@ -21,7 +21,9 @@ public class P2PServer extends P2PBase {
 
         // 서버 소켓 생성
         try { 
-            serverSocket = new ServerSocket(PORT); 
+            serverSocket = new ServerSocket();
+            serverSocket.setReuseAddress(true); // 포트 재사용 허용 (테스트 환경에서 필수)
+            serverSocket.bind(new InetSocketAddress(PORT));
         } catch (IOException e) { 
             System.err.println("P2P 서버: 서버 소켓 생성 실패 (포트: " + PORT + ") - " + e.getMessage());
             e.printStackTrace();
