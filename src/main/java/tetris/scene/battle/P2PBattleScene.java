@@ -26,9 +26,6 @@ import tetris.util.Theme;
 // 직렬화된 게임 상태를 저장할 필드들
 class SerializedGameState {
 
-    // 전송 시간
-    long timestamp;
-
     // 게임 보드 (현재 블럭 포함)
     int[][] board;
     char[][] boardColors;
@@ -134,12 +131,6 @@ public class P2PBattleScene extends BattleScene {
      */
     final long MAX_LATENCY_MS = 200;
     
-    // 지연 시간 모니터링 관련 필드
-    private long currentLatency = 0;
-    private long averageLatency = 0;
-    private Queue<Long> latencyHistory = new LinkedList<>();
-    private static final int LATENCY_HISTORY_SIZE = 10;
-
     // 블럭 타입 매핑
     final char[] blockTypes = { 'I','J','L','O','S','T','Z' };
     
@@ -228,10 +219,6 @@ public class P2PBattleScene extends BattleScene {
     void deserializeGameState(String serialized) {
         Gson gson = new Gson();
         SerializedGameState state = gson.fromJson(serialized, SerializedGameState.class);
-
-        long currentTimestamp = System.currentTimeMillis();
-        long latency = currentTimestamp - state.timestamp;
-        handleLatency(latency);
 
         boardManager2.setBoard(state.board);
         boardManager2.setBoardTypes(state.boardTypes);
@@ -347,14 +334,14 @@ public class P2PBattleScene extends BattleScene {
             }
         }
 
+        long latency = p2p.getLastRttMs();
+        handleLatency(latency);
+
     }
 
     // 현재 게임 상태를 직렬화하여 전송
     String serializeGameState() {
         SerializedGameState state = new SerializedGameState();
-
-        // 현재 시간 기록
-        state.timestamp = System.currentTimeMillis();
 
         int[][] board = boardManager1.getBoard();
         int[][] boardTypes = boardManager1.getBoardTypes();
@@ -527,46 +514,10 @@ public class P2PBattleScene extends BattleScene {
     }
 
     private void handleLatency(long latency) {
-        currentLatency = latency;
-        
         // NetworkStatusDisplay 업데이트
         if (networkStatusDisplay != null) {
             networkStatusDisplay.updateLatency(latency);
         }
-        
-        // 지연 히스토리 관리
-        latencyHistory.offer(latency);
-        if (latencyHistory.size() > LATENCY_HISTORY_SIZE) {
-            latencyHistory.poll();
-        }
-        
-        // 평균 지연 시간 계산
-        if (!latencyHistory.isEmpty()) {
-            averageLatency = (long) latencyHistory.stream()
-                .mapToLong(Long::longValue)
-                .average()
-                .orElse(0);
-        } else {
-            averageLatency = latency;
-        }
-        
-        // 연결 끊김 판단: 지속적으로 높은 지연만 연결 끊김 처리
-        // 기준: 최근 3개 이상의 샘플이 모두 MAX_LATENCY_MS(200ms) 초과
-        // 이는 일시적 지연과 실제 연결 문제를 구분하기 위함
-        // 참고: P2PBase.TIMEOUT_MS(5000ms) 초과 시에도 연결 끊김 처리됨
-        if (latency > MAX_LATENCY_MS && averageLatency > MAX_LATENCY_MS && latencyHistory.size() >= 3) {
-            boolean allHighLatency = latencyHistory.stream()
-                .allMatch(l -> l > MAX_LATENCY_MS);
-            if (allHighLatency) {
-                System.out.println("연결 끊김 판단: 지속적 높은 지연 (" + averageLatency + "ms 평균)");
-                SwingUtilities.invokeLater(() -> {
-                    showDisconnectDialog();
-                });
-            }
-        }
-
-        // System.out.println(String.format("네트워크 지연: %dms (평균: %dms)", currentLatency, averageLatency));
-        
         
     }
     

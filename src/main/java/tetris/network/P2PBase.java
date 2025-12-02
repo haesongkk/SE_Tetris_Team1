@@ -31,7 +31,7 @@ public class P2PBase {
             System.err.println("P2P: 메시지 전송 실패 - " + ex.getMessage() + " (메시지: " + message + ")");
             handleNetworkError(ex);
         }
-     }
+    }
 
     public void release() {
         // release() 호출 시에는 정상 종료이므로 오류 처리를 하지 않음
@@ -39,11 +39,7 @@ public class P2PBase {
         isHandlingError = true; // handleNetworkError가 호출되지 않도록 설정
         
         if(onDisconnect != null) {
-            try {
-                onDisconnect.run();
-            } catch (Exception ex) {
-                System.err.println("P2P: onDisconnect 콜백 실행 중 오류: " + ex.getMessage());
-            }
+            onDisconnect.run();
             onDisconnect = null;
         }
         
@@ -74,39 +70,37 @@ public class P2PBase {
     private Map<String, Consumer<String>> callbacks = new HashMap<>();
     protected Runnable onDisconnect;
     private final String RELEASE_MESSAGE = "release";
-    private long lastReceiveTime = -1;
     
     /**
-     * 네트워크 연결 타임아웃 기준 (밀리초)
-     * 
-     * 기준 설정 근거:
-     * - 게임 상태는 100ms 주기로 전송됨 (P2PBattleScene.writeTimer)
-     * - 5초(5000ms) = 50회 전송 주기 동안 응답 없음
-     * - 일반적인 네트워크 지연(50-200ms)과 구분하여 실제 연결 끊김을 감지
-     * - 너무 짧으면 일시적 지연을 끊김으로 오인, 너무 길면 끊김 감지가 늦어짐
-     * 
-     * 연결 끊김 판단 기준:
-     * - 마지막 메시지 수신 후 TIMEOUT_MS 이상 경과 시 ping 전송
-     * - ping 전송 후 TIMEOUT_MS 이상 pong 미수신 시 연결 끊김으로 판단
-     * 
-     * 지연(랙)과의 구분:
-     * - 지연(랙): 일시적 높은 지연 (예: 100-200ms) - 게임은 계속 진행
-     * - 연결 끊김: TIMEOUT_MS 이상 응답 없음 - 연결 종료 처리
+     * 네트워크 타임아웃 및 ping 간격 설정 (밀리초)
+     *
+     * - TIMEOUT_MS: ping 보낸 후 pong이 오지 않았을 때 "끊겼다"고 판단하는 기준
+     * - PING_INTERVAL_MS: 주기적으로 ping을 보내는 간격 (RTT 측정 + 끊김 감지용)
      */
-    private static final int TIMEOUT_MS = 5000;
-    
-    private final String PING_MESSAGE = "ping";
-    private final String PONG_MESSAGE = "pong";
+    private static final int TIMEOUT_MS = 5000;      // 5초 이상 pong 없으면 끊김
+    private static final int PING_INTERVAL_MS = 500; // 0.5초마다 ping 전송
+
+    // ping/pong 메시지 포맷: ping:<id>, pong:<id>
+    private final String PING_PREFIX = "ping:"; 
+    private final String PONG_PREFIX = "pong:"; 
+
     private boolean bWaitingPong = false;
     private long lastPingTime = -1;
+    private long pingSeq = 0;                          // ping 시퀀스 ID
+    private final Map<Long, Long> pingSentTimeMap = new HashMap<>(); // pingID → 보낸 시각(ms)
+
+    // RTT 측정 결과
+    private long lastRttMs = -1;   // 마지막 ping의 RTT(ms)
+    private long avgRttMs  = -1;   // 간단한 이동 평균 RTT(ms)
+
     private boolean isHandlingError = false; // 중복 오류 처리 방지
 
     /**
      * 네트워크 오류 발생 시 처리
      */
     private void handleNetworkError(IOException e) {
-        // 중복 오류 처리 방지 - isHandlingError가 이미 true면 중복 호출이므로 무시
-        if (isHandlingError) {
+        // 중복 오류 처리 방지
+        if (isHandlingError || !bRunning) {
             return;
         }
         
@@ -128,73 +122,94 @@ public class P2PBase {
 
     protected void run() {
         bRunning = true;
-        lastReceiveTime = System.currentTimeMillis();
         
         new Thread(() -> {
-            while(bRunning) {
-                // 타임아웃 검사 (연결 끊김 판단 기준)
-                // 마지막 메시지 수신 후 TIMEOUT_MS 이상 경과 시 ping 전송
+            while (bRunning) {
                 long currentTime = System.currentTimeMillis();
-                if(currentTime - lastReceiveTime > TIMEOUT_MS) {
-                    if(bWaitingPong) {
-                        // ping 전송 후 TIMEOUT_MS 이상 pong 미수신 시 연결 끊김으로 판단
-                        if(currentTime - lastPingTime > TIMEOUT_MS) {
-                            System.out.println("타임아웃 발생: " + TIMEOUT_MS + "ms 이상 응답 없음");
-                            handleNetworkError(new IOException("타임아웃"));
-                            break;
-                        } else { /* pong 대기 중 - 아직 타임아웃 아님 */}
 
-                    } else {
-                        send(PING_MESSAGE);
-                        bWaitingPong = true;
-                        lastPingTime = currentTime;
-                    }
+                // 1) 주기적인 ping 전송 (RTT 측정 + 끊김 감지용)
+                if (!bWaitingPong && (lastPingTime < 0 || currentTime - lastPingTime >= PING_INTERVAL_MS)) {
+                    long id = ++pingSeq;
+                    pingSentTimeMap.put(id, currentTime);
+                    send(PING_PREFIX + id);
+                    bWaitingPong = true;
+                    lastPingTime = currentTime;
+                    // System.out.println("P2P: send ping:" + id);
                 }
 
-                String message;
+                // 2) pong 타임아웃 체크
+                if (bWaitingPong && currentTime - lastPingTime > TIMEOUT_MS) {
+                    System.out.println("타임아웃 발생: ping/pong " + TIMEOUT_MS + "ms 초과");
+                    handleNetworkError(new IOException("ping/pong 타임아웃"));
+                    break;
+                }
+
+                // 3) 입력 스트림 준비 확인
                 try { 
                     if (in == null) {
                         System.err.println("P2P: 입력 스트림이 null입니다");
                         handleNetworkError(new IOException("입력 스트림이 null입니다"));
                         break;
                     }
-                    
-                    // readLine()은 블로킹이지만 소켓이 닫히면 null을 반환하거나 예외를 발생시킴
+                    if(!in.ready()) continue;
+                } catch (IOException e) { 
+                    System.err.println("P2P: 입력 스트림 확인 중 오류 - " + e.getMessage());
+                    handleNetworkError(e);
+                    break; 
+                }
+                
+                String message = null;
+                try { 
                     message = in.readLine(); 
-                    
-                    if(message == null) {
-                        System.out.println("P2P: 연결이 종료되었습니다 (null 메시지 수신)");
-                        handleNetworkError(new IOException("연결이 종료되었습니다"));
-                        break;
-                    }
                 } catch (IOException ex) { 
                     System.err.println("P2P: 메시지 읽기 중 오류 - " + ex.getMessage());
                     handleNetworkError(ex);
                     break; 
                 }
+                if(message == null) {
+                    System.out.println("P2P: 연결이 종료되었습니다 (null 메시지 수신)");
+                    handleNetworkError(new IOException("연결이 종료되었습니다"));
+                    break;
+                }
 
-                lastReceiveTime = System.currentTimeMillis();
+                // 5) 제어 메시지 처리
                 if(message.equals(RELEASE_MESSAGE)) { 
                     send(RELEASE_MESSAGE);
                     break; 
-                } else if(message.equals(PING_MESSAGE)) {
-                    send(PONG_MESSAGE);
+                } else if(message.startsWith(PING_PREFIX)) {
+                    // 상대가 보낸 ping:<id> → 그대로 pong:<id>로 돌려줌
+                    String idPart = message.substring(PING_PREFIX.length());
+                    send(PONG_PREFIX + idPart);
                     continue;
-                } else if(message.equals(PONG_MESSAGE)) {
+                } else if(message.startsWith(PONG_PREFIX)) {
+                    // 내가 보낸 ping:<id>에 대한 응답
+                    String idPart = message.substring(PONG_PREFIX.length());
+                    try {
+                        long id = Long.parseLong(idPart.trim());
+                        Long sentTime = pingSentTimeMap.remove(id);
+                        if (sentTime != null) {
+                            long rtt = currentTime - sentTime;
+                            lastRttMs = rtt;
+                            if (avgRttMs < 0) avgRttMs = rtt;
+                            else avgRttMs = (avgRttMs * 3 + rtt) / 4;
+                        }
+                    } catch (NumberFormatException ignore) { }
                     bWaitingPong = false;
-                    lastPingTime = -1;
+                    lastPingTime = currentTime;
                     continue;
                 }
 
+                // 6) 일반 메시지 콜백 처리
                 for(String key : callbacks.keySet()) {
                     if(message.startsWith(key)) {
                         callbacks.get(key).accept(message.substring(key.length()));
                         break;
                     }
                 }
-
             }
-            // 정상 종료가 아닌 경우에만 release 호출 (이미 handleNetworkError에서 처리했을 수 있음)
+
+            // 정상 종료가 아닌 경우에만 release 호출
+            // (IO 오류 등으로 handleNetworkError가 이미 처리한 경우는 건드리지 않음)
             if (bRunning || !isHandlingError) {
                 release();
             }
@@ -204,22 +219,29 @@ public class P2PBase {
 
     public void addCallback(String message, Consumer<String> callback) {
         callbacks.put(message, callback);
-        for(String key : callbacks.keySet()) {
-            System.out.println("key: " + key);
-        }
     }
 
     public void removeCallback(String message) {
         callbacks.remove(message);
-        for(String key : callbacks.keySet()) {
-            System.out.println("key: " + key);
-        }
     }
 
     public void setOnDisconnect(Runnable onDisconnect) {
         this.onDisconnect = onDisconnect;
     }
 
+    /**
+     * 마지막 ping에 대한 RTT(ms).
+     * 아직 ping/pong이 한 번도 오가지 않았다면 -1을 반환합니다.
+     */
+    public long getLastRttMs() {
+        return lastRttMs;
+    }
 
-
+    /**
+     * 최근 여러 번의 RTT를 반영한 이동 평균 값(ms).
+     * 아직 측정되지 않았다면 -1을 반환합니다.
+     */
+    public long getAvgRttMs() {
+        return avgRttMs;
+    }
 }
