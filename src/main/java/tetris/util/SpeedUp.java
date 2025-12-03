@@ -17,8 +17,8 @@ public class SpeedUp {
     }
     
     // 상수들
-    private static final int BLOCKS_THRESHOLD = 5;     // 속도 증가를 위한 블록 생성 임계값
-    private static final int LINES_THRESHOLD = 2;      // 속도 증가를 위한 줄 삭제 임계값
+    private static final int BLOCKS_THRESHOLD = 40;     // 속도 증가를 위한 블록 생성 임계값
+    private static final int LINES_THRESHOLD = 10;      // 속도 증가를 위한 줄 삭제 임계값
     private static final int BASE_INTERVAL_DECREASE = 200;   // 기본 속도 증가 시 감소할 딜레이 시간 (ms)
     private static final int MIN_INTERVAL = 400;        // 최소 딜레이 시간 (최대 속도)
     
