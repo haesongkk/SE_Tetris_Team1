@@ -453,12 +453,12 @@ public class GameControlTest {
             // ===== 테스트 케이스 4: 줄 삭제 - 정상 줄 삭제 (임계값 미만) =====
             System.out.println("테스트 4: 정상 줄 삭제 (임계값 미만)");
             
-            // LINES_THRESHOLD = 2이므로, 1줄만 삭제하면 임계값에 도달하지 않음
-            speedUp.onLinesCleared(1); // 1줄 삭제 (임계값 2보다 작게)
+            // LINES_THRESHOLD = 10이므로, 9줄만 삭제하면 임계값에 도달하지 않음
+            speedUp.onLinesCleared(9); // 9줄 삭제 (임계값 10보다 작게)
             
             int linesAfterFirstClear = speedUp.getTotalLinesCleared();
-            assertEquals(1, linesAfterFirstClear, "1줄 삭제 시 카운트는 1이어야 합니다. 현재: " + linesAfterFirstClear);
-            System.out.println("✅ 1줄 삭제 후 카운트: " + linesAfterFirstClear);
+            assertEquals(9, linesAfterFirstClear, "9줄 삭제 시 카운트는 9이어야 합니다. 현재: " + linesAfterFirstClear);
+            System.out.println("✅ 9줄 삭제 후 카운트: " + linesAfterFirstClear);
 
             // ===== 테스트 케이스 5: 속도 증가 조건 충족 (줄 삭제 임계값) =====
             System.out.println("테스트 5: 줄 삭제 임계값에 의한 속도 증가");
