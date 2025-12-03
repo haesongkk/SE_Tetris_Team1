@@ -123,7 +123,7 @@ public class P2PBase {
     protected void run() {
         bRunning = true;
         
-        new Thread(() -> {
+        Thread networkThread = new Thread(() -> {
             while (bRunning) {
                 long currentTime = System.currentTimeMillis();
 
@@ -213,7 +213,9 @@ public class P2PBase {
             if (bRunning || !isHandlingError) {
                 release();
             }
-        }).start();
+        });
+        networkThread.setDaemon(true); // 데몬 스레드로 설정 (메인 종료 시 자동 정리)
+        networkThread.start();
     }
 
 
