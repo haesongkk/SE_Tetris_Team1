@@ -6,7 +6,7 @@
 
 ## 실행 화면
 
-[![](https://img.youtube.com/vi/SyxkUnvwehw/maxresdefault.jpg)](https://youtu.be/SyxkUnvwehw)
+[![](./screenshot.gif)](https://youtu.be/SyxkUnvwehw)
 
 > 위 이미지를 클릭하면 플레이 영상을 확인할 수 있습니다.
 
